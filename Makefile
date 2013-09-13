@@ -1,7 +1,7 @@
 all: libopenmp.so
 	
 libopenmp.so: hpxMP.o
-	g++ -shared -Wl,-soname,libopenmp.so -o libopenmp.so hpxMP.o `pkg-config --cflags --libs hpx_application`
+	g++ -shared -Wl,-soname,libopenmp.so -o libopenmp.so hpxMP.o -L/home/jeremy/hpxc/lib -lhpxcd `pkg-config --cflags --libs hpx_application`
 
 hpxMP.o: hpxMP.cpp hpxMP.h
 	g++ -fPIC -c hpxMP.cpp -o hpxMP.o -I/home/jeremy/hpxc/include -L/home/jeremy/hpxc/lib -lhpxcd `pkg-config --cflags --libs hpx_application`
