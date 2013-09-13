@@ -12,4 +12,4 @@ clean:
 
 
 run: libopenmp.so
-	LD_PRELOAD=./libopenmp.so ../simple-omp/a.out
+	LD_PRELOAD=./libopenmp.so ./simple-omp/omp-par
