@@ -35,10 +35,10 @@ int hpx_main() {
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
 {
     printf("hello from fork\n");
-  /*  omp_task = micro_task;
+    omp_task = micro_task;
     num_threads = Nthreads;
     hpx::init();
-*/
+
 }
 
 void __ompc_serialized_parallel(omp_int32 global_tid)
