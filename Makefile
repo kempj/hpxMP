@@ -11,5 +11,9 @@ clean:
 	rm -rf *.so
 
 
-run: libopenmp.so
-	LD_PRELOAD=./libopenmp.so ./simple-omp/omp-par
+tests: libopenmp.so par-test for-test
+
+par-test:
+	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-par
+for-test:
+	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-for
