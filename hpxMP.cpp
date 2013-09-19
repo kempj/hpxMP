@@ -75,3 +75,11 @@ omp_int32 __ompc_get_local_thread_num()
     return 0;
 }
 
+void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
+        omp_int32 *plower,
+        omp_int32 *pupper, omp_int32 *pstride,
+        omp_int32 incr, omp_int32 chunk) 
+{
+    //Not sure what this does. It seems more to be related to the scheduling
+}
+
