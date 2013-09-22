@@ -17,6 +17,8 @@ typedef void (*omp_micro)(omp_int32 , frame_pointer_t);
 
 using namespace::std;
 
+hpxc_thread_t *threads;
+
 void (*omp_task)(int, void*)=0;
 int num_threads = 0;
 
@@ -30,7 +32,7 @@ int get_num_threads() {
 }
 
 int hpx_main() {
-    hpxc_thread_t *threads = new hpxc_thread_t[num_threads];
+    threads = new hpxc_thread_t[num_threads];
     cout << "hello from hpx main" << endl;
     for(int i = 0; i < num_threads; i++) {
         hpxc_thread_create(&threads[i], 0, (void* (*)(void*))conversion_func, 0);
@@ -72,14 +74,28 @@ omp_int32 __ompc_can_fork()
 
 omp_int32 __ompc_get_local_thread_num()
 {
+    for(int i = 0; i < num_threads; i++) {
+        if(hpxc_thread_equal(hpxc_thread_self(), threads[i])) {
+            return i;
+        }
+    }
     return 0;
 }
 
 void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
-        omp_int32 *plower,
-        omp_int32 *pupper, omp_int32 *pstride,
+        omp_int32 *p_lower,
+        omp_int32 *p_upper, omp_int32 *p_stride,
         omp_int32 incr, omp_int32 chunk) 
 {
-    //Not sure what this does. It seems more to be related to the scheduling
+    int thread_num = __ompc_get_local_thread_num();
+    int size = *p_upper - *p_lower + 1;
+    int chunk_size = size/num_threads;
+    if(thread_num < size % num_threads) {
+        *p_lower = thread_num * (chunk_size+1);
+        *p_upper = *p_lower + chunk_size ;
+    } else {
+        *p_lower = (size % num_threads) * (chunk_size+1) + (thread_num - size % num_threads ) * chunk_size;
+        *p_upper = *p_lower + chunk_size - 1;
+    }
 }
 

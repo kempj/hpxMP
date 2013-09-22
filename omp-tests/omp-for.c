@@ -4,7 +4,7 @@ int main() {
     int i;
 
 #pragma omp parallel for
-    for(i = 0; i < 20; i++) 
+    for(i = 0; i < 11; i++) 
     {
         printf("Hello World %d\n", i);
     }

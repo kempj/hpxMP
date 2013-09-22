@@ -5,6 +5,20 @@ typedef void *frame_pointer_t;
 typedef omp_int32 omp_tid;
 typedef void (*omp_micro)(omp_int32 , frame_pointer_t);
 
+typedef enum {
+    OMP_SCHED_UNKNOWN             = 0,
+    OMP_SCHED_STATIC              = 1,
+    OMP_SCHED_STATIC_EVEN         = 2,
+    OMP_SCHED_DYNAMIC             = 3,
+    OMP_SCHED_GUIDED              = 4,
+    OMP_SCHED_RUNTIME             = 5,
+
+    OMP_SCHED_ORDERED_STATIC      = 31,
+    OMP_SCHED_ORDERED_STATIC_EVEN = 32,
+    OMP_SCHED_ORDERED_DYNAMIC     = 33,
+    OMP_SCHED_ORDERED_GUIDED  = 34,
+    OMP_SCHED_ORDERED_RUNTIME     = 35
+} omp_sched_t;
 
 
 extern "C" void __ompc_fork(int num_threads, omp_micro micro_task,
