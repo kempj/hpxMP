@@ -95,3 +95,11 @@ static void __omprg_main_11();
 
 extern _INT32 __ompc_barrier();
 
+static void __ompdo_main_2();
+
+static void __ompdo_main_3();
+
+static void __ompdo_main_4();
+
+static void __ompdo_main_5();
+

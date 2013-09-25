@@ -30,7 +30,7 @@ int get_num_threads() {
 
 int hpx_main() {
     threads = new hpxc_thread_t[num_threads];
-    cout << "hello from hpx main" << endl;
+    cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
         hpxc_thread_create(&threads[i], 0, (void* (*)(void*))omp_task, 0);
     }
@@ -56,7 +56,6 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
         started = true;
         omp_task = micro_task;
         num_threads = get_num_threads();
-        cout << "hello from fork ( " << num_threads << " threads)" << endl;
         hpx::init();
         started = false;
     }
@@ -98,14 +97,21 @@ void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
         omp_int32 incr, omp_int32 chunk) 
 {
     int thread_num = __ompc_get_local_thread_num();
-    int size = *p_upper - *p_lower + 1;
+    int size;
+    omp_int32 *tmp;
+    if(*p_upper < *p_lower) {
+        tmp = p_upper;
+        p_upper = p_lower;
+        p_lower = tmp;
+    }
+    size = *p_upper - *p_lower + 1;
     int chunk_size = size/num_threads;
     if(thread_num < size % num_threads) {
-        *p_lower = thread_num * (chunk_size+1);
+        *p_lower += thread_num * (chunk_size+incr);
         *p_upper = *p_lower + chunk_size ;
     } else {
-        *p_lower = (size % num_threads) * (chunk_size+1) + (thread_num - size % num_threads ) * chunk_size;
-        *p_upper = *p_lower + chunk_size - 1;
+        *p_lower += (size % num_threads) * (chunk_size+incr) + (thread_num - size % num_threads ) * chunk_size;
+        *p_upper = *p_lower + chunk_size - incr;
     }
 }
 
