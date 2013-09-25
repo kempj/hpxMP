@@ -1,0 +1,13 @@
+CC=~/openUH/bin/uhcc
+
+all: parallel for nested-parallel
+
+parallel:
+	$(CC) ../omp-par.c -fopenmp -CLIST:emit_nested_pu:before_cg
+
+nested-parallel:
+	$(CC) ../omp-nested-par.c -fopenmp -CLIST:emit_nested_pu:before_cg
+
+for:
+	$(CC) ../omp-for.c -fopenmp -CLIST:emit_nested_pu:before_cg 
+

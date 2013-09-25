@@ -3,7 +3,7 @@
  *******************************************************/
 
 /* Include file-level type and variable decls */
-#include "omp-for.w2c.h"
+#include "omp-nested-par.w2c.h"
 
 
 __inline _INT32 vprintf(
@@ -274,8 +274,6 @@ extern _INT32 main()
   register _INT64 _w2c_reg6;
   register _INT64 _w2c_reg7;
   register _UINT64 _w2c_reg3;
-  register _INT32 _w2c_i0;
-  register _INT32 _w2c___ompv_ok_to_fork0;
   
   /*Begin_of_nested_PU(s)*/
   
@@ -284,176 +282,101 @@ extern _INT32 main()
   if(!(_w2c___ompv_ok_to_fork))
     goto _514;
   _w2c_reg5 = 0U;
-  _w2c_reg6 = (_INT64)(&__ompdo_main_1);
+  _w2c_reg6 = (_INT64)(&__omprg_main_1);
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
-  __ompc_fork((_INT32) 0U, &__ompdo_main_1, _w2c_reg3);
-  goto _3330;
+  __ompc_fork((_INT32) 0U, &__omprg_main_1, _w2c_reg3);
+  goto _770;
   _514 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
   _w2c_reg1 = 0;
   __ompc_serialized_parallel();
-  _w2c_i0 = 0U;
-  _1282 :;
-  _w2c_reg5 = (_INT64)("Hello World %d\n");
-  _w2c_reg6 = _w2c_i0;
+  _w2c_reg5 = (_INT64)("Hello World\n");
   _w2c_reg1 = 0;
-  printf("Hello World %d\n", _w2c_i0);
-  _w2c_i0 = _w2c_i0 + (_INT32)(1U);
-  if(_w2c_i0 <= (_INT32)(10U))
-    goto _1282;
-  _w2c_reg1 = 0;
-  __ompc_end_serialized_parallel();
-  _3330 :;
-  _w2c_reg5 = (_INT64)("second loop: separate parallel and for pragmas\n");
-  _w2c_reg1 = 0;
-  printf("second loop: separate parallel and for pragmas\n");
-  _w2c_reg1 = 0;
-  _w2c___ompv_ok_to_fork0 = __ompc_can_fork();
-  if(!(_w2c___ompv_ok_to_fork0))
-    goto _2050;
-  _w2c_reg5 = 0U;
-  _w2c_reg6 = (_INT64)(&__omprg_main_11);
-  _w2c_reg7 = _w2c_reg3;
-  _w2c_reg1 = 0;
-  __ompc_fork((_INT32) 0U, &__omprg_main_11, _w2c_reg3);
-  goto _3586;
-  _2050 :;
+  printf("Hello World\n");
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
   _w2c_reg1 = 0;
   __ompc_serialized_parallel();
-  _w2c_i0 = 0U;
-  _2818 :;
-  _w2c_reg5 = (_INT64)("Hello World %d\n");
-  _w2c_reg6 = _w2c_i0;
+  _w2c_reg5 = (_INT64)("nested parallel region\n");
   _w2c_reg1 = 0;
-  printf("Hello World %d\n", _w2c_i0);
-  _w2c_i0 = _w2c_i0 + (_INT32)(1U);
-  if(_w2c_i0 <= (_INT32)(10U))
-    goto _2818;
+  printf("nested parallel region\n");
+  _w2c_reg1 = 0;
+  __ompc_get_local_thread_num();
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _3586 :;
+  _w2c_reg1 = 0;
+  __ompc_end_serialized_parallel();
+  _770 :;
   return 0U;
 } /* main */
 
 
-static void __ompdo_main_1(__ompv_gtid_a, __ompv_slink_a)
+static void __omprg_main_1(__ompv_gtid_a, __ompv_slink_a)
   _INT32 __ompv_gtid_a;
   _UINT64 __ompv_slink_a;
 {
   
   register _UINT64 _w2c_reg6;
-  register _INT32 _w2c___ompv_gtid_a0;
   register _INT64 _w2c_reg5;
-  register _INT64 _w2c_reg7;
-  register _INT64 _w2c_reg8;
-  register _INT64 _w2c_reg9;
-  register _INT64 _w2c_reg10;
   register _INT32 _w2c_reg1;
-  register _INT32 _w2c___ompv_temp_do_upper00;
-  register _INT32 _w2c___ompv_temp_do_lower00;
-  register _INT32 _w2c___mplocal_i0;
+  register _INT32 _w2c___ompv_ok_to_fork;
+  register _INT64 _w2c_reg7;
+  register _UINT64 _w2c_reg3;
   _UINT64 _temp___slink_sym0;
-  _INT32 __ompv_temp_do_upper0;
-  _INT32 __ompv_temp_do_lower0;
-  _INT32 __ompv_temp_do_stride0;
   
   /*Begin_of_nested_PU(s)*/
   
   _temp___slink_sym0 = _w2c_reg6;
-  _w2c___ompv_gtid_a0 = (_INT32) _w2c_reg5;
-  __ompv_temp_do_upper0 = 10U;
-  __ompv_temp_do_lower0 = 0U;
-  _w2c_reg5 = _w2c___ompv_gtid_a0;
-  _w2c_reg6 = 2U;
-  _w2c_reg7 = (_INT64)(&__ompv_temp_do_lower0);
-  _w2c_reg8 = (_INT64)(&__ompv_temp_do_upper0);
-  _w2c_reg9 = (_INT64)(&__ompv_temp_do_stride0);
-  _w2c_reg10 = 1U;
-  * ((_INT32 *) &) = 1U;
+  _w2c_reg5 = (_INT64)("Hello World\n");
   _w2c_reg1 = 0;
-  __ompc_static_init_4(_w2c___ompv_gtid_a0, (_INT32) 2U, &__ompv_temp_do_lower0, &__ompv_temp_do_upper0, &__ompv_temp_do_stride0, (_INT32) 1U, (_INT32) 1U);
-  _w2c___ompv_temp_do_upper00 = __ompv_temp_do_upper0;
-  _w2c___ompv_temp_do_upper00 = (_w2c___ompv_temp_do_upper00 > (_INT32)(10U) ? 10U : _w2c___ompv_temp_do_upper00);
-  __ompv_temp_do_upper0 = _w2c___ompv_temp_do_upper00;
-  _w2c___ompv_temp_do_lower00 = __ompv_temp_do_lower0;
-  _w2c___mplocal_i0 = _w2c___ompv_temp_do_lower00;
-  if(!(_w2c___ompv_temp_do_lower00 <= _w2c___ompv_temp_do_upper00))
-    goto _771;
-  _1283 :;
-  _w2c_reg5 = (_INT64)("Hello World %d\n");
-  _w2c_reg6 = _w2c___mplocal_i0;
+  printf("Hello World\n");
   _w2c_reg1 = 0;
-  printf("Hello World %d\n", _w2c___mplocal_i0);
-  _w2c___mplocal_i0 = _w2c___mplocal_i0 + (_INT32)(1U);
-  if(__ompv_temp_do_upper0 >= _w2c___mplocal_i0)
-    goto _1283;
+  _w2c___ompv_ok_to_fork = __ompc_can_fork();
+  if(!(_w2c___ompv_ok_to_fork))
+    goto _515;
+  _w2c_reg5 = 0U;
+  _w2c_reg6 = (_UINT64)(&__omprg___omprg_main_1_1);
+  _w2c_reg7 = _w2c_reg3;
+  _w2c_reg1 = 0;
+  __ompc_fork((_INT32) 0U, &__omprg___omprg_main_1_1, _w2c_reg3);
+  goto _771;
+  _515 :;
+  _w2c_reg1 = 0;
+  __ompc_get_local_thread_num();
+  _w2c_reg1 = 0;
+  __ompc_serialized_parallel();
+  _w2c_reg5 = (_INT64)("nested parallel region\n");
+  _w2c_reg1 = 0;
+  printf("nested parallel region\n");
+  _w2c_reg1 = 0;
+  __ompc_end_serialized_parallel();
   _771 :;
   _w2c_reg1 = 0;
   __ompc_task_exit();
   return;
-} /* __ompdo_main_1 */
+} /* __omprg_main_1 */
 
 
-static void __omprg_main_11(__ompv_gtid_a, __ompv_slink_a)
+static void __omprg___omprg_main_1_1(__ompv_gtid_a, __ompv_slink_a)
   _INT32 __ompv_gtid_a;
   _UINT64 __ompv_slink_a;
 {
   
   register _UINT64 _w2c_reg6;
-  register _INT32 _w2c___ompv_gtid_a0;
   register _INT64 _w2c_reg5;
-  register _INT64 _w2c_reg7;
-  register _INT64 _w2c_reg8;
-  register _INT64 _w2c_reg9;
-  register _INT64 _w2c_reg10;
   register _INT32 _w2c_reg1;
-  register _INT32 _w2c___ompv_temp_do_upper00;
-  register _INT32 _w2c___ompv_temp_do_lower00;
-  register _INT32 _w2c___mplocal_i0;
-  _UINT64 _temp___slink_sym1;
-  _INT32 __ompv_temp_do_upper0;
-  _INT32 __ompv_temp_do_lower0;
-  _INT32 __ompv_temp_do_stride0;
+  _UINT64 _temp___slink_sym2;
   
   /*Begin_of_nested_PU(s)*/
   
-  _temp___slink_sym1 = _w2c_reg6;
-  _w2c___ompv_gtid_a0 = (_INT32) _w2c_reg5;
-  __ompv_temp_do_upper0 = 10U;
-  __ompv_temp_do_lower0 = 0U;
-  _w2c_reg5 = _w2c___ompv_gtid_a0;
-  _w2c_reg6 = 2U;
-  _w2c_reg7 = (_INT64)(&__ompv_temp_do_lower0);
-  _w2c_reg8 = (_INT64)(&__ompv_temp_do_upper0);
-  _w2c_reg9 = (_INT64)(&__ompv_temp_do_stride0);
-  _w2c_reg10 = 1U;
-  * ((_INT32 *) &) = 1U;
+  _temp___slink_sym2 = _w2c_reg6;
+  _w2c_reg5 = (_INT64)("nested parallel region\n");
   _w2c_reg1 = 0;
-  __ompc_static_init_4(_w2c___ompv_gtid_a0, (_INT32) 2U, &__ompv_temp_do_lower0, &__ompv_temp_do_upper0, &__ompv_temp_do_stride0, (_INT32) 1U, (_INT32) 1U);
-  _w2c___ompv_temp_do_upper00 = __ompv_temp_do_upper0;
-  _w2c___ompv_temp_do_upper00 = (_w2c___ompv_temp_do_upper00 > (_INT32)(10U) ? 10U : _w2c___ompv_temp_do_upper00);
-  __ompv_temp_do_upper0 = _w2c___ompv_temp_do_upper00;
-  _w2c___ompv_temp_do_lower00 = __ompv_temp_do_lower0;
-  _w2c___mplocal_i0 = _w2c___ompv_temp_do_lower00;
-  if(!(_w2c___ompv_temp_do_lower00 <= _w2c___ompv_temp_do_upper00))
-    goto _771;
-  _1283 :;
-  _w2c_reg5 = (_INT64)("Hello World %d\n");
-  _w2c_reg6 = _w2c___mplocal_i0;
-  _w2c_reg1 = 0;
-  printf("Hello World %d\n", _w2c___mplocal_i0);
-  _w2c___mplocal_i0 = _w2c___mplocal_i0 + (_INT32)(1U);
-  if(__ompv_temp_do_upper0 >= _w2c___mplocal_i0)
-    goto _1283;
-  _771 :;
-  _w2c_reg1 = 0;
-  __ompc_barrier();
+  printf("nested parallel region\n");
   _w2c_reg1 = 0;
   __ompc_task_exit();
   return;
-} /* __omprg_main_11 */
+} /* __omprg___omprg_main_1_1 */
 

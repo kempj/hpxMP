@@ -21,10 +21,7 @@ hpxc_thread_t *threads;
 
 void (*omp_task)(int, void*)=0;
 int num_threads = 0;
-
-void conversion_func(void*) {
-    omp_task(0, NULL);
-}
+bool started = false;
 
 int get_num_threads() {
     //TODO: first, read OMP_NUM_THREADS from env
@@ -35,7 +32,7 @@ int hpx_main() {
     threads = new hpxc_thread_t[num_threads];
     cout << "hello from hpx main" << endl;
     for(int i = 0; i < num_threads; i++) {
-        hpxc_thread_create(&threads[i], 0, (void* (*)(void*))conversion_func, 0);
+        hpxc_thread_create(&threads[i], 0, (void* (*)(void*))omp_task, 0);
     }
     for(int i = 0; i < num_threads; i++) {
         hpxc_thread_join(threads[i], 0);
@@ -45,11 +42,24 @@ int hpx_main() {
 
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
 {
-    omp_task = micro_task;
-    num_threads = get_num_threads();
-    cout << "hello from fork ( " << num_threads << " threads)" << endl;
-    hpx::init();
-
+    if(started) {
+        //What happens if get_thread_num is called in here?
+        hpxc_thread_t *local_threads = new hpxc_thread_t[num_threads];
+        auto local_func = [=] { micro_task(0, NULL);};
+        for(int i = 0; i < num_threads; i++) {
+            hpxc_thread_create(&local_threads[i], 0, (void* (*)(void*))micro_task, 0);
+        }
+        for(int i = 0; i < num_threads; i++) {
+            hpxc_thread_join(local_threads[i], 0);
+        }
+    } else {
+        started = true;
+        omp_task = micro_task;
+        num_threads = get_num_threads();
+        cout << "hello from fork ( " << num_threads << " threads)" << endl;
+        hpx::init();
+        started = false;
+    }
 }
 
 void __ompc_serialized_parallel(omp_int32 global_tid)

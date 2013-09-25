@@ -11,9 +11,11 @@ clean:
 	rm -rf *.so
 
 
-tests: libopenmp.so par-test for-test
+tests: libopenmp.so par-test for-test par-nested-test
 
 par-test:
 	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-par
 for-test:
 	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-for
+par-nested-test:
+	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-nested-par

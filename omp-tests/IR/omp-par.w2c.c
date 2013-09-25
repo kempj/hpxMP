@@ -1,5 +1,5 @@
 /*******************************************************
- * C file translated from WHIRL Tue Sep 10 13:42:54 2013
+ * C file translated from WHIRL Tue Sep 24 17:45:55 2013
  *******************************************************/
 
 /* Include file-level type and variable decls */
@@ -268,15 +268,21 @@ __inline _INT32 ferror_unlocked(
 extern _INT32 main()
 {
   
-  register _INT64 _w2c_reg1;
-  register _INT32 _w2c___ompv_ok_to_fork;
   register _INT64 _w2c_reg5;
   register _INT64 _w2c_reg6;
+  register _INT64 _w2c_reg1;
+  register _INT32 _w2c___ompv_ok_to_fork;
   register _INT64 _w2c_reg7;
   register _UINT64 _w2c_reg3;
+  register _INT32 _w2c___ompv_ok_to_fork0;
+  struct timespec requestStart;
+  struct timespec requestEnd;
   
   /*Begin_of_nested_PU(s)*/
   
+  _w2c_reg5 = 0U;
+  _w2c_reg6 = (_INT64)(&requestStart);
+  clock_gettime((_INT32) 0U, &requestStart);
   _w2c_reg1 = 0;
   _w2c___ompv_ok_to_fork = __ompc_can_fork();
   if(!(_w2c___ompv_ok_to_fork))
@@ -286,7 +292,7 @@ extern _INT32 main()
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
   __ompc_fork((_INT32) 0U, &__omprg_main_1, _w2c_reg3);
-  goto _770;
+  goto _1282;
   _514 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
@@ -297,7 +303,44 @@ extern _INT32 main()
   printf("Hello World\n");
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _770 :;
+  _1282 :;
+  _w2c_reg5 = 0U;
+  _w2c_reg6 = (_INT64)(&requestEnd);
+  clock_gettime((_INT32) 0U, &requestEnd);
+  _w2c_reg5 = (_INT64)("Parallel region took %d second, and %d nanoseconds\n");
+  _w2c_reg6 = (requestEnd).tv_sec - (requestStart).tv_sec;
+  _w2c_reg7 = (requestEnd).tv_nsec - (requestStart).tv_nsec;
+  _w2c_reg1 = 0;
+  printf("Parallel region took %d second, and %d nanoseconds\n", (requestEnd).tv_sec - (requestStart).tv_sec, (requestEnd).tv_nsec - (requestStart).tv_nsec);
+  _w2c_reg1 = 0;
+  _w2c___ompv_ok_to_fork0 = __ompc_can_fork();
+  if(!(_w2c___ompv_ok_to_fork0))
+    goto _1026;
+  _w2c_reg5 = 0U;
+  _w2c_reg6 = (_INT64)(&__omprg_main_2);
+  _w2c_reg7 = _w2c_reg3;
+  _w2c_reg1 = 0;
+  __ompc_fork((_INT32) 0U, &__omprg_main_2, _w2c_reg3);
+  goto _1538;
+  _1026 :;
+  _w2c_reg1 = 0;
+  __ompc_get_local_thread_num();
+  _w2c_reg1 = 0;
+  __ompc_serialized_parallel();
+  _w2c_reg5 = (_INT64)("second parallel region\n");
+  _w2c_reg1 = 0;
+  printf("second parallel region\n");
+  _w2c_reg1 = 0;
+  __ompc_end_serialized_parallel();
+  _1538 :;
+  _w2c_reg5 = 0U;
+  _w2c_reg6 = (_INT64)(&requestEnd);
+  clock_gettime((_INT32) 0U, &requestEnd);
+  _w2c_reg5 = (_INT64)("Total of both parallel regions took %d second, and %d nanoseconds\n");
+  _w2c_reg6 = (requestEnd).tv_sec - (requestStart).tv_sec;
+  _w2c_reg7 = (requestEnd).tv_nsec - (requestStart).tv_nsec;
+  _w2c_reg1 = 0;
+  printf("Total of both parallel regions took %d second, and %d nanoseconds\n", (requestEnd).tv_sec - (requestStart).tv_sec, (requestEnd).tv_nsec - (requestStart).tv_nsec);
   return 0U;
 } /* main */
 
@@ -322,4 +365,26 @@ static void __omprg_main_1(__ompv_gtid_a, __ompv_slink_a)
   __ompc_task_exit();
   return;
 } /* __omprg_main_1 */
+
+
+static void __omprg_main_2(__ompv_gtid_a, __ompv_slink_a)
+  _INT32 __ompv_gtid_a;
+  _UINT64 __ompv_slink_a;
+{
+  
+  register _UINT64 _w2c_reg6;
+  register _INT64 _w2c_reg5;
+  register _INT32 _w2c_reg1;
+  _UINT64 _temp___slink_sym1;
+  
+  /*Begin_of_nested_PU(s)*/
+  
+  _temp___slink_sym1 = _w2c_reg6;
+  _w2c_reg5 = (_INT64)("second parallel region\n");
+  _w2c_reg1 = 0;
+  printf("second parallel region\n");
+  _w2c_reg1 = 0;
+  __ompc_task_exit();
+  return;
+} /* __omprg_main_2 */
 

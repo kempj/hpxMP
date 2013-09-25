@@ -73,15 +73,7 @@ __inline _INT32 ferror_unlocked(struct _IO_FILE *);
 
 extern _INT32 main();
 
-extern _INT32 clock_gettime(_INT32, struct timespec *);
-
 extern _INT32 printf(const _INT8 *, ...);
-
-static void __omprg_main_1();
-
-extern _INT32 __ompc_task_exit();
-
-extern _INT32 __ompc_fork();
 
 extern _INT32 __ompc_get_local_thread_num();
 
@@ -89,7 +81,13 @@ extern _INT32 __ompc_serialized_parallel();
 
 extern _INT32 __ompc_end_serialized_parallel();
 
+static void __omprg_main_1();
+
+extern _INT32 __ompc_task_exit();
+
+extern _INT32 __ompc_fork();
+
 extern _INT32 __ompc_can_fork();
 
-static void __omprg_main_2();
+static void __omprg___omprg_main_1_1();
 
