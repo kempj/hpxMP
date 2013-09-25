@@ -1,5 +1,5 @@
 /*******************************************************
- * C file translated from WHIRL Wed Sep 25 13:35:51 2013
+ * C file translated from WHIRL Wed Sep 25 17:49:13 2013
  *******************************************************/
 
 /* Include file-level type and variable decls */
@@ -280,6 +280,8 @@ extern _INT32 main()
   register _INT32 _w2c___ompv_ok_to_fork2;
   register _INT32 _w2c___ompv_ok_to_fork3;
   register _INT32 _w2c___ompv_ok_to_fork4;
+  register _INT32 _w2c___ompv_ok_to_fork5;
+  register _INT32 _w2c_j0;
   
   /*Begin_of_nested_PU(s)*/
   
@@ -292,7 +294,7 @@ extern _INT32 main()
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
   __ompc_fork((_INT32) 0U, &__ompdo_main_1, _w2c_reg3);
-  goto _9474;
+  goto _12034;
   _514 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
@@ -309,10 +311,10 @@ extern _INT32 main()
     goto _1282;
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _9474 :;
-  _w2c_reg5 = (_INT64)("second loop: separate parallel and for pragmas\n");
+  _12034 :;
+  _w2c_reg5 = (_INT64)("loop 2: separate parallel and for pragmas\n");
   _w2c_reg1 = 0;
-  printf("second loop: separate parallel and for pragmas\n");
+  printf("loop 2: separate parallel and for pragmas\n");
   _w2c_reg1 = 0;
   _w2c___ompv_ok_to_fork0 = __ompc_can_fork();
   if(!(_w2c___ompv_ok_to_fork0))
@@ -322,7 +324,7 @@ extern _INT32 main()
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
   __ompc_fork((_INT32) 0U, &__omprg_main_11, _w2c_reg3);
-  goto _9730;
+  goto _12290;
   _2050 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
@@ -339,10 +341,10 @@ extern _INT32 main()
     goto _2818;
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _9730 :;
-  _w2c_reg5 = (_INT64)("Third loop: stride of 2, 0-9\n");
+  _12290 :;
+  _w2c_reg5 = (_INT64)("loop 3: stride of 2, 0-9\n");
   _w2c_reg1 = 0;
-  printf("Third loop: stride of 2, 0-9\n");
+  printf("loop 3: stride of 2, 0-9\n");
   _w2c_reg1 = 0;
   _w2c___ompv_ok_to_fork1 = __ompc_can_fork();
   if(!(_w2c___ompv_ok_to_fork1))
@@ -352,7 +354,7 @@ extern _INT32 main()
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
   __ompc_fork((_INT32) 0U, &__ompdo_main_2, _w2c_reg3);
-  goto _9986;
+  goto _12546;
   _3586 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
@@ -369,10 +371,10 @@ extern _INT32 main()
     goto _4354;
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _9986 :;
-  _w2c_reg5 = (_INT64)("Fourth loop: stride of 2, 0-10\n");
+  _12546 :;
+  _w2c_reg5 = (_INT64)("loop 4: stride of 2, 0-10\n");
   _w2c_reg1 = 0;
-  printf("Fourth loop: stride of 2, 0-10\n");
+  printf("loop 4: stride of 2, 0-10\n");
   _w2c_reg1 = 0;
   _w2c___ompv_ok_to_fork2 = __ompc_can_fork();
   if(!(_w2c___ompv_ok_to_fork2))
@@ -382,7 +384,7 @@ extern _INT32 main()
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
   __ompc_fork((_INT32) 0U, &__ompdo_main_3, _w2c_reg3);
-  goto _10242;
+  goto _12802;
   _5122 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
@@ -399,10 +401,10 @@ extern _INT32 main()
     goto _5890;
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _10242 :;
-  _w2c_reg5 = (_INT64)("Fifth loop: stride of 1, -5-4\n");
+  _12802 :;
+  _w2c_reg5 = (_INT64)("loop 5: stride of 1, -5-4\n");
   _w2c_reg1 = 0;
-  printf("Fifth loop: stride of 1, -5-4\n");
+  printf("loop 5: stride of 1, -5-4\n");
   _w2c_reg1 = 0;
   _w2c___ompv_ok_to_fork3 = __ompc_can_fork();
   if(!(_w2c___ompv_ok_to_fork3))
@@ -412,7 +414,7 @@ extern _INT32 main()
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
   __ompc_fork((_INT32) 0U, &__ompdo_main_4, _w2c_reg3);
-  goto _10498;
+  goto _13058;
   _6658 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
@@ -429,10 +431,10 @@ extern _INT32 main()
     goto _7426;
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _10498 :;
-  _w2c_reg5 = (_INT64)("Sixth loop: stride of 2, -5-4\n");
+  _13058 :;
+  _w2c_reg5 = (_INT64)("loop 6: stride of 2, -5-4\n");
   _w2c_reg1 = 0;
-  printf("Sixth loop: stride of 2, -5-4\n");
+  printf("loop 6: stride of 2, -5-4\n");
   _w2c_reg1 = 0;
   _w2c___ompv_ok_to_fork4 = __ompc_can_fork();
   if(!(_w2c___ompv_ok_to_fork4))
@@ -442,7 +444,7 @@ extern _INT32 main()
   _w2c_reg7 = _w2c_reg3;
   _w2c_reg1 = 0;
   __ompc_fork((_INT32) 0U, &__ompdo_main_5, _w2c_reg3);
-  goto _10754;
+  goto _13314;
   _8194 :;
   _w2c_reg1 = 0;
   __ompc_get_local_thread_num();
@@ -459,7 +461,51 @@ extern _INT32 main()
     goto _8962;
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
-  _10754 :;
+  _13314 :;
+  _w2c_reg5 = (_INT64)("loop 7: nested par for loops\n");
+  _w2c_reg1 = 0;
+  printf("loop 7: nested par for loops\n");
+  _w2c_reg1 = 0;
+  _w2c___ompv_ok_to_fork5 = __ompc_can_fork();
+  if(!(_w2c___ompv_ok_to_fork5))
+    goto _9730;
+  _w2c_reg5 = 0U;
+  _w2c_reg6 = (_INT64)(&__ompdo_main_6);
+  _w2c_reg7 = _w2c_reg3;
+  _w2c_reg1 = 0;
+  __ompc_fork((_INT32) 0U, &__ompdo_main_6, _w2c_reg3);
+  goto _13570;
+  _9730 :;
+  _w2c_reg1 = 0;
+  __ompc_get_local_thread_num();
+  _w2c_reg1 = 0;
+  __ompc_serialized_parallel();
+  _w2c_i0 = 0U;
+  _10498 :;
+  _w2c_reg1 = 0;
+  __ompc_get_local_thread_num();
+  _w2c_reg1 = 0;
+  __ompc_serialized_parallel();
+  _w2c_j0 = 0U;
+  _11266 :;
+  _w2c_reg5 = (_INT64)("Hello World %d, %d\n");
+  _w2c_reg6 = _w2c_i0;
+  _w2c_reg7 = _w2c_j0;
+  _w2c_reg1 = 0;
+  printf("Hello World %d, %d\n", _w2c_i0, _w2c_j0);
+  _w2c_j0 = _w2c_j0 + (_INT32)(1U);
+  if(_w2c_j0 <= (_INT32)(4U))
+    goto _11266;
+  _w2c_reg1 = 0;
+  __ompc_get_local_thread_num();
+  _w2c_reg1 = 0;
+  __ompc_end_serialized_parallel();
+  _w2c_i0 = _w2c_i0 + (_INT32)(1U);
+  if(_w2c_i0 <= (_INT32)(4U))
+    goto _10498;
+  _w2c_reg1 = 0;
+  __ompc_end_serialized_parallel();
+  _13570 :;
   return 0U;
 } /* main */
 
@@ -812,4 +858,153 @@ static void __ompdo_main_5(__ompv_gtid_a, __ompv_slink_a)
   __ompc_task_exit();
   return;
 } /* __ompdo_main_5 */
+
+
+static void __ompdo_main_6(__ompv_gtid_a, __ompv_slink_a)
+  _INT32 __ompv_gtid_a;
+  _UINT64 __ompv_slink_a;
+{
+  
+  register _UINT64 _w2c_reg6;
+  register _INT32 _w2c___ompv_gtid_a0;
+  register _INT64 _w2c_reg5;
+  register _INT64 _w2c_reg7;
+  register _INT64 _w2c_reg8;
+  register _INT64 _w2c_reg9;
+  register _INT64 _w2c_reg10;
+  register _INT32 _w2c_reg1;
+  register _INT32 _w2c___ompv_temp_do_upper00;
+  register _INT32 _w2c___ompv_temp_do_lower00;
+  register _INT32 _w2c___mplocal_i0;
+  register _INT32 _w2c___ompv_ok_to_fork;
+  register _UINT64 _w2c_reg3;
+  register _INT32 _w2c___mplocal_j0;
+  _UINT64 _temp___slink_sym6;
+  _INT32 __mplocal_i;
+  _INT32 __ompv_temp_do_upper0;
+  _INT32 __ompv_temp_do_lower0;
+  _INT32 __ompv_temp_do_stride0;
+  
+  /*Begin_of_nested_PU(s)*/
+  
+  _temp___slink_sym6 = _w2c_reg6;
+  _w2c___ompv_gtid_a0 = (_INT32) _w2c_reg5;
+  __ompv_temp_do_upper0 = 4U;
+  __ompv_temp_do_lower0 = 0U;
+  _w2c_reg5 = _w2c___ompv_gtid_a0;
+  _w2c_reg6 = 2U;
+  _w2c_reg7 = (_INT64)(&__ompv_temp_do_lower0);
+  _w2c_reg8 = (_INT64)(&__ompv_temp_do_upper0);
+  _w2c_reg9 = (_INT64)(&__ompv_temp_do_stride0);
+  _w2c_reg10 = 1U;
+  * ((_INT32 *) &) = 1U;
+  _w2c_reg1 = 0;
+  __ompc_static_init_4(_w2c___ompv_gtid_a0, (_INT32) 2U, &__ompv_temp_do_lower0, &__ompv_temp_do_upper0, &__ompv_temp_do_stride0, (_INT32) 1U, (_INT32) 1U);
+  _w2c___ompv_temp_do_upper00 = __ompv_temp_do_upper0;
+  _w2c___ompv_temp_do_upper00 = (_w2c___ompv_temp_do_upper00 > (_INT32)(4U) ? 4U : _w2c___ompv_temp_do_upper00);
+  __ompv_temp_do_upper0 = _w2c___ompv_temp_do_upper00;
+  _w2c___ompv_temp_do_lower00 = __ompv_temp_do_lower0;
+  _w2c___mplocal_i0 = _w2c___ompv_temp_do_lower00;
+  if(!(_w2c___ompv_temp_do_lower00 <= _w2c___ompv_temp_do_upper00))
+    goto _771;
+  _1283 :;
+  _w2c_reg1 = 0;
+  _w2c___ompv_ok_to_fork = __ompc_can_fork();
+  if(!(_w2c___ompv_ok_to_fork))
+    goto _1795;
+  __mplocal_i = _w2c___mplocal_i0;
+  _w2c_reg5 = 0U;
+  _w2c_reg6 = (_UINT64)(&__ompdo___ompdo_main_6_1);
+  _w2c_reg7 = _w2c_reg3;
+  _w2c_reg1 = 0;
+  __ompc_fork((_INT32) 0U, &__ompdo___ompdo_main_6_1, _w2c_reg3);
+  _w2c___mplocal_i0 = __mplocal_i;
+  goto _3331;
+  _1795 :;
+  _w2c_reg1 = 0;
+  __ompc_get_local_thread_num();
+  _w2c_reg1 = 0;
+  __ompc_serialized_parallel();
+  _w2c___mplocal_j0 = 0U;
+  _2563 :;
+  _w2c_reg5 = (_INT64)("Hello World %d, %d\n");
+  _w2c_reg6 = _w2c___mplocal_i0;
+  _w2c_reg7 = _w2c___mplocal_j0;
+  _w2c_reg1 = 0;
+  printf("Hello World %d, %d\n", _w2c___mplocal_i0, _w2c___mplocal_j0);
+  _w2c___mplocal_j0 = _w2c___mplocal_j0 + (_INT32)(1U);
+  if(_w2c___mplocal_j0 <= (_INT32)(4U))
+    goto _2563;
+  _w2c_reg1 = 0;
+  __ompc_end_serialized_parallel();
+  _3331 :;
+  _w2c___mplocal_i0 = _w2c___mplocal_i0 + (_INT32)(1U);
+  if(__ompv_temp_do_upper0 >= _w2c___mplocal_i0)
+    goto _1283;
+  _771 :;
+  _w2c_reg1 = 0;
+  __ompc_task_exit();
+  return;
+} /* __ompdo_main_6 */
+
+
+static void __ompdo___ompdo_main_6_1(__ompv_gtid_a, __ompv_slink_a)
+  _INT32 __ompv_gtid_a;
+  _UINT64 __ompv_slink_a;
+{
+  
+  register _UINT64 _w2c_reg6;
+  register _INT32 _w2c___ompv_gtid_a0;
+  register _INT64 _w2c_reg5;
+  register _INT32 _w2c___mplocalx_i0;
+  register _INT64 _w2c_reg7;
+  register _INT64 _w2c_reg8;
+  register _INT64 _w2c_reg9;
+  register _INT64 _w2c_reg10;
+  register _INT32 _w2c_reg1;
+  register _INT32 _w2c___ompv_temp_do_upper00;
+  register _INT32 _w2c___ompv_temp_do_lower00;
+  register _INT32 _w2c___mplocalx_j0;
+  _UINT64 _temp___slink_sym22;
+  _INT32 __ompv_temp_do_upper0;
+  _INT32 __ompv_temp_do_lower0;
+  _INT32 __ompv_temp_do_stride0;
+  
+  /*Begin_of_nested_PU(s)*/
+  
+  _temp___slink_sym22 = _w2c_reg6;
+  _w2c___ompv_gtid_a0 = (_INT32) _w2c_reg5;
+  _w2c___mplocalx_i0 = *((_INT32 *) _temp___slink_sym22 + -12LL);
+  __ompv_temp_do_upper0 = 4U;
+  __ompv_temp_do_lower0 = 0U;
+  _w2c_reg5 = _w2c___ompv_gtid_a0;
+  _w2c_reg6 = 2U;
+  _w2c_reg7 = (_INT64)(&__ompv_temp_do_lower0);
+  _w2c_reg8 = (_INT64)(&__ompv_temp_do_upper0);
+  _w2c_reg9 = (_INT64)(&__ompv_temp_do_stride0);
+  _w2c_reg10 = 1U;
+  * ((_INT32 *) &) = 1U;
+  _w2c_reg1 = 0;
+  __ompc_static_init_4(_w2c___ompv_gtid_a0, (_INT32) 2U, &__ompv_temp_do_lower0, &__ompv_temp_do_upper0, &__ompv_temp_do_stride0, (_INT32) 1U, (_INT32) 1U);
+  _w2c___ompv_temp_do_upper00 = __ompv_temp_do_upper0;
+  _w2c___ompv_temp_do_upper00 = (_w2c___ompv_temp_do_upper00 > (_INT32)(4U) ? 4U : _w2c___ompv_temp_do_upper00);
+  __ompv_temp_do_upper0 = _w2c___ompv_temp_do_upper00;
+  _w2c___ompv_temp_do_lower00 = __ompv_temp_do_lower0;
+  _w2c___mplocalx_j0 = _w2c___ompv_temp_do_lower00;
+  if(!(_w2c___ompv_temp_do_lower00 <= _w2c___ompv_temp_do_upper00))
+    goto _772;
+  _1284 :;
+  _w2c_reg5 = (_INT64)("Hello World %d, %d\n");
+  _w2c_reg6 = _w2c___mplocalx_i0;
+  _w2c_reg7 = _w2c___mplocalx_j0;
+  _w2c_reg1 = 0;
+  printf("Hello World %d, %d\n", _w2c___mplocalx_i0, _w2c___mplocalx_j0);
+  _w2c___mplocalx_j0 = _w2c___mplocalx_j0 + (_INT32)(1U);
+  if(__ompv_temp_do_upper0 >= _w2c___mplocalx_j0)
+    goto _1284;
+  _772 :;
+  _w2c_reg1 = 0;
+  __ompc_task_exit();
+  return;
+} /* __ompdo___ompdo_main_6_1 */
 

@@ -32,7 +32,9 @@ int hpx_main() {
     threads = new hpxc_thread_t[num_threads];
     cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
-        hpxc_thread_create(&threads[i], 0, (void* (*)(void*))omp_task, 0);
+        hpxc_thread_create(&threads[i], 0, (void* (*)(void*))omp_task, 0);//(void*)i);
+        //There is a reference to a struct being passed that seems to be accessed only on nested parallel regions
+        //So, nested parallel regions should be disabled now; running in serial after the first fork
     }
     for(int i = 0; i < num_threads; i++) {
         hpxc_thread_join(threads[i], 0);
@@ -43,11 +45,10 @@ int hpx_main() {
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
 {
     if(started) {
-        //What happens if get_thread_num is called in here?
+        //TODO:What happens if get_thread_num is called in here?
         hpxc_thread_t *local_threads = new hpxc_thread_t[num_threads];
-        auto local_func = [=] { micro_task(0, NULL);};
         for(int i = 0; i < num_threads; i++) {
-            hpxc_thread_create(&local_threads[i], 0, (void* (*)(void*))micro_task, 0);
+            hpxc_thread_create(&local_threads[i], 0, (void* (*)(void*))micro_task, 0);//, (void*)i);
         }
         for(int i = 0; i < num_threads; i++) {
             hpxc_thread_join(local_threads[i], 0);
@@ -61,24 +62,18 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
     }
 }
 
-void __ompc_serialized_parallel(omp_int32 global_tid)
-{
+void __ompc_serialized_parallel(omp_int32 global_tid) {
     //It appears this function does nothing
 }
-
-void __ompc_end_serialized_parallel(omp_int32 global_tid)
-{
+void __ompc_end_serialized_parallel(omp_int32 global_tid) {
     //It appears this function does nothing
 }
-
-void __ompc_task_exit()
-{
+void __ompc_task_exit() {
 }
 
-omp_int32 __ompc_can_fork()
-{
+omp_int32 __ompc_can_fork() {
     //some logic here to detect if HPX can spawn threads?
-    return 1;
+    return !started;
 }
 
 omp_int32 __ompc_get_local_thread_num()
@@ -96,6 +91,8 @@ void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
         omp_int32 *p_upper, omp_int32 *p_stride,
         omp_int32 incr, omp_int32 chunk) 
 {
+    //cout << "Global_tid = " << global_tid << endl;
+    //int thread_num = global_tid;
     int thread_num = __ompc_get_local_thread_num();
     int size;
     omp_int32 *tmp;

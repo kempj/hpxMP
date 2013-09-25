@@ -103,3 +103,7 @@ static void __ompdo_main_4();
 
 static void __ompdo_main_5();
 
+static void __ompdo_main_6();
+
+static void __ompdo___ompdo_main_6_1();
+
