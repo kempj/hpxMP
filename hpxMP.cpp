@@ -23,27 +23,28 @@ int get_num_threads() {
     return hpx::threads::hardware_concurrency();
 }
 
+//There is a reference to a struct being passed as the second argument to the 
+//micro_taskthat seems to be accessed only on nested parallel regions. 
+//The first argument is the global_tid.
+//So, nested parallel regions should be disabled now; running in serial after the first fork
 int hpx_main() {
     threads = new hpxc_thread_t[num_threads];
     b = new barrier(num_threads);
     cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
-        hpxc_thread_create(&threads[i], 0, (void* (*)(void*))omp_task, 0);//(void*)i);
-        //There is a reference to a struct being passed that seems to be accessed only on nested parallel regions
-        //So, nested parallel regions should be disabled now; running in serial after the first fork
+        hpxc_thread_create( &threads[i], 0, (void* (*)(void*))omp_task, 0);
     }
     for(int i = 0; i < num_threads; i++) {
-        hpxc_thread_join(threads[i], 0);
+        hpxc_thread_join( threads[i], 0);
     }
     return hpx::finalize();
 }
 
-void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
-{
+void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     if(started) {
         hpxc_thread_t *local_threads = new hpxc_thread_t[num_threads];
         for(int i = 0; i < num_threads; i++) {
-            hpxc_thread_create(&local_threads[i], 0, (void* (*)(void*))micro_task, 0);//, (void*)i);
+            hpxc_thread_create( &local_threads[i], 0, (void* (*)(void*))micro_task, 0);
         }
         for(int i = 0; i < num_threads; i++) {
             hpxc_thread_join(local_threads[i], 0);
@@ -57,22 +58,11 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
     }
 }
 
-void __ompc_serialized_parallel(omp_int32 global_tid) {
-    //It appears this function does nothing
-}
-void __ompc_end_serialized_parallel(omp_int32 global_tid) {
-    //It appears this function does nothing
-}
-void __ompc_task_exit() {
-    //It appears this function does nothing
-}
-
 omp_int32 __ompc_can_fork() {
     return !started;
 }
 
-omp_int32 __ompc_get_local_thread_num()
-{
+omp_int32 __ompc_get_local_thread_num() {
     for(int i = 0; i < num_threads; i++) {
         if(hpxc_thread_equal(hpxc_thread_self(), threads[i])) {
             return i;
@@ -81,11 +71,10 @@ omp_int32 __ompc_get_local_thread_num()
     return 0;
 }
 
-void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
-        omp_int32 *p_lower,
-        omp_int32 *p_upper, omp_int32 *p_stride,
-        omp_int32 incr, omp_int32 chunk) 
-{
+void __ompc_static_init_4( omp_int32 global_tid, omp_sched_t schedtype,
+                           omp_int32 *p_lower, omp_int32 *p_upper, 
+                           omp_int32 *p_stride, omp_int32 incr, 
+                           omp_int32 chunk) {
     int thread_num = __ompc_get_local_thread_num();
     int size;
     omp_int32 *tmp;
@@ -107,5 +96,14 @@ void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
 
 void __ompc_ebarrier() {
     b->wait();
+}
+void __ompc_serialized_parallel(omp_int32 global_tid) {
+    //It appears this function does nothing
+}
+void __ompc_end_serialized_parallel(omp_int32 global_tid) {
+    //It appears this function does nothing
+}
+void __ompc_task_exit() {
+    //It appears this function does nothing
 }
 
