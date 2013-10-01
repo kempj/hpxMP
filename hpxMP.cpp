@@ -63,6 +63,7 @@ omp_int32 __ompc_can_fork() {
 }
 
 omp_int32 __ompc_get_local_thread_num() {
+//    hpx::get_worker_thread_num()
     for(int i = 0; i < num_threads; i++) {
         if(hpxc_thread_equal(hpxc_thread_self(), threads[i])) {
             return i;
