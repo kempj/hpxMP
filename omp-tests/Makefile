@@ -1,5 +1,5 @@
 CC=~/openUH/bin/uhcc
-all: parallel for nested-parallel task
+all: parallel for nested-parallel task barrier
 
 for: omp-for.c
 	$(CC) omp-for.c -fopenmp -o omp-for

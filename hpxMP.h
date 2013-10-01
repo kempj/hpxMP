@@ -38,3 +38,4 @@ extern "C" void __ompc_static_init_4( omp_int32 global_tid, omp_sched_t schedtyp
                                       omp_int32 *pupper, omp_int32 *pstride,
                                       omp_int32 incr, omp_int32 chunk);
 
+extern "C" void __ompc_ebarrier();

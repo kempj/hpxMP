@@ -14,14 +14,17 @@ typedef void (*omp_micro)(omp_int32 , frame_pointer_t);
 #include <hpx/hpx_fwd.hpp>
 #include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
+#include <hpx/lcos/local/barrier.hpp>
 
-using namespace::std;
+using namespace std;
+using hpx::lcos::local::barrier;
 
 hpxc_thread_t *threads;
 
 void (*omp_task)(int, void*)=0;
 int num_threads = 0;
 bool started = false;
+barrier *b;
 
 int get_num_threads() {
     //TODO: first, read OMP_NUM_THREADS from env
@@ -30,6 +33,7 @@ int get_num_threads() {
 
 int hpx_main() {
     threads = new hpxc_thread_t[num_threads];
+    b = new barrier(num_threads);
     cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
         hpxc_thread_create(&threads[i], 0, (void* (*)(void*))omp_task, 0);//(void*)i);
@@ -110,5 +114,9 @@ void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
         *p_lower += (size % num_threads) * (chunk_size+incr) + (thread_num - size % num_threads ) * chunk_size;
         *p_upper = *p_lower + chunk_size - incr;
     }
+}
+
+void __ompc_ebarrier() {
+    b->wait();
 }
 

@@ -10,7 +10,6 @@ clean:
 	rm -rf *.o
 	rm -rf *.so
 
-
 tests: libopenmp.so par-test for-test par-nested-test
 
 par-test:
@@ -19,3 +18,10 @@ for-test:
 	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-for
 par-nested-test:
 	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-nested-par
+
+not-working: libopenmp.so barrier-test task-test
+
+task-test: libopenmp.so ./omp-tests/omp-task
+	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-task
+barrier-test: libopenmp.so ./omp-tests/omp-barrier
+	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-barrier
