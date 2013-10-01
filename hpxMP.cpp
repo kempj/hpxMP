@@ -1,14 +1,6 @@
 #include "hpxMP.h"
-//#include "stdio.h"
 #include <iostream>
 #include <hpxc/threads.h>
-/*
-typedef int omp_int32;
-typedef long long omp_int64;
-typedef void *frame_pointer_t;
-typedef omp_int32 omp_tid;
-typedef void (*omp_micro)(omp_int32 , frame_pointer_t);
-*/
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
@@ -49,7 +41,6 @@ int hpx_main() {
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
 {
     if(started) {
-        //TODO:What happens if get_thread_num is called in here?
         hpxc_thread_t *local_threads = new hpxc_thread_t[num_threads];
         for(int i = 0; i < num_threads; i++) {
             hpxc_thread_create(&local_threads[i], 0, (void* (*)(void*))micro_task, 0);//, (void*)i);
@@ -73,10 +64,10 @@ void __ompc_end_serialized_parallel(omp_int32 global_tid) {
     //It appears this function does nothing
 }
 void __ompc_task_exit() {
+    //It appears this function does nothing
 }
 
 omp_int32 __ompc_can_fork() {
-    //some logic here to detect if HPX can spawn threads?
     return !started;
 }
 
@@ -95,8 +86,6 @@ void __ompc_static_init_4(omp_int32 global_tid, omp_sched_t schedtype,
         omp_int32 *p_upper, omp_int32 *p_stride,
         omp_int32 incr, omp_int32 chunk) 
 {
-    //cout << "Global_tid = " << global_tid << endl;
-    //int thread_num = global_tid;
     int thread_num = __ompc_get_local_thread_num();
     int size;
     omp_int32 *tmp;
