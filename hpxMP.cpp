@@ -1,5 +1,6 @@
 #include "hpxMP.h"
 #include <iostream>
+#include <cstdlib>
 #include <hpxc/threads.h>
 
 #include <hpx/hpx.hpp>
@@ -20,7 +21,13 @@ barrier *b;
 
 int get_num_threads() {
     //TODO: first, read OMP_NUM_THREADS from env
-    return hpx::threads::hardware_concurrency();
+    int numThreads = 0;
+    auto envNum = getenv("OMP_NUM_THREADS");
+    if( envNum != 0)
+       numThreads =  atoi(envNum);
+    else 
+        numThreads = hpx::threads::hardware_concurrency();
+    return numThreads;
 }
 
 //There is a reference to a struct being passed as the second argument to the 
@@ -30,7 +37,7 @@ int get_num_threads() {
 int hpx_main() {
     threads = new hpxc_thread_t[num_threads];
     b = new barrier(num_threads);
-    cout << "hello from hpx main (" << num_threads << " threads)" << endl;
+//    cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
         hpxc_thread_create( &threads[i], 0, (void* (*)(void*))omp_task, 0);
     }
@@ -63,7 +70,6 @@ omp_int32 __ompc_can_fork() {
 }
 
 omp_int32 __ompc_get_local_thread_num() {
-//    hpx::get_worker_thread_num()
     for(int i = 0; i < num_threads; i++) {
         if(hpxc_thread_equal(hpxc_thread_self(), threads[i])) {
             return i;
