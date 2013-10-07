@@ -9,15 +9,20 @@
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
 
+#include <atomic>
+ 
 using namespace std;
 using hpx::lcos::local::barrier;
 
 hpxc_thread_t *threads;
+hpxc_mutex_t single_lock = HPXC_MUTEX_INITIALIZER;
 
 void (*omp_task)(int, void*)=0;
 int num_threads = 0;
 bool started = false;
 barrier *b;
+//atomic
+int current_single_thread = -1;
 
 int get_num_threads() {
     //TODO: first, read OMP_NUM_THREADS from env
@@ -104,6 +109,38 @@ void __ompc_static_init_4( omp_int32 global_tid, omp_sched_t schedtype,
 void __ompc_ebarrier() {
     b->wait();
 }
+
+omp_int32 __ompc_get_num_threads(){
+    return 0;
+}
+
+omp_int32 __ompc_master(omp_int32 global_tid){
+    if(__ompc_get_local_thread_num() == 0) 
+        return 1;
+    return 0;
+}
+
+void __ompc_end_master(omp_int32 global_tid){
+}
+
+omp_int32 __ompc_single(omp_int32 global_tid){
+    int is_locked = hpxc_mutex_trylock(&single_lock);
+    if(is_locked == 0) {
+        if(current_single_thread == -1) {
+            current_single_thread = __ompc_get_local_thread_num();
+            return 1;
+        }
+        hpxc_mutex_unlock(&single_lock);
+    }
+    return 0;
+}
+
+void __ompc_end_single(omp_int32 global_tid){
+    if(current_single_thread == __ompc_get_local_thread_num()) {
+        current_single_thread = 0;//TODO: this only works for one single in a program
+    }
+}
+
 void __ompc_serialized_parallel(omp_int32 global_tid) {
     //It appears this function does nothing
 }
@@ -113,4 +150,3 @@ void __ompc_end_serialized_parallel(omp_int32 global_tid) {
 void __ompc_task_exit() {
     //It appears this function does nothing
 }
-

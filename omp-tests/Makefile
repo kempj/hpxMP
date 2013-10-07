@@ -16,3 +16,8 @@ task: omp-task.c
 barrier: omp-barrier.c
 	$(CC) omp-barrier.c -fopenmp -o omp-barrier
 
+single: omp-single.c
+	$(CC) omp-single.c -fopenmp -o omp-single
+
+master: omp-master.c
+	$(CC) omp-master.c -fopenmp -o omp-master

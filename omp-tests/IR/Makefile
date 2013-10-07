@@ -1,6 +1,6 @@
 CC=~/openUH/bin/uhcc
 
-all: parallel for nested-parallel task
+all: parallel for nested-parallel task barrier single master
 
 parallel:
 	$(CC) ../omp-par.c -fopenmp -CLIST:emit_nested_pu:before_cg
@@ -16,3 +16,9 @@ task:
 
 barrier:
 	$(CC) ../omp-barrier.c -fopenmp -CLIST:emit_nested_pu:before_cg 
+
+single:
+	$(CC) ../omp-single.c -fopenmp -CLIST:emit_nested_pu:before_cg 
+
+master:
+	$(CC) ../omp-master.c -fopenmp -CLIST:emit_nested_pu:before_cg 
