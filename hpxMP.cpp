@@ -21,7 +21,7 @@ void (*omp_task)(int, void*)=0;
 int num_threads = 0;
 bool started = false;
 barrier *b;
-//atomic
+int single_counter = 0;
 int current_single_thread = -1;
 
 int get_num_threads() {
@@ -106,6 +106,10 @@ void __ompc_static_init_4( omp_int32 global_tid, omp_sched_t schedtype,
     }
 }
 
+void __ompc_barrier() {
+    __ompc_ebarrier();
+}
+
 void __ompc_ebarrier() {
     b->wait();
 }
@@ -124,21 +128,26 @@ void __ompc_end_master(omp_int32 global_tid){
 }
 
 omp_int32 __ompc_single(omp_int32 global_tid){
-    int is_locked = hpxc_mutex_trylock(&single_lock);
-    if(is_locked == 0) {
-        if(current_single_thread == -1) {
-            current_single_thread = __ompc_get_local_thread_num();
-            return 1;
-        }
-        hpxc_mutex_unlock(&single_lock);
+    int tid = __ompc_get_local_thread_num();
+    hpxc_mutex_lock(&single_lock);
+    if(current_single_thread == -1 && single_counter == 0) {
+        current_single_thread = tid;
+        single_counter = 1 - num_threads;
+    } else {
+        single_counter++;
     }
+    hpxc_mutex_unlock(&single_lock);
+    if(current_single_thread == tid) 
+        return 1;
     return 0;
 }
 
 void __ompc_end_single(omp_int32 global_tid){
-    if(current_single_thread == __ompc_get_local_thread_num()) {
-        current_single_thread = 0;//TODO: this only works for one single in a program
+    hpxc_mutex_lock(&single_lock);
+    if(single_counter == 0) {
+        current_single_thread = -1;
     }
+    hpxc_mutex_unlock(&single_lock);
 }
 
 void __ompc_serialized_parallel(omp_int32 global_tid) {

@@ -1,5 +1,5 @@
 /*******************************************************
- * C file translated from WHIRL Fri Sep 27 14:48:27 2013
+ * C file translated from WHIRL Wed Oct  2 19:30:29 2013
  *******************************************************/
 
 /* Include file-level type and variable decls */
@@ -298,9 +298,6 @@ extern _INT32 main()
   __ompc_get_local_thread_num();
   _w2c_reg1 = 0;
   __ompc_serialized_parallel();
-  _w2c_reg5 = (_INT64)("Hello World\n");
-  _w2c_reg1 = 0;
-  printf("Hello World\n");
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
   _1282 :;
@@ -327,9 +324,6 @@ extern _INT32 main()
   __ompc_get_local_thread_num();
   _w2c_reg1 = 0;
   __ompc_serialized_parallel();
-  _w2c_reg5 = (_INT64)("second parallel region\n");
-  _w2c_reg1 = 0;
-  printf("second parallel region\n");
   _w2c_reg1 = 0;
   __ompc_end_serialized_parallel();
   _1538 :;
@@ -351,16 +345,12 @@ static void __omprg_main_1(__ompv_gtid_a, __ompv_slink_a)
 {
   
   register _UINT64 _w2c_reg6;
-  register _INT64 _w2c_reg5;
   register _INT32 _w2c_reg1;
   _UINT64 _temp___slink_sym0;
   
   /*Begin_of_nested_PU(s)*/
   
   _temp___slink_sym0 = _w2c_reg6;
-  _w2c_reg5 = (_INT64)("Hello World\n");
-  _w2c_reg1 = 0;
-  printf("Hello World\n");
   _w2c_reg1 = 0;
   __ompc_task_exit();
   return;
@@ -373,16 +363,12 @@ static void __omprg_main_2(__ompv_gtid_a, __ompv_slink_a)
 {
   
   register _UINT64 _w2c_reg6;
-  register _INT64 _w2c_reg5;
   register _INT32 _w2c_reg1;
   _UINT64 _temp___slink_sym1;
   
   /*Begin_of_nested_PU(s)*/
   
   _temp___slink_sym1 = _w2c_reg6;
-  _w2c_reg5 = (_INT64)("second parallel region\n");
-  _w2c_reg1 = 0;
-  printf("second parallel region\n");
   _w2c_reg1 = 0;
   __ompc_task_exit();
   return;
