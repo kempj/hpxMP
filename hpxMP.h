@@ -49,3 +49,7 @@ extern "C" void __ompc_end_master(omp_int32 global_tid);
 extern "C" omp_int32 __ompc_single(omp_int32 global_tid);
 extern "C" void __ompc_end_single(omp_int32 global_tid);
 
+extern "C" omp_int32 omp_get_num_threads();
+extern "C" omp_int32 omp_get_max_threads();
+extern "C" omp_int32 omp_get_thread_num();
+

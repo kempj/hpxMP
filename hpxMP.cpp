@@ -24,8 +24,7 @@ barrier *b;
 int single_counter = 0;
 int current_single_thread = -1;
 
-int get_num_threads() {
-    //TODO: first, read OMP_NUM_THREADS from env
+int init_num_threads() {
     int numThreads = 0;
     auto envNum = getenv("OMP_NUM_THREADS");
     if( envNum != 0)
@@ -64,7 +63,7 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     } else {
         started = true;
         omp_task = micro_task;
-        num_threads = get_num_threads();
+        num_threads = init_num_threads();
         hpx::init();
         started = false;
     }
@@ -158,4 +157,16 @@ void __ompc_end_serialized_parallel(omp_int32 global_tid) {
 }
 void __ompc_task_exit() {
     //It appears this function does nothing
+}
+
+omp_int32 omp_get_num_threads() {
+    return num_threads;
+}
+
+omp_int32 omp_get_max_threads() {
+    return num_threads;
+}
+
+omp_int32 omp_get_thread_num() {
+    return __ompc_get_local_thread_num();
 }
