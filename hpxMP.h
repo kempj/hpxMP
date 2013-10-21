@@ -1,3 +1,5 @@
+#include <time.h>
+
 typedef int omp_int32;
 typedef long long omp_int64;
 
@@ -53,3 +55,4 @@ extern "C" omp_int32 omp_get_num_threads();
 extern "C" omp_int32 omp_get_max_threads();
 extern "C" omp_int32 omp_get_thread_num();
 
+extern "C" timespec get_hpx_time();
