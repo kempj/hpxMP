@@ -53,7 +53,7 @@ int hpx_main() {
 }
 
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
-    struct timespec start_time, end_time;
+    //struct timespec start_time, end_time;
     if(started) {
         hpxc_thread_t *local_threads = new hpxc_thread_t[num_threads];
         for(int i = 0; i < num_threads; i++) {
@@ -66,11 +66,11 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
         started = true;
         omp_task = micro_task;
         num_threads = init_num_threads();
-        clock_gettime(CLOCK_REALTIME, &start_time);
+        //clock_gettime(CLOCK_REALTIME, &start_time);
         hpx::init();
-        clock_gettime(CLOCK_REALTIME, &end_time);
-        cout << endl << end_time.tv_sec - start_time.tv_sec << ", "
-             << end_time.tv_nsec - start_time.tv_nsec << endl;
+        //clock_gettime(CLOCK_REALTIME, &end_time);
+        //cout << endl << end_time.tv_sec - start_time.tv_sec << ", "
+        //     << end_time.tv_nsec - start_time.tv_nsec << endl;
         started = false;
     }
 }
