@@ -1,26 +1,27 @@
 #include "hpxMP.h"
 #include <iostream>
 #include <cstdlib>
-#include <hpxc/threads.h>
 
+#include <hpxc/threads.h>
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
 #include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
+#include <hpx/include/lcos.hpp>
 
-#include <atomic>
- 
 using namespace std;
 using hpx::lcos::local::barrier;
+using hpx::lcos::future;
 
-hpxc_thread_t *threads;
+//hpxc_thread_t *threads;
+vector<hpx::lcos::future<void>> threads;
 hpxc_mutex_t single_lock = HPXC_MUTEX_INITIALIZER;
 
 void (*omp_task)(int, void*)=0;
 int num_threads = 0;
 bool started = false;
-barrier *b;
+barrier *globalBarrier;
 int single_counter = 0;
 int current_single_thread = -1;
 
@@ -40,61 +41,57 @@ int init_num_threads() {
 //The first argument is the global_tid.
 //So, nested parallel regions should be disabled now; running in serial after the first fork
 int hpx_main() {
-    threads = new hpxc_thread_t[num_threads];
-    b = new barrier(num_threads);
+    threads.reserve(num_threads);
+    globalBarrier = new barrier(num_threads);
 //    cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
-        hpxc_thread_create( &threads[i], 0, (void* (*)(void*))omp_task, 0);
+        threads.push_back( hpx::async(*omp_task, 0, (void*)0));
+//        hpxc_thread_create( &threads[i], 0, (void* (*)(void*))omp_task, 0);
     }
-    for(int i = 0; i < num_threads; i++) {
-        hpxc_thread_join( threads[i], 0);
-    }
+    hpx::lcos::wait(threads);
     return hpx::finalize();
 }
 
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
-    //struct timespec start_time, end_time;
     if(started) {
-        hpxc_thread_t *local_threads = new hpxc_thread_t[num_threads];
+        vector<future<void>> local_threads;
+        local_threads.reserve(num_threads);
         for(int i = 0; i < num_threads; i++) {
-            hpxc_thread_create( &local_threads[i], 0, (void* (*)(void*))micro_task, 0);
+            local_threads.push_back(hpx::async(*micro_task, 0, fp));
         }
-        for(int i = 0; i < num_threads; i++) {
-            hpxc_thread_join(local_threads[i], 0);
-        }
+        hpx::lcos::wait(local_threads);
     } else {
         started = true;
         omp_task = micro_task;
         num_threads = init_num_threads();
-        //clock_gettime(CLOCK_REALTIME, &start_time);
         hpx::init();
-        //clock_gettime(CLOCK_REALTIME, &end_time);
-        //cout << endl << end_time.tv_sec - start_time.tv_sec << ", "
-        //     << end_time.tv_nsec - start_time.tv_nsec << endl;
         started = false;
     }
 }
 
-omp_int32 __ompc_can_fork() {
+int __ompc_can_fork() {
     return !started;
 }
 
-omp_int32 __ompc_get_local_thread_num() {
+int __ompc_get_local_thread_num() {
+    /*
     for(int i = 0; i < num_threads; i++) {
         if(hpxc_thread_equal(hpxc_thread_self(), threads[i])) {
+        hpx::threads::thread_self* self = hpx::threads::get_self_ptr();
+        if(*self ==  threads[i]) {
             return i;
         }
-    }
+    }*/
     return 0;
 }
 
-void __ompc_static_init_4( omp_int32 global_tid, omp_sched_t schedtype,
-                           omp_int32 *p_lower, omp_int32 *p_upper, 
-                           omp_int32 *p_stride, omp_int32 incr, 
-                           omp_int32 chunk) {
+void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
+                           int *p_lower, int *p_upper, 
+                           int *p_stride, int incr, 
+                           int chunk) {
     int thread_num = __ompc_get_local_thread_num();
     int size;
-    omp_int32 *tmp;
+    int *tmp;
     if(*p_upper < *p_lower) {
         tmp = p_upper;
         p_upper = p_lower;
@@ -116,23 +113,23 @@ void __ompc_barrier() {
 }
 
 void __ompc_ebarrier() {
-    b->wait();
+    globalBarrier->wait();
 }
 
-omp_int32 __ompc_get_num_threads(){
+int __ompc_get_num_threads(){
     return 0;
 }
 
-omp_int32 __ompc_master(omp_int32 global_tid){
+int __ompc_master(int global_tid){
     if(__ompc_get_local_thread_num() == 0) 
         return 1;
     return 0;
 }
 
-void __ompc_end_master(omp_int32 global_tid){
+void __ompc_end_master(int global_tid){
 }
 
-omp_int32 __ompc_single(omp_int32 global_tid){
+int __ompc_single(int global_tid){
     int tid = __ompc_get_local_thread_num();
     hpxc_mutex_lock(&single_lock);
     if(current_single_thread == -1 && single_counter == 0) {
@@ -147,7 +144,7 @@ omp_int32 __ompc_single(omp_int32 global_tid){
     return 0;
 }
 
-void __ompc_end_single(omp_int32 global_tid){
+void __ompc_end_single(int global_tid){
     hpxc_mutex_lock(&single_lock);
     if(single_counter == 0) {
         current_single_thread = -1;
@@ -155,51 +152,25 @@ void __ompc_end_single(omp_int32 global_tid){
     hpxc_mutex_unlock(&single_lock);
 }
 
-int __ompc_task_will_defer(int may_delay){
-    //in the OpenUH runtime, this also checks if a task limit has been reached
-    //leaving that to hpx to decide
-    return may_delay;
-}
-
-void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
-    //Not sure if anything needs to be allocated yet.
-}
-
-void __ompc_task_firstprivates_free(void *firstprivates){
-    //similar to alloc, not implementing yet
-}
-
-void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
-                         void *firstprivates, int may_delay,
-                         int is_tied, int blocks_parent){
-}
-
-void __ompc_task_wait(){
-}
-
-void __ompc_task_exit(){
-}
-
-
-void __ompc_serialized_parallel(omp_int32 global_tid) {
+void __ompc_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
-void __ompc_end_serialized_parallel(omp_int32 global_tid) {
+void __ompc_end_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
 void __ompc_task_exit() {
     //It appears this function does nothing
 }
 
-omp_int32 omp_get_num_threads() {
+int omp_get_num_threads() {
     return num_threads;
 }
 
-omp_int32 omp_get_max_threads() {
+int omp_get_max_threads() {
     return num_threads;
 }
 
-omp_int32 omp_get_thread_num() {
+int omp_get_thread_num() {
     return __ompc_get_local_thread_num();
 }
 
