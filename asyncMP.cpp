@@ -74,6 +74,11 @@ int __ompc_can_fork() {
 }
 
 int __ompc_get_local_thread_num() {
+    hpx::threads::thread_self* self = hpx::threads::get_self_ptr();
+    int thread_id = (long long int)self->get_thread_id();
+
+    cout << thread_id << endl;
+    return thread_id;
     /*
     for(int i = 0; i < num_threads; i++) {
         if(hpxc_thread_equal(hpxc_thread_self(), threads[i])) {
@@ -81,8 +86,8 @@ int __ompc_get_local_thread_num() {
         if(*self ==  threads[i]) {
             return i;
         }
-    }*/
-    return 0;
+    }
+    return 0;*/
 }
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
@@ -138,6 +143,7 @@ int __ompc_single(int global_tid){
     } else {
         single_counter++;
     }
+    //TODO:remove these hpxc calls
     hpxc_mutex_unlock(&single_lock);
     if(current_single_thread == tid) 
         return 1;
