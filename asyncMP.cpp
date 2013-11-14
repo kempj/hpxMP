@@ -2,7 +2,7 @@
 #include <iostream>
 #include <cstdlib>
 
-#include <hpxc/threads.h>
+//#include <hpxc/threads.h>
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
 #include <hpx/hpx_init.hpp>
@@ -14,9 +14,9 @@ using namespace std;
 using hpx::lcos::local::barrier;
 using hpx::lcos::future;
 
-//hpxc_thread_t *threads;
 vector<hpx::lcos::future<void>> threads;
-hpxc_mutex_t single_lock = HPXC_MUTEX_INITIALIZER;
+hpx::lcos::local::spinlock single_lock;
+
 
 void (*omp_task)(int, void*)=0;
 int num_threads = 0;
@@ -46,7 +46,6 @@ int hpx_main() {
 //    cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
         threads.push_back( hpx::async(*omp_task, 0, (void*)0));
-//        hpxc_thread_create( &threads[i], 0, (void* (*)(void*))omp_task, 0);
     }
     hpx::lcos::wait(threads);
     return hpx::finalize();
@@ -74,20 +73,13 @@ int __ompc_can_fork() {
 }
 
 int __ompc_get_local_thread_num() {
-    hpx::threads::thread_self* self = hpx::threads::get_self_ptr();
-    int thread_id = (long long int)self->get_thread_id();
+    auto thread_id = hpx::threads::thread_id_type();
 
-    cout << thread_id << endl;
-    return thread_id;
-    /*
-    for(int i = 0; i < num_threads; i++) {
-        if(hpxc_thread_equal(hpxc_thread_self(), threads[i])) {
-        hpx::threads::thread_self* self = hpx::threads::get_self_ptr();
-        if(*self ==  threads[i]) {
-            return i;
-        }
-    }
-    return 0;*/
+//    hpx::threads::thread_self* self = hpx::threads::get_self_ptr();
+//    auto thread_id = self->get_thread_id();
+
+    cout << thread_id.get() << endl;
+    return 0;
 }
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
@@ -136,7 +128,9 @@ void __ompc_end_master(int global_tid){
 
 int __ompc_single(int global_tid){
     int tid = __ompc_get_local_thread_num();
-    hpxc_mutex_lock(&single_lock);
+    //TODO:remove these hpxc calls
+    //hpxc_mutex_lock(&single_lock);
+    single_lock.lock();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
@@ -144,18 +138,23 @@ int __ompc_single(int global_tid){
         single_counter++;
     }
     //TODO:remove these hpxc calls
-    hpxc_mutex_unlock(&single_lock);
+    //hpxc_mutex_unlock(&single_lock);
+    single_lock.unlock();
     if(current_single_thread == tid) 
         return 1;
     return 0;
 }
 
 void __ompc_end_single(int global_tid){
-    hpxc_mutex_lock(&single_lock);
+    //TODO:remove these hpxc calls
+    //hpxc_mutex_lock(&single_lock);
+    single_lock.lock();
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    hpxc_mutex_unlock(&single_lock);
+    //TODO:remove these hpxc calls
+    //hpxc_mutex_unlock(&single_lock);
+    single_lock.unlock();
 }
 
 void __ompc_serialized_parallel(int global_tid) {
