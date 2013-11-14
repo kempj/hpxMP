@@ -2,7 +2,6 @@
 #include <iostream>
 #include <cstdlib>
 
-//#include <hpxc/threads.h>
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
 #include <hpx/hpx_init.hpp>
@@ -36,16 +35,17 @@ int init_num_threads() {
     return numThreads;
 }
 
-//There is a reference to a struct being passed as the second argument to the 
-//micro_taskthat seems to be accessed only on nested parallel regions. 
-//The first argument is the global_tid.
-//So, nested parallel regions should be disabled now; running in serial after the first fork
+void thread_setup(void (*micro_task)(int, void*), int thread_num, void *fp) {
+    auto thread_id = hpx::threads::get_self_id();
+    hpx::threads::set_thread_data( thread_id, thread_num);
+    micro_task(thread_num, fp);
+}
+
 int hpx_main() {
     threads.reserve(num_threads);
     globalBarrier = new barrier(num_threads);
-//    cout << "hello from hpx main (" << num_threads << " threads)" << endl;
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async(*omp_task, 0, (void*)0));
+        threads.push_back( hpx::async(thread_setup, *omp_task, i, (void*)0));
     }
     hpx::lcos::wait(threads);
     return hpx::finalize();
@@ -56,7 +56,7 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
         vector<future<void>> local_threads;
         local_threads.reserve(num_threads);
         for(int i = 0; i < num_threads; i++) {
-            local_threads.push_back(hpx::async(*micro_task, 0, fp));
+            local_threads.push_back(hpx::async(*micro_task, i, fp));//should this be i or the current omp_thread_num
         }
         hpx::lcos::wait(local_threads);
     } else {
@@ -73,13 +73,9 @@ int __ompc_can_fork() {
 }
 
 int __ompc_get_local_thread_num() {
-    auto thread_id = hpx::threads::thread_id_type();
-
-//    hpx::threads::thread_self* self = hpx::threads::get_self_ptr();
-//    auto thread_id = self->get_thread_id();
-
-    cout << thread_id.get() << endl;
-    return 0;
+    auto thread_id = hpx::threads::get_self_id();
+    int thread_num = hpx::threads::get_thread_data( thread_id );
+    return thread_num;
 }
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
@@ -128,8 +124,6 @@ void __ompc_end_master(int global_tid){
 
 int __ompc_single(int global_tid){
     int tid = __ompc_get_local_thread_num();
-    //TODO:remove these hpxc calls
-    //hpxc_mutex_lock(&single_lock);
     single_lock.lock();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
@@ -137,8 +131,6 @@ int __ompc_single(int global_tid){
     } else {
         single_counter++;
     }
-    //TODO:remove these hpxc calls
-    //hpxc_mutex_unlock(&single_lock);
     single_lock.unlock();
     if(current_single_thread == tid) 
         return 1;
@@ -146,14 +138,10 @@ int __ompc_single(int global_tid){
 }
 
 void __ompc_end_single(int global_tid){
-    //TODO:remove these hpxc calls
-    //hpxc_mutex_lock(&single_lock);
     single_lock.lock();
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    //TODO:remove these hpxc calls
-    //hpxc_mutex_unlock(&single_lock);
     single_lock.unlock();
 }
 
