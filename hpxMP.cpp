@@ -53,16 +53,24 @@ int hpx_main() {
 
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     if(started) {
+        //This shouldn't happen, because __ompc_can_fork() should prevent it any nested parallelism
+        int threads_to_use = Nthreads;
+        if(threads_to_use == 0)
+            threads_to_use = num_threads;
         vector<future<void>> local_threads;
-        local_threads.reserve(num_threads);
-        for(int i = 0; i < num_threads; i++) {
-            local_threads.push_back(hpx::async(*micro_task, i, fp));//should this be i or the current omp_thread_num
+        local_threads.reserve(threads_to_use);
+        for(int i = 0; i < threads_to_use; i++) {
+            local_threads.push_back(hpx::async(*micro_task, i, fp));
         }
         hpx::lcos::wait(local_threads);
     } else {
         started = true;
         omp_task = micro_task;
-        num_threads = init_num_threads();
+        if(Nthreads == 0)
+            num_threads = init_num_threads();
+        else
+            num_threads = Nthreads;
+        //The frame pointer will be needed for shared/firstprivate variables in tasks
         hpx::init();
         started = false;
     }
@@ -144,6 +152,7 @@ void __ompc_end_single(int global_tid){
     }
     single_lock.unlock();
 }
+
 int __ompc_task_will_defer(int may_delay){
     //in the OpenUH runtime, this also checks if a task limit has been reached
     //leaving that to hpx to decide
@@ -161,9 +170,13 @@ void __ompc_task_firstprivates_free(void *firstprivates){
 void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
+    //future = async(taskfunc, frame_pointer);
+    //what to do with future?
+    //It looks like they need to be thread local
 }
 
 void __ompc_task_wait(){
+    //This needs to wait on all running futures executed in the same scope
 }
 
 void __ompc_task_exit(){
@@ -174,9 +187,6 @@ void __ompc_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
 void __ompc_end_serialized_parallel(int global_tid) {
-    //It appears this function does nothing
-}
-void __ompc_task_exit() {
     //It appears this function does nothing
 }
 
