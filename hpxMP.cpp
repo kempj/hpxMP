@@ -181,7 +181,7 @@ void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
                          int is_tied, int blocks_parent) {
     auto *data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    data->task_handles.push_back(hpx::async(taskfunc, frame_pointer));
+    data->task_handles.push_back(hpx::async(taskfunc, firstprivates, frame_pointer));
 }
 
 void __ompc_task_wait(){

@@ -7,7 +7,7 @@ typedef void *frame_pointer_t;
 typedef int omp_tid;
 typedef void (*omp_micro)(int , frame_pointer_t);
 
-typedef void (*omp_task_func)(void *args);
+typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
 
 typedef enum {
