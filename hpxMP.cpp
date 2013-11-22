@@ -16,14 +16,18 @@ using hpx::lcos::future;
 vector<hpx::lcos::future<void>> threads;
 hpx::lcos::local::spinlock single_lock;
 
-
 void (*omp_task)(int, void*)=0;
+frame_pointer_t parent_fp = 0;
 int num_threads = 0;
 bool started = false;
 barrier *globalBarrier;
 int single_counter = 0;
 int current_single_thread = -1;
 
+struct thread_data {
+    int thread_num;
+    vector<future<void>> task_handles;
+};
 
 int init_num_threads() {
     int numThreads = 0;
@@ -36,8 +40,10 @@ int init_num_threads() {
 }
 
 void thread_setup(void (*micro_task)(int, void*), int thread_num, void *fp) {
+    thread_data *data_struct = new thread_data;
+    data_struct->thread_num = thread_num;
     auto thread_id = hpx::threads::get_self_id();
-    hpx::threads::set_thread_data( thread_id, thread_num);
+    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
     micro_task(thread_num, fp);
 }
 
@@ -45,15 +51,17 @@ int hpx_main() {
     threads.reserve(num_threads);
     globalBarrier = new barrier(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async(thread_setup, *omp_task, i, (void*)0));
+        threads.push_back( hpx::async(thread_setup, *omp_task, i, parent_fp));
     }
     hpx::lcos::wait(threads);
     return hpx::finalize();
 }
 
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
+    /*
     if(started) {
         //This shouldn't happen, because __ompc_can_fork() should prevent it any nested parallelism
+        //but with tasks, I'm not sure.
         int threads_to_use = Nthreads;
         if(threads_to_use == 0)
             threads_to_use = num_threads;
@@ -63,17 +71,17 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
             local_threads.push_back(hpx::async(*micro_task, i, fp));
         }
         hpx::lcos::wait(local_threads);
-    } else {
-        started = true;
-        omp_task = micro_task;
-        if(Nthreads == 0)
-            num_threads = init_num_threads();
-        else
-            num_threads = Nthreads;
-        //The frame pointer will be needed for shared/firstprivate variables in tasks
-        hpx::init();
-        started = false;
-    }
+    } else {*/
+    assert(!started);
+    started = true;
+    omp_task = micro_task;
+    parent_fp = fp;
+    if(Nthreads == 0)
+        num_threads = init_num_threads();
+    else
+        num_threads = Nthreads;
+    hpx::init();
+    started = false;
 }
 
 int __ompc_can_fork() {
@@ -82,8 +90,9 @@ int __ompc_can_fork() {
 
 int __ompc_get_local_thread_num() {
     auto thread_id = hpx::threads::get_self_id();
-    int thread_num = hpx::threads::get_thread_data( thread_id );
-    return thread_num;
+    auto *data = reinterpret_cast<thread_data*>(
+                    hpx::threads::get_thread_data(thread_id) );
+    return data->thread_num;
 }
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
@@ -170,13 +179,16 @@ void __ompc_task_firstprivates_free(void *firstprivates){
 void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
-    //future = async(taskfunc, frame_pointer);
-    //what to do with future?
-    //It looks like they need to be thread local
+    auto *data = reinterpret_cast<thread_data*>(
+                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    data->task_handles.push_back(hpx::async(taskfunc, frame_pointer));
 }
 
 void __ompc_task_wait(){
-    //This needs to wait on all running futures executed in the same scope
+    auto *data = reinterpret_cast<thread_data*>(
+                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    hpx::wait(data->task_handles); 
+    data->task_handles.clear();
 }
 
 void __ompc_task_exit(){

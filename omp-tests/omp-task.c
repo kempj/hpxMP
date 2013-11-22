@@ -1,30 +1,24 @@
 #include <stdio.h>
 
-int fib(int n) {
-    int f1, f2, f;
-    if(n < 2) {
-        return n;
-    }
-#pragma omp task shared(f1)
-    f1 = fib(n-1);
-#pragma omp task shared(f2)
-    f2 = fib(n-2);
-
-#pragma omp taskwait
-    f = f1 + f2;
-
-    return f;
-}
-
 int main() {
-    int f=0;
+    int x=0;
 #pragma omp parallel
     {
 #pragma omp single
         {
-            f = fib(8);
+#pragma omp task
+            {
+                x = x + 1;
+                printf("x1 = %d\n", x);
+            }
+#pragma omp taskwait
+#pragma omp task
+            {
+                x = x + 1;
+                printf("x2 = %d\n", x);
+            }
         }
     }
-    printf("fib = %d\n", f);
+    printf("x = %d\n", x);
     return 0;
 }
