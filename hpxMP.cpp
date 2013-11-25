@@ -19,8 +19,9 @@ using hpx::lcos::local::barrier;
 using hpx::lcos::future;
 
 vector<hpx::lcos::future<void>> threads;
-hpx::lcos::local::mutex single_lock;
-//hpx::lcos::local::spinlock single_lock;
+//hpx::lcos::local::mutex single_lock;
+typedef hpx::lcos::local::spinlock mutex_type;
+mutex_type single_lock;
 
 void (*omp_task)(int, void*)=0;
 frame_pointer_t parent_fp = 0;
@@ -154,7 +155,8 @@ void __ompc_end_master(int global_tid){
 
 int __ompc_single(int global_tid){
     int tid = __ompc_get_local_thread_num();
-    boost::lock_guard<hpx::lcos::local::mutex> l(single_lock);
+    mutex_type::scoped_lock l(single_lock);
+    //boost::lock_guard<hpx::lcos::local::mutex> l(single_lock);
     //single_lock.lock();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
@@ -169,7 +171,8 @@ int __ompc_single(int global_tid){
 }
 
 void __ompc_end_single(int global_tid){
-    boost::lock_guard<hpx::lcos::local::mutex> l(single_lock);
+    mutex_type::scoped_lock l(single_lock);
+    //boost::lock_guard<hpx::lcos::local::mutex> l(single_lock);
     //single_lock.lock();
     if(single_counter == 0) {
         current_single_thread = -1;
