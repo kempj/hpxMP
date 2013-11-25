@@ -186,12 +186,24 @@ void __ompc_task_firstprivates_free(void *firstprivates){
     delete[] firstprivates;
 }
 */
+
+void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
+    thread_data *data_struct = new thread_data;
+    data_struct->thread_num = thread_num;
+    auto thread_id = hpx::threads::get_self_id();
+    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
+    task_func(firstprivates, fp);
+}
+
 void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
+
     auto *data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    data->task_handles.push_back(hpx::async(taskfunc, firstprivates, frame_pointer));
+    int current_tid = data->thread_num;
+    data->task_handles.push_back(hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
+//            hpx::async(taskfunc, firstprivates, frame_pointer));
 }
 
 void __ompc_task_wait(){
