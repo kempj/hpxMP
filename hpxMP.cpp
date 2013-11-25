@@ -9,6 +9,11 @@
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/include/lcos.hpp>
 
+#include <string>
+#include <boost/lexical_cast.hpp>
+#include <boost/assign/std/vector.hpp>
+
+
 using namespace std;
 using hpx::lcos::local::barrier;
 using hpx::lcos::future;
@@ -48,6 +53,7 @@ void thread_setup(void (*micro_task)(int, void*), int thread_num, void *fp) {
 }
 
 int hpx_main() {
+//    cout << "OS threads = " << hpx::get_os_thread_count() << endl;
     threads.reserve(num_threads);
     globalBarrier = new barrier(num_threads);
     for(int i = 0; i < num_threads; i++) {
@@ -80,7 +86,11 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
         num_threads = init_num_threads();
     else
         num_threads = Nthreads;
-    hpx::init();
+    using namespace boost::assign;
+    std::vector<std::string> cfg;
+    cfg += "hpx.os_threads=" +
+        boost::lexical_cast<std::string>(num_threads);
+    hpx::init(cfg);
     started = false;
 }
 
@@ -167,7 +177,7 @@ int __ompc_task_will_defer(int may_delay){
     //leaving that to hpx to decide
     return may_delay;
 }
-
+/*
 void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
     *firstprivates = new char[size];
 }
@@ -175,7 +185,7 @@ void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
 void __ompc_task_firstprivates_free(void *firstprivates){
     delete[] firstprivates;
 }
-
+*/
 void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
