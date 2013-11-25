@@ -169,11 +169,11 @@ int __ompc_task_will_defer(int may_delay){
 }
 
 void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
-    //Not sure if anything needs to be allocated yet.
+    *firstprivates = new char[size];
 }
 
 void __ompc_task_firstprivates_free(void *firstprivates){
-    //Not sure if anything needs to be allocated yet.
+    delete[] firstprivates;
 }
 
 void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,

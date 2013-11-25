@@ -13,6 +13,9 @@ nested-parallel: omp-nested-par.c
 task: omp-task.c
 	$(CC) omp-task.c -fopenmp -o omp-task
 
+fib: omp-fib.c
+	$(CC) omp-fib.c -fopenmp -o omp-fib
+
 barrier: omp-barrier.c
 	$(CC) omp-barrier.c -fopenmp -o omp-barrier
 

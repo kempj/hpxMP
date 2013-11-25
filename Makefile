@@ -38,3 +38,6 @@ not-working: libopenmp.so task-test
 
 task-test: libopenmp.so ./omp-tests/omp-task
 	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-task
+
+fib-test: libopenmp.so ./omp-tests/omp-fib
+	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-fib
