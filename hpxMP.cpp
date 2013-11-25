@@ -179,14 +179,13 @@ int __ompc_task_will_defer(int may_delay){
 }
 /*
 void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
-    *firstprivates = new char[size];
+    *firstprivates = aligned_malloc(size, CACHE_LINE_SIZE);
 }
 
 void __ompc_task_firstprivates_free(void *firstprivates){
-    delete[] firstprivates;
+    aligned_free(firstprivates);
 }
 */
-
 void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
     thread_data *data_struct = new thread_data;
     data_struct->thread_num = thread_num;
