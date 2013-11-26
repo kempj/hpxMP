@@ -91,7 +91,11 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     std::vector<std::string> cfg;
     cfg += "hpx.os_threads=" +
         boost::lexical_cast<std::string>(num_threads);
-    hpx::init(cfg);
+    int argc = 2;
+    char ** argv = new char*[argc];
+    argv[0] = "foo";
+    argv[1] = "--hpx:dump-config";
+    hpx::init(argc, argv, cfg);
     started = false;
 }
 
