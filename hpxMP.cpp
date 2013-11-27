@@ -97,21 +97,34 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     cfg += "hpx.os_threads=" +
         boost::lexical_cast<std::string>(num_threads);
 
-    char const* hpx_args_raw = getenv("OMP_HPX_ARGS"); 
-    std::vector<std::string> hpx_args;
+    char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
 
-    boost::algorithm::split(hpx_args_raw, hpx_args,
-        boost::algorithm::is_any_of(":"),
-            boost::algorithm::token_compress_on);
+    int argc;
+    char ** argv;
 
-    // FIXME: For correctness check for signed overflow.
-    int argc = hpx_args.size();
-    char ** argv = new char*[argc + 1];
-    argv[0] = "hpxMP";
+    if (hpx_args_raw)
+    { 
+        std::vector<std::string> hpx_args;
 
-    // FIXME: Should we do escaping?    
-    for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
-        argv[i + 1] = hpx_args[i].c_str();
+        boost::algorithm::split(hpx_args_raw, hpx_args,
+            boost::algorithm::is_any_of(":"),
+                boost::algorithm::token_compress_on);
+
+        // FIXME: For correctness check for signed overflow.
+        argc = hpx_args.size();
+        argv = new char*[argc + 1];
+        argv[0] = "hpxMP";
+
+        // FIXME: Should we do escaping?    
+        for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
+            argv[i + 1] = hpx_args[i].c_str();
+    }
+
+    else
+    {
+        argc = 1
+        argv = new char*[argc];
+    }
 
 //    argv[1] = "--hpx:dump-config";
 //    argv[2] = "--hpx:print-bind";
