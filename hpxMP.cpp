@@ -1,6 +1,8 @@
 #include "hpxMP.h"
 #include <iostream>
 #include <cstdlib>
+#include <vector>
+#include <string>
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
@@ -9,9 +11,11 @@
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/include/lcos.hpp>
 
-#include <string>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/assign/std/vector.hpp>
+#include <boost/cstdint.hpp>
 
 
 using namespace std;
@@ -92,13 +96,29 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     std::vector<std::string> cfg;
     cfg += "hpx.os_threads=" +
         boost::lexical_cast<std::string>(num_threads);
-    int argc = 1;
-    char ** argv = new char*[argc];
-    argv[0] = "foo";
+
+    char const* hpx_args_raw = getenv("OMP_HPX_ARGS"); 
+    std::vector<std::string> hpx_args;
+
+    boost::algorithm::split(hpx_args_raw, hpx_args,
+        boost::algorithm::is_any_of(":"),
+            boost::algorithm::token_compress_on);
+
+    // FIXME: For correctness check for signed overflow.
+    int argc = hpx_args.size();
+    char ** argv = new char*[argc + 1];
+    argv[0] = "hpxMP";
+
+    // FIXME: Should we do escaping?    
+    for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
+        argv[i + 1] = hpx_args[i].c_str();
+
 //    argv[1] = "--hpx:dump-config";
 //    argv[2] = "--hpx:print-bind";
     hpx::init(argc, argv, cfg);
     started = false;
+
+    delete[] argv;
 }
 
 int __ompc_can_fork() {
