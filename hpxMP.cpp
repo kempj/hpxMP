@@ -117,7 +117,7 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
 
         // FIXME: Should we do escaping?    
         for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
-            argv[i + 1] = hpx_args[i].c_str();
+            argv[i + 1] = strdup(hpx_args[i].c_str());
     }
 
     else
