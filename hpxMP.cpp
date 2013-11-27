@@ -107,7 +107,7 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
         std::vector<std::string> hpx_args;
 
         boost::algorithm::split(hpx_args_raw, hpx_args,
-            boost::algorithm::is_any_of(":"),
+            boost::algorithm::is_any_of(";"),
                 boost::algorithm::token_compress_on);
 
         // FIXME: For correctness check for signed overflow.
