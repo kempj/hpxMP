@@ -122,7 +122,7 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
 
     else
     {
-        argc = 1
+        argc = 1;
         argv = new char*[argc];
     }
 
