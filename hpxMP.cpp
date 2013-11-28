@@ -110,7 +110,7 @@ struct initialize_hpx
         { 
             std::vector<std::string> hpx_args;
     
-            boost::algorithm::split(std::string(hpx_args_raw), hpx_args,
+            boost::algorithm::split(hpx_args, std::string(hpx_args_raw),
                 boost::algorithm::is_any_of(";"),
                     boost::algorithm::token_compress_on);
     
