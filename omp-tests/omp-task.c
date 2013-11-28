@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 int main() {
-    int x=0;
+    int x = 10, i = 0;
 #pragma omp parallel
     {
 #pragma omp single
@@ -9,16 +9,20 @@ int main() {
 #pragma omp task
             {
                 x = x + 1;
-                printf("x1 = %d\n", x);
+                printf("x = %d\n", x);
             }
 #pragma omp taskwait
-#pragma omp task
+
+            for(i = 0; i < 4; i++) 
             {
-                x = x + 1;
-                printf("x2 = %d\n", x);
+#pragma omp task firstprivate(i)
+                {
+                    printf("x%d = %d\n", i, x + i );
+                }
             }
+#pragma omp taskwait
         }
     }
-    printf("x = %d\n", x);
+    printf("final x = %d\n", x);
     return 0;
 }

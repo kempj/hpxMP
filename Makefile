@@ -41,3 +41,9 @@ task-test: libopenmp.so ./omp-tests/omp-task
 
 fib-test: libopenmp.so ./omp-tests/omp-fib
 	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-fib
+
+#first number should be 100x the second, to keep the blocksize the same
+#blocksize = 100x100 : 1000/10 = 100
+lu-test: libopenmp.so ./omp-tests/omp-lu
+	LD_PRELOAD=./libopenmp.so ./omp-tests/omp-lu 1000 10
+
