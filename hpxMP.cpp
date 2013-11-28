@@ -1,3 +1,9 @@
+//  Copyright (c) 2013 Jeremy Kemp
+//  Copyright (c) 2013 Bryce Adelstein-Lelbach
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
+//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #include "hpxMP.h"
 #include <iostream>
 #include <cstdlib>
@@ -6,7 +12,7 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
-#include <hpx/hpx_init.hpp>
+#include <hpx/hpx_start.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/util/static.hpp>
@@ -24,12 +30,14 @@ using hpx::lcos::local::barrier;
 using hpx::lcos::future;
 
 vector<hpx::lcos::future<void>> threads;
-//hpx::lcos::local::mutex single_lock;
-typedef hpx::lcos::local::spinlock mutex_type;
-mutex_type single_lock;
 
-void (*omp_task)(int, void*)=0;
-frame_pointer_t parent_fp = 0;
+typedef hpx::lcos::local::spinlock mutex_type;
+
+mutex_type single_mtx;
+
+mutex_type init_mtx;
+bool hpx_initialized = false;
+
 int num_threads = 0;
 bool started = false;
 barrier *globalBarrier;
@@ -45,7 +53,7 @@ int init_num_threads() {
     int numThreads = 0;
     auto envNum = getenv("OMP_NUM_THREADS");
     if( envNum != 0)
-       numThreads =  atoi(envNum);
+       numThreads = atoi(envNum);
     else 
         numThreads = hpx::threads::hardware_concurrency();
     return numThreads;
@@ -60,89 +68,177 @@ void thread_setup(void (*micro_task)(int, void*), int thread_num, void *fp) {
 }
 
 int hpx_main() {
-//    cout << "OS threads = " << hpx::get_os_thread_count() << endl;
+    assert(false);
+    return 1;
+}
+
+void fini_runtime_worker(boost::mutex& mtx,
+    boost::condition& cond, bool& running)
+{
+    hpx::stop();
+
+/*
+    // Let the main thread know that we're done.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        running = true;
+        cond.notify_all();
+    }
+*/
+}
+
+void fini_runtime()
+{
+    cout << "Stopping HPX OpenMP runtime" << endl;
+
+    boost::mutex mtx;
+    boost::condition cond;
+    bool running = false;
+
+    hpx::applier::register_thread_nullary(
+        HPX_STD_BIND(&fini_runtime_worker, 
+            boost::ref(mtx), boost::ref(cond), boost::ref(running))
+      , "fini_runtime_worker");
+
+/*
+    // Wait for the thread to run.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        if (!running)
+            cond.wait(lk);
+    }
+*/
+}
+
+void wait_for_startup(boost::mutex& mtx,
+    boost::condition& cond, bool& running)
+{
+    cout << "HPX OpenMP runtime has started" << endl;
+
+    // Let the main thread know that we're done.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        running = true;
+        cond.notify_all();
+    }
+}
+
+void init_runtime()
+{
+    mutex_type::scoped_lock l(init_mtx);
+
+    if (hpx_initialized)
+        return;
+
+    cout << "Starting HPX OpenMP runtime" << endl; 
+
+    num_threads = init_num_threads();
+
+    using namespace boost::assign;
+    std::vector<std::string> cfg;
+    cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(num_threads);
+    cfg += "hpx.run_hpx_main!=0";
+
+    char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
+
+    int argc;
+    char ** argv;
+
+    if (hpx_args_raw)
+    { 
+        std::string tmp(hpx_args_raw);
+
+        std::vector<std::string> hpx_args;
+        boost::algorithm::split(hpx_args, tmp,
+            boost::algorithm::is_any_of(";"),
+                boost::algorithm::token_compress_on);
+
+        // FIXME: For correctness check for signed overflow.
+        argc = hpx_args.size() + 1;
+        argv = new char*[argc];
+
+        // FIXME: Should we do escaping?    
+        for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
+        {
+            cout << "arg[" << i << "]: " << hpx_args[i] << endl;
+            argv[i + 1] = strdup(hpx_args[i].c_str());
+        }
+    }
+
+    else
+    {
+        argc = 1;
+        argv = new char*[argc];
+    }
+
+    argv[0] = const_cast<char*>("hpxMP");
+
+    HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
+    boost::program_options::options_description desc_cmdline; 
+
+    boost::mutex mtx;
+    boost::condition cond;
+    bool running = false;
+
+    hpx::start(f, desc_cmdline, argc, argv, cfg,
+        HPX_STD_BIND(&wait_for_startup, 
+            boost::ref(mtx), boost::ref(cond), boost::ref(running)));
+
+    // Wait for the thread to run.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        if (!running)
+            cond.wait(lk);
+    }
+
+    atexit(fini_runtime);
+
+    delete[] argv;
+
+    hpx_initialized = true;
+}
+
+void ompc_fork_worker(int Nthreads, omp_micro micro_task, frame_pointer_t fp,
+    boost::mutex& mtx, boost::condition& cond, bool& running)
+{
+    assert(!started);
+    started = true;
+
     threads.reserve(num_threads);
     globalBarrier = new barrier(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async(thread_setup, *omp_task, i, parent_fp));
+        threads.push_back( hpx::async(thread_setup, *micro_task, i, fp));
     }
     hpx::lcos::wait(threads);
-    return hpx::finalize();
+
+    started = false;
+
+    // Let the main thread know that we're done.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        running = true;
+        cond.notify_all();
+    }
 }
 
-struct initialize_hpx
-{
-    initialize_hpx(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
-    {
-        /*
-        if(started) {
-            //This shouldn't happen, because __ompc_can_fork() should prevent it any nested parallelism
-            //but with tasks, I'm not sure.
-            int threads_to_use = Nthreads;
-            if(threads_to_use == 0)
-                threads_to_use = num_threads;
-            vector<future<void>> local_threads;
-            local_threads.reserve(threads_to_use);
-            for(int i = 0; i < threads_to_use; i++) {
-                local_threads.push_back(hpx::async(*micro_task, i, fp));
-            }
-            hpx::lcos::wait(local_threads);
-        } else {*/
-        assert(!started);
-        started = true;
-        omp_task = micro_task;
-        parent_fp = fp;
-        if(Nthreads == 0)
-            num_threads = init_num_threads();
-        else
-            num_threads = Nthreads;
-        using namespace boost::assign;
-        std::vector<std::string> cfg;
-        cfg += "hpx.os_threads=" +
-            boost::lexical_cast<std::string>(num_threads);
-    
-        char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
-    
-        int argc;
-        char ** argv;
-    
-        if (hpx_args_raw)
-        { 
-            std::vector<std::string> hpx_args;
-    
-            boost::algorithm::split(hpx_args, std::string(hpx_args_raw),
-                boost::algorithm::is_any_of(";"),
-                    boost::algorithm::token_compress_on);
-    
-            // FIXME: For correctness check for signed overflow.
-            argc = hpx_args.size();
-            argv = new char*[argc + 1];
-            argv[0] = "hpxMP";
-    
-            // FIXME: Should we do escaping?    
-            for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
-                argv[i + 1] = strdup(hpx_args[i].c_str());
-        }
-    
-        else
-        {
-            argc = 1;
-            argv = new char*[argc];
-        }
-    
-    //    argv[1] = "--hpx:dump-config";
-    //    argv[2] = "--hpx:print-bind";
-        hpx::init(argc, argv, cfg);
-        started = false;
-    
-        delete[] argv;
-    }
-};
-
-struct init_hpx_tag {};
-
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
-    hpx::util::static_<initialize_hpx, init_hpx_tag> init_hpx; 
+    init_runtime();
+
+    boost::mutex mtx;
+    boost::condition cond;
+    bool running = false;
+
+    hpx::applier::register_thread_nullary(
+        HPX_STD_BIND(&ompc_fork_worker, Nthreads, micro_task, fp,
+            boost::ref(mtx), boost::ref(cond), boost::ref(running))
+      , "ompc_fork_worker");
+
+    // Wait for the thread to run.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        if (!running)
+            cond.wait(lk);
+    }
 }
 
 int __ompc_can_fork() {
@@ -204,29 +300,29 @@ void __ompc_end_master(int global_tid){
 
 int __ompc_single(int global_tid){
     int tid = __ompc_get_local_thread_num();
-    mutex_type::scoped_lock l(single_lock);
-    //boost::lock_guard<hpx::lcos::local::mutex> l(single_lock);
-    //single_lock.lock();
+    mutex_type::scoped_lock l(single_mtx);
+    //boost::lock_guard<hpx::lcos::local::mutex> l(single_mtx);
+    //single_mtx.lock();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
     } else {
         single_counter++;
     }
-    //single_lock.unlock();
+    //single_mtx.unlock();
     if(current_single_thread == tid) 
         return 1;
     return 0;
 }
 
 void __ompc_end_single(int global_tid){
-    mutex_type::scoped_lock l(single_lock);
-    //boost::lock_guard<hpx::lcos::local::mutex> l(single_lock);
-    //single_lock.lock();
+    mutex_type::scoped_lock l(single_mtx);
+    //boost::lock_guard<hpx::lcos::local::mutex> l(single_mtx);
+    //single_mtx.lock();
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    //single_lock.unlock();
+    //single_mtx.unlock();
 }
 
 int __ompc_task_will_defer(int may_delay){
