@@ -9,6 +9,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
+#include <hpx/util/static.hpp>
 #include <hpx/include/lcos.hpp>
 
 #include <boost/algorithm/string/split.hpp>
@@ -69,69 +70,79 @@ int hpx_main() {
     return hpx::finalize();
 }
 
-void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
-    /*
-    if(started) {
-        //This shouldn't happen, because __ompc_can_fork() should prevent it any nested parallelism
-        //but with tasks, I'm not sure.
-        int threads_to_use = Nthreads;
-        if(threads_to_use == 0)
-            threads_to_use = num_threads;
-        vector<future<void>> local_threads;
-        local_threads.reserve(threads_to_use);
-        for(int i = 0; i < threads_to_use; i++) {
-            local_threads.push_back(hpx::async(*micro_task, i, fp));
-        }
-        hpx::lcos::wait(local_threads);
-    } else {*/
-    assert(!started);
-    started = true;
-    omp_task = micro_task;
-    parent_fp = fp;
-    if(Nthreads == 0)
-        num_threads = init_num_threads();
-    else
-        num_threads = Nthreads;
-    using namespace boost::assign;
-    std::vector<std::string> cfg;
-    cfg += "hpx.os_threads=" +
-        boost::lexical_cast<std::string>(num_threads);
-
-    char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
-
-    int argc;
-    char ** argv;
-
-    if (hpx_args_raw)
-    { 
-        std::vector<std::string> hpx_args;
-
-        boost::algorithm::split(std::string(hpx_args_raw), hpx_args,
-            boost::algorithm::is_any_of(";"),
-                boost::algorithm::token_compress_on);
-
-        // FIXME: For correctness check for signed overflow.
-        argc = hpx_args.size();
-        argv = new char*[argc + 1];
-        argv[0] = "hpxMP";
-
-        // FIXME: Should we do escaping?    
-        for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
-            argv[i + 1] = strdup(hpx_args[i].c_str());
-    }
-
-    else
+struct initialize_hpx
+{
+    initialize_hpx(int Nthreads, omp_micro micro_task, frame_pointer_t fp)
     {
-        argc = 1;
-        argv = new char*[argc];
+        /*
+        if(started) {
+            //This shouldn't happen, because __ompc_can_fork() should prevent it any nested parallelism
+            //but with tasks, I'm not sure.
+            int threads_to_use = Nthreads;
+            if(threads_to_use == 0)
+                threads_to_use = num_threads;
+            vector<future<void>> local_threads;
+            local_threads.reserve(threads_to_use);
+            for(int i = 0; i < threads_to_use; i++) {
+                local_threads.push_back(hpx::async(*micro_task, i, fp));
+            }
+            hpx::lcos::wait(local_threads);
+        } else {*/
+        assert(!started);
+        started = true;
+        omp_task = micro_task;
+        parent_fp = fp;
+        if(Nthreads == 0)
+            num_threads = init_num_threads();
+        else
+            num_threads = Nthreads;
+        using namespace boost::assign;
+        std::vector<std::string> cfg;
+        cfg += "hpx.os_threads=" +
+            boost::lexical_cast<std::string>(num_threads);
+    
+        char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
+    
+        int argc;
+        char ** argv;
+    
+        if (hpx_args_raw)
+        { 
+            std::vector<std::string> hpx_args;
+    
+            boost::algorithm::split(std::string(hpx_args_raw), hpx_args,
+                boost::algorithm::is_any_of(";"),
+                    boost::algorithm::token_compress_on);
+    
+            // FIXME: For correctness check for signed overflow.
+            argc = hpx_args.size();
+            argv = new char*[argc + 1];
+            argv[0] = "hpxMP";
+    
+            // FIXME: Should we do escaping?    
+            for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
+                argv[i + 1] = strdup(hpx_args[i].c_str());
+        }
+    
+        else
+        {
+            argc = 1;
+            argv = new char*[argc];
+        }
+    
+    //    argv[1] = "--hpx:dump-config";
+    //    argv[2] = "--hpx:print-bind";
+        hpx::init(argc, argv, cfg);
+        started = false;
+    
+        delete[] argv;
     }
+};
 
-//    argv[1] = "--hpx:dump-config";
-//    argv[2] = "--hpx:print-bind";
-    hpx::init(argc, argv, cfg);
-    started = false;
+struct init_hpx_tag {};
 
-    delete[] argv;
+void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
+    hpx::util::static_<initialize_hpx, init_hpx_tag> init_hpx; 
 }
 
 int __ompc_can_fork() {
