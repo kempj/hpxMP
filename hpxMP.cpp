@@ -247,6 +247,28 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
     }
 }
 
+void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
+                      omp_int64 *p_lower, omp_int64 *p_upper, omp_int64 *p_stride,
+                      omp_int64 incr, omp_int64 chunk ){
+    omp_int64 thread_num = __ompc_get_local_thread_num();
+    omp_int64 size;
+    omp_int64 *tmp;
+    if(*p_upper < *p_lower) {
+        tmp = p_upper;
+        p_upper = p_lower;
+        p_lower = tmp;
+    }
+    size = *p_upper - *p_lower + 1;
+    int chunk_size = size/num_threads;
+    if(thread_num < size % num_threads) {
+        *p_lower += thread_num * (chunk_size+incr);
+        *p_upper = *p_lower + chunk_size ;
+    } else {
+        *p_lower += (size % num_threads) * (chunk_size+incr) + (thread_num - size % num_threads ) * chunk_size;
+        *p_upper = *p_lower + chunk_size - incr;
+    }
+}
+
 void __ompc_barrier() {
     __ompc_ebarrier();
 }

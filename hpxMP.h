@@ -6,7 +6,7 @@
 
 #include <time.h>
 
-//typedef int omp_int32;
+typedef int omp_int32;
 typedef long long omp_int64;
 
 typedef void *frame_pointer_t;
@@ -48,6 +48,10 @@ extern "C" void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                                       int *plower,
                                       int *pupper, int *pstride,
                                       int incr, int chunk);
+extern "C" void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
+                                      omp_int64 *plower, 
+                                      omp_int64 *pupper, omp_int64 *pstride,
+                                      omp_int64 incr, omp_int64 chunk );
 
 extern "C" void __ompc_ebarrier();
 extern "C" void __ompc_barrier();
