@@ -73,22 +73,16 @@ int hpx_main() {
 }
 
 void fini_runtime_worker(boost::mutex& mtx,
-    boost::condition& cond, bool& running)
-{
+        boost::condition& cond, bool& running) {
     hpx::stop();
-
-/*
-    // Let the main thread know that we're done.
-    {
+/*    {// Let the main thread know that we're done.
         boost::mutex::scoped_lock lk(mtx);
         running = true;
         cond.notify_all();
-    }
-*/
+    }*/
 }
 
-void fini_runtime()
-{
+void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
 
     boost::mutex mtx;
@@ -100,21 +94,16 @@ void fini_runtime()
             boost::ref(mtx), boost::ref(cond), boost::ref(running))
       , "fini_runtime_worker");
 
-/*
-    // Wait for the thread to run.
-    {
+/*  { // Wait for the thread to run.
         boost::mutex::scoped_lock lk(mtx);
         if (!running)
             cond.wait(lk);
-    }
-*/
+    }*/
 }
 
 void wait_for_startup(boost::mutex& mtx,
-    boost::condition& cond, bool& running)
-{
+    boost::condition& cond, bool& running) {
     cout << "HPX OpenMP runtime has started" << endl;
-
     // Let the main thread know that we're done.
     {
         boost::mutex::scoped_lock lk(mtx);
@@ -123,15 +112,13 @@ void wait_for_startup(boost::mutex& mtx,
     }
 }
 
-void init_runtime()
-{
+void init_runtime() {
     mutex_type::scoped_lock l(init_mtx);
 
     if (hpx_initialized)
         return;
 
     cout << "Starting HPX OpenMP runtime" << endl; 
-
     num_threads = init_num_threads();
 
     using namespace boost::assign;
@@ -144,8 +131,7 @@ void init_runtime()
     int argc;
     char ** argv;
 
-    if (hpx_args_raw)
-    { 
+    if (hpx_args_raw) { 
         std::string tmp(hpx_args_raw);
 
         std::vector<std::string> hpx_args;
@@ -158,21 +144,15 @@ void init_runtime()
         argv = new char*[argc];
 
         // FIXME: Should we do escaping?    
-        for (boost::uint64_t i = 0; i < hpx_args.size(); ++i)
-        {
+        for (boost::uint64_t i = 0; i < hpx_args.size(); ++i) {
             cout << "arg[" << i << "]: " << hpx_args[i] << endl;
             argv[i + 1] = strdup(hpx_args[i].c_str());
         }
-    }
-
-    else
-    {
+    } else {
         argc = 1;
         argv = new char*[argc];
     }
-
     argv[0] = const_cast<char*>("hpxMP");
-
     HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 
@@ -184,17 +164,13 @@ void init_runtime()
         HPX_STD_BIND(&wait_for_startup, 
             boost::ref(mtx), boost::ref(cond), boost::ref(running)));
 
-    // Wait for the thread to run.
-    {
+    { // Wait for the thread to run.
         boost::mutex::scoped_lock lk(mtx);
         if (!running)
             cond.wait(lk);
     }
-
     atexit(fini_runtime);
-
     delete[] argv;
-
     hpx_initialized = true;
 }
 
@@ -210,9 +186,7 @@ void ompc_fork_worker(int Nthreads, omp_micro micro_task, frame_pointer_t fp,
         threads.push_back( hpx::async(thread_setup, *micro_task, i, fp));
     }
     hpx::lcos::wait(threads);
-
     started = false;
-
     // Let the main thread know that we're done.
     {
         boost::mutex::scoped_lock lk(mtx);
@@ -223,7 +197,6 @@ void ompc_fork_worker(int Nthreads, omp_micro micro_task, frame_pointer_t fp,
 
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     init_runtime();
-
     boost::mutex mtx;
     boost::condition cond;
     bool running = false;
@@ -232,7 +205,6 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
         HPX_STD_BIND(&ompc_fork_worker, Nthreads, micro_task, fp,
             boost::ref(mtx), boost::ref(cond), boost::ref(running))
       , "ompc_fork_worker");
-
     // Wait for the thread to run.
     {
         boost::mutex::scoped_lock lk(mtx);
@@ -296,20 +268,15 @@ int __ompc_master(int global_tid){
 void __ompc_end_master(int global_tid){
 }
 
-//typedef hpx::lcos::local::spinlock my_mutex;
-
 int __ompc_single(int global_tid){
     int tid = __ompc_get_local_thread_num();
     mutex_type::scoped_lock l(single_mtx);
-    //boost::lock_guard<hpx::lcos::local::mutex> l(single_mtx);
-    //single_mtx.lock();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
     } else {
         single_counter++;
     }
-    //single_mtx.unlock();
     if(current_single_thread == tid) 
         return 1;
     return 0;
@@ -317,12 +284,9 @@ int __ompc_single(int global_tid){
 
 void __ompc_end_single(int global_tid){
     mutex_type::scoped_lock l(single_mtx);
-    //boost::lock_guard<hpx::lcos::local::mutex> l(single_mtx);
-    //single_mtx.lock();
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    //single_mtx.unlock();
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -330,15 +294,13 @@ int __ompc_task_will_defer(int may_delay){
     //leaving that to hpx to decide
     return may_delay;
 }
-/*
 void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
-    *firstprivates = aligned_malloc(size, CACHE_LINE_SIZE);
+    *firstprivates = malloc(size);
 }
 
 void __ompc_task_firstprivates_free(void *firstprivates){
-    aligned_free(firstprivates);
+    free(firstprivates);
 }
-*/
 void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
     thread_data *data_struct = new thread_data;
     data_struct->thread_num = thread_num;
@@ -355,7 +317,6 @@ void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     int current_tid = data->thread_num;
     data->task_handles.push_back(hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
-//            hpx::async(taskfunc, firstprivates, frame_pointer));
 }
 
 void __ompc_task_wait(){
@@ -367,7 +328,6 @@ void __ompc_task_wait(){
 
 void __ompc_task_exit(){
 }
-
 
 void __ompc_serialized_parallel(int global_tid) {
     //It appears this function does nothing
