@@ -140,7 +140,7 @@ void init_runtime() {
                 boost::algorithm::token_compress_on);
 
         // FIXME: For correctness check for signed overflow.
-        argc = hpx_args.size() + 1;
+        argc = hpx_args.size() + 2;
         argv = new char*[argc];
 
         // FIXME: Should we do escaping?    
@@ -149,10 +149,11 @@ void init_runtime() {
             argv[i + 1] = strdup(hpx_args[i].c_str());
         }
     } else {
-        argc = 1;
+        argc = 2;
         argv = new char*[argc];
     }
     argv[0] = const_cast<char*>("hpxMP");
+    argv[argc - 1] = const_cast<char*>("-Ihpx.stacks.use_guard_pages=0");
     HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 

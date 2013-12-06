@@ -22,3 +22,7 @@ single:
 
 master:
 	$(CC) ../omp-master.c -fopenmp -CLIST:emit_nested_pu:before_cg 
+
+thrdprvt:
+	$(CC) ../omp-thrdprvt.c -fopenmp -CLIST:emit_nested_pu:before_cg -Wb,-trlow,-tslow 
+

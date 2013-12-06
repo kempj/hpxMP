@@ -27,3 +27,6 @@ master: omp-master.c
 
 lu: omp-lu.c
 	$(CC) omp-lu.c -fopenmp -o omp-lu
+	
+thrdprvt: omp-thrdprvt.c
+	$(CC) omp-thrdprvt.c -fopenmp -o omp-thrdprvt
