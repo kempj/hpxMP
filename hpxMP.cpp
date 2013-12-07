@@ -75,11 +75,6 @@ int hpx_main() {
 void fini_runtime_worker(boost::mutex& mtx,
         boost::condition& cond, bool& running) {
     hpx::stop();
-/*    {// Let the main thread know that we're done.
-        boost::mutex::scoped_lock lk(mtx);
-        running = true;
-        cond.notify_all();
-    }*/
 }
 
 void fini_runtime() {
@@ -93,12 +88,6 @@ void fini_runtime() {
         HPX_STD_BIND(&fini_runtime_worker, 
             boost::ref(mtx), boost::ref(cond), boost::ref(running))
       , "fini_runtime_worker");
-
-/*  { // Wait for the thread to run.
-        boost::mutex::scoped_lock lk(mtx);
-        if (!running)
-            cond.wait(lk);
-    }*/
 }
 
 void wait_for_startup(boost::mutex& mtx,
@@ -359,6 +348,8 @@ void __ompc_end_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
 
+//OMP Library functions
+//TODO: move to another file
 int omp_get_num_threads() {
     return num_threads;
 }
