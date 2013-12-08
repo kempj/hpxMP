@@ -12,17 +12,12 @@
 #include <string>
 
 using namespace std;
+hpx_runtime hpx_backend;
 //using hpx::lcos::local::barrier;
 //using hpx::lcos::future;
-
-hpx_runtime hpx_backend;
-
 //vector<hpx::lcos::future<void>> threads;
-
 //typedef hpx::lcos::local::spinlock mutex_type;
-
 //mutex_type single_mtx;
-
 //mutex_type init_mtx;
 //bool hpx_initialized = false;
 
@@ -31,6 +26,7 @@ bool started = false;
 //barrier *globalBarrier;
 int single_counter = 0;
 int current_single_thread = -1;
+int single_mtx_id = -1;
 /*
 struct thread_data {
     int thread_num;
@@ -42,21 +38,14 @@ int init_num_threads() {
     auto envNum = getenv("OMP_NUM_THREADS");
     if( envNum != 0)
        numThreads = atoi(envNum);
-    //else 
-    //    numThreads = hpx::threads::hardware_concurrency();//TODO:move to hpx_runtime
     return numThreads;
 }
-/*
-void thread_setup(void (*micro_task)(int, void*), int thread_num, void *fp) {
-    thread_data *data_struct = new thread_data;
-    data_struct->thread_num = thread_num;
-    auto thread_id = hpx::threads::get_self_id();
-    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
-    micro_task(thread_num, fp);
-}
-*/
+
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
+    cout << "forking" << endl;
     hpx_backend.init(init_num_threads());
+    if(single_mtx_id == -1) 
+        single_mtx_id = hpx_backend.new_mtx();
     assert(!started);
     started = true;
     hpx_backend.fork(Nthreads, micro_task, fp);
@@ -66,13 +55,10 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
 int __ompc_can_fork() {
     return !started;
 }
-/*
 int __ompc_get_local_thread_num() {
-    auto thread_id = hpx::threads::get_self_id();
-    auto *data = reinterpret_cast<thread_data*>(
-                    hpx::threads::get_thread_data(thread_id) );
-    return data->thread_num;
+    return hpx_backend.get_thread_num();
 }
+
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                            int *p_lower, int *p_upper, 
@@ -124,7 +110,7 @@ void __ompc_barrier() {
 }
 
 void __ompc_ebarrier() {
-    globalBarrier->wait();
+    hpx_backend.barrier_wait();
 }
 
 int __ompc_get_num_threads(){
@@ -140,8 +126,23 @@ int __ompc_master(int global_tid){
 void __ompc_end_master(int global_tid){
 }
 
+void* single_worker(int tid) {
+    if(current_single_thread == -1 && single_counter == 0) {
+        current_single_thread = tid;
+        single_counter = 1 - num_threads;
+    } else {
+        single_counter++;
+    }
+    return (void*)(current_single_thread == tid);
+}
+
 int __ompc_single(int global_tid){
-    int tid = __ompc_get_local_thread_num();
+    bool is_first = hpx_backend.run_mtx(single_worker, single_mtx_id);
+    if(is_first) {
+        return 1;
+    }
+    return 0;
+    /*int tid = __ompc_get_local_thread_num();
     mutex_type::scoped_lock l(single_mtx);
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
@@ -151,14 +152,23 @@ int __ompc_single(int global_tid){
     }
     if(current_single_thread == tid) 
         return 1;
-    return 0;
+    return 0;*/
 }
 
-void __ompc_end_single(int global_tid){
-    mutex_type::scoped_lock l(single_mtx);
+void* end_single_worker(int tid) {
     if(single_counter == 0) {
         current_single_thread = -1;
     }
+    return (void*)(0);
+}
+
+void __ompc_end_single(int global_tid){
+    hpx_backend.run_mtx(end_single_worker, single_mtx_id);
+    /*
+    mutex_type::scoped_lock l(single_mtx);
+    if(single_counter == 0) {
+        current_single_thread = -1;
+    }*/
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -173,6 +183,7 @@ void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
 void __ompc_task_firstprivates_free(void *firstprivates){
     free(firstprivates);
 }
+/*
 void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
     thread_data *data_struct = new thread_data;
     data_struct->thread_num = thread_num;

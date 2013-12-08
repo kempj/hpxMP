@@ -1,5 +1,32 @@
+//  Copyright (c) 2013 Jeremy Kemp
+//  Copyright (c) 2013 Bryce Adelstein-Lelbach
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
+//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
 #include "hpx_runtime.h"
 
+
+bool hpx_runtime::run_mtx(void*(*work_function)(int tid), int lock_id) {
+    mutex_type::scoped_lock l(lock_list[lock_id]);
+    return work_function(get_thread_num());
+}
+
+int hpx_runtime::new_mtx(){
+    lock_list.push_back(mutex_type());
+    return lock_list.size() - 1;
+
+}
+void hpx_runtime::barrier_wait(){
+    globalBarrier->wait();
+}
+
+int hpx_runtime::get_thread_num() {
+    auto thread_id = hpx::threads::get_self_id();
+    auto *data = reinterpret_cast<thread_data*>(
+            hpx::threads::get_thread_data(thread_id) );
+    return data->thread_num;
+}
 
 int hpx_main() {
     assert(false);

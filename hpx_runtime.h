@@ -1,3 +1,8 @@
+//  Copyright (c) 2013 Jeremy Kemp
+//  Copyright (c) 2013 Bryce Adelstein-Lelbach
+//
+//  Distributed under the Boost Software License, Version 1.0. (See accompanying
+//  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
@@ -32,10 +37,16 @@ struct thread_data {
     int thread_num;
     vector<future<void>> task_handles;
 };
+
 class hpx_runtime {
     public:
         void init(int num_threads);
         void fork(int num_threads, omp_micro micro_task, frame_pointer_t fp);
+        int get_thread_num();
+        void barrier_wait();
+        bool run_mtx(int);
+        bool run_mtx(void*(*work_function)(int tid), int lock_id);
+        int new_mtx();
         
     private:
         bool hpx_initialized = false;
@@ -43,5 +54,6 @@ class hpx_runtime {
         mutex_type init_mtx;
         barrier *globalBarrier;
         int num_threads;
+        vector<mutex_type> lock_list;
 };
 
