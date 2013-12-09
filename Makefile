@@ -7,13 +7,13 @@ opt: hpxMPopt.o
 	g++ -O3 -shared -Wl,-soname,libopenmp.so -o libopenmp.so hpxMP.o `pkg-config --cflags --libs hpx_application`
 
 libopenmp.so: hpxMP.o hpx_runtime.o
-	g++ -shared -Wl,-soname,libopenmp.so -o libopenmp.so hpxMP.o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
+	g++ -g -shared -Wl,-soname,libopenmp.so -o libopenmp.so hpxMP.o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
 
 hpx_runtime.o: hpx_runtime.cpp
-	g++ -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
+	g++ -g -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
 
 hpxMP.o: hpxMP.cpp hpxMP.h
-	g++ -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
+	g++ -g -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
 
 clean:
 	rm -rf *.o

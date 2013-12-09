@@ -6,6 +6,9 @@
 
 #include "hpx_runtime.h"
 
+int hpx_runtime::get_num_threads() {
+    return num_threads;
+}
 
 bool hpx_runtime::run_mtx(void*(*work_function)(int tid), int lock_id) {
     mutex_type::scoped_lock l(lock_list[lock_id]);
@@ -128,22 +131,28 @@ void hpx_runtime::init(int Nthreads) {
     hpx_initialized = true;
 }
 
+void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
+    thread_data *data_struct = new thread_data;
+    data_struct->thread_num = thread_num;
+    auto thread_id = hpx::threads::get_self_id();
+    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
+    task_func(firstprivates, fp);
+}
+/*
 void thread_setup(void (*micro_task)(int, void*), int thread_num, void *fp) {
     thread_data *data_struct = new thread_data;
     data_struct->thread_num = thread_num;
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
     micro_task(thread_num, fp);
-}
+}*/
 
-
-void ompc_fork_worker(int Nthreads, omp_micro micro_task, frame_pointer_t fp,
-    boost::mutex& mtx, boost::condition& cond, bool& running)
-{
+void ompc_fork_worker( int Nthreads, omp_task_func task_func, frame_pointer_t fp,
+                       boost::mutex& mtx, boost::condition& cond, bool& running) {
     vector<hpx::lcos::future<void>> threads;
     threads.reserve(Nthreads);
     for(int i = 0; i < Nthreads; i++) {
-        threads.push_back( hpx::async(thread_setup, *micro_task, i, fp));
+        threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));
     }
     hpx::lcos::wait(threads);
     // Let the main thread know that we're done.
@@ -154,19 +163,13 @@ void ompc_fork_worker(int Nthreads, omp_micro micro_task, frame_pointer_t fp,
     }
 }
 
-
-
-
-void hpx_runtime::fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) { 
+void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp) { 
     boost::mutex mtx;
     boost::condition cond;
     bool running = false;
 
-    if(Nthreads <= 0) {
-        Nthreads = num_threads;
-    }
     hpx::applier::register_thread_nullary(
-            HPX_STD_BIND(&ompc_fork_worker, Nthreads, micro_task, fp,
+            HPX_STD_BIND(&ompc_fork_worker, Nthreads, task_func, fp,
                 boost::ref(mtx), boost::ref(cond), boost::ref(running))
             , "ompc_fork_worker");
     // Wait for the thread to run.
@@ -176,7 +179,4 @@ void hpx_runtime::fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
             cond.wait(lk);
     }
 }
-
-
-
 

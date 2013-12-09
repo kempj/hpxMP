@@ -13,25 +13,14 @@
 
 using namespace std;
 hpx_runtime hpx_backend;
-//using hpx::lcos::local::barrier;
-//using hpx::lcos::future;
-//vector<hpx::lcos::future<void>> threads;
-//typedef hpx::lcos::local::spinlock mutex_type;
-//mutex_type single_mtx;
-//mutex_type init_mtx;
-//bool hpx_initialized = false;
 
-int num_threads = 0;
+//int num_threads = 0;
 bool started = false;
-//barrier *globalBarrier;
 int single_counter = 0;
 int current_single_thread = -1;
 int single_mtx_id = -1;
-/*
-struct thread_data {
-    int thread_num;
-    vector<future<void>> task_handles;
-};*/
+
+omp_micro thread_func = 0;
 
 int init_num_threads() {
     int numThreads = 0;
@@ -41,14 +30,21 @@ int init_num_threads() {
     return numThreads;
 }
 
+void omp_thread_func(void *firstprivates, void *fp) {
+    int tid = __ompc_get_local_thread_num();
+    thread_func(tid, fp);
+}
+
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
-    cout << "forking" << endl;
     hpx_backend.init(init_num_threads());
     if(single_mtx_id == -1) 
         single_mtx_id = hpx_backend.new_mtx();
+    if(Nthreads <= 0)
+        Nthreads = hpx_backend.get_num_threads();
+    thread_func = micro_task;
     assert(!started);
     started = true;
-    hpx_backend.fork(Nthreads, micro_task, fp);
+    hpx_backend.fork(Nthreads, omp_thread_func, fp);
     started = false;
 }
 
@@ -67,6 +63,7 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
     int thread_num = __ompc_get_local_thread_num();
     int size;
     int *tmp;
+    int num_threads = __ompc_get_num_threads();
     if(*p_upper < *p_lower) {
         tmp = p_upper;
         p_upper = p_lower;
@@ -89,6 +86,7 @@ void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
     omp_int64 thread_num = __ompc_get_local_thread_num();
     omp_int64 size;
     omp_int64 *tmp;
+    int num_threads = __ompc_get_num_threads();
     if(*p_upper < *p_lower) {
         tmp = p_upper;
         p_upper = p_lower;
@@ -114,7 +112,7 @@ void __ompc_ebarrier() {
 }
 
 int __ompc_get_num_threads(){
-    return 0;
+    return hpx_backend.get_num_threads();
 }
 
 int __ompc_master(int global_tid){
@@ -127,6 +125,7 @@ void __ompc_end_master(int global_tid){
 }
 
 void* single_worker(int tid) {
+    int num_threads = __ompc_get_local_thread_num();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
