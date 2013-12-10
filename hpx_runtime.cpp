@@ -27,7 +27,7 @@ void hpx_runtime::barrier_wait(){
 int hpx_runtime::get_thread_num() {
     auto thread_id = hpx::threads::get_self_id();
     auto *data = reinterpret_cast<thread_data*>(
-            hpx::threads::get_thread_data(thread_id) );
+                    hpx::threads::get_thread_data(thread_id) );
     return data->thread_num;
 }
 
@@ -138,15 +138,22 @@ void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, vo
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
     task_func(firstprivates, fp);
 }
-/*
-void thread_setup(void (*micro_task)(int, void*), int thread_num, void *fp) {
-    thread_data *data_struct = new thread_data;
-    data_struct->thread_num = thread_num;
-    auto thread_id = hpx::threads::get_self_id();
-    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
-    micro_task(thread_num, fp);
-}*/
+void hpx_runtime::create_task(omp_task_func taskfunc, void *frame_pointer,
+                 void *firstprivates, int may_delay,
+                 int is_tied, int blocks_parent) {
+    auto *data = reinterpret_cast<thread_data*>(
+            hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    int current_tid = data->thread_num;
+    data->task_handles.push_back(hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
+}
 
+void hpx_runtime::task_wait() {
+    auto *data = reinterpret_cast<thread_data*>(
+            hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    hpx::wait(data->task_handles);
+    data->task_handles.clear();
+
+}
 void ompc_fork_worker( int Nthreads, omp_task_func task_func, frame_pointer_t fp,
                        boost::mutex& mtx, boost::condition& cond, bool& running) {
     vector<hpx::lcos::future<void>> threads;

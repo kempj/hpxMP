@@ -48,6 +48,10 @@ class hpx_runtime {
         bool run_mtx(int);
         bool run_mtx(void*(*work_function)(int tid), int lock_id);
         int new_mtx();
+        void create_task(omp_task_func taskfunc, void *frame_pointer,
+                         void *firstprivates, int may_delay,
+                         int is_tied, int blocks_parent);
+        void task_wait();
         
     private:
         bool hpx_initialized = false;

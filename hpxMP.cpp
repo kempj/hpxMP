@@ -14,7 +14,6 @@
 using namespace std;
 hpx_runtime hpx_backend;
 
-//int num_threads = 0;
 bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
@@ -125,7 +124,7 @@ void __ompc_end_master(int global_tid){
 }
 
 void* single_worker(int tid) {
-    int num_threads = __ompc_get_local_thread_num();
+    int num_threads = __ompc_get_num_threads();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
@@ -141,17 +140,6 @@ int __ompc_single(int global_tid){
         return 1;
     }
     return 0;
-    /*int tid = __ompc_get_local_thread_num();
-    mutex_type::scoped_lock l(single_mtx);
-    if(current_single_thread == -1 && single_counter == 0) {
-        current_single_thread = tid;
-        single_counter = 1 - num_threads;
-    } else {
-        single_counter++;
-    }
-    if(current_single_thread == tid) 
-        return 1;
-    return 0;*/
 }
 
 void* end_single_worker(int tid) {
@@ -163,11 +151,6 @@ void* end_single_worker(int tid) {
 
 void __ompc_end_single(int global_tid){
     hpx_backend.run_mtx(end_single_worker, single_mtx_id);
-    /*
-    mutex_type::scoped_lock l(single_mtx);
-    if(single_counter == 0) {
-        current_single_thread = -1;
-    }*/
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -182,30 +165,16 @@ void __ompc_task_firstprivates_alloc(void **firstprivates, int size){
 void __ompc_task_firstprivates_free(void *firstprivates){
     free(firstprivates);
 }
-/*
-void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
-    thread_data *data_struct = new thread_data;
-    data_struct->thread_num = thread_num;
-    auto thread_id = hpx::threads::get_self_id();
-    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
-    task_func(firstprivates, fp);
-}
 
-void __ompc_task_create( omp_task_func taskfunc, void *frame_pointer,
+void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
-
-    auto *data = reinterpret_cast<thread_data*>(
-                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    int current_tid = data->thread_num;
-    data->task_handles.push_back(hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
+    hpx_backend.create_task( task_func, frame_pointer, firstprivates, 
+                             may_delay, is_tied, blocks_parent);
 }
 
 void __ompc_task_wait(){
-    auto *data = reinterpret_cast<thread_data*>(
-                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    hpx::wait(data->task_handles); 
-    data->task_handles.clear();
+    hpx_backend.task_wait();
 }
 
 void __ompc_task_exit(){
@@ -221,15 +190,15 @@ void __ompc_end_serialized_parallel(int global_tid) {
 //OMP Library functions
 //TODO: move to another file
 int omp_get_num_threads() {
-    return num_threads;
+    return hpx_backend.get_num_threads();
 }
 
 int omp_get_max_threads() {
-    return num_threads;
+    return hpx_backend.get_num_threads();
 }
 
 int omp_get_thread_num() {
     return __ompc_get_local_thread_num();
 }
-*/
+
 
