@@ -31,6 +31,8 @@ typedef enum {
     OMP_SCHED_ORDERED_RUNTIME     = 35
 } omp_sched_t;
 
+extern "C" void __ompc_critical(int gtid, int **lck);
+extern "C" void __ompc_end_critical(int gtid, int **lck);
 
 extern "C" void __ompc_fork(int num_threads, omp_micro micro_task,
                       frame_pointer_t fp);
@@ -64,12 +66,6 @@ extern "C" void __ompc_end_master(int global_tid);
 extern "C" int __ompc_single(int global_tid);
 extern "C" void __ompc_end_single(int global_tid);
 
-extern "C" int omp_get_num_threads();
-extern "C" int omp_get_max_threads();
-extern "C" int omp_get_thread_num();
-
-extern "C" timespec get_hpx_time();
-
 extern "C" int __ompc_task_will_defer(int may_delay);
 extern "C" void __ompc_task_create(omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int may_delay, 
@@ -80,3 +76,8 @@ extern "C" void __ompc_task_exit();
 extern "C" void __ompc_task_firstprivates_alloc(void **firstprivates, int size);
 extern "C" void __ompc_task_firstprivates_free(void *firstprivates);
 
+extern "C" int omp_get_num_threads();
+extern "C" int omp_get_max_threads();
+extern "C" int omp_get_thread_num();
+//extern "C" timespec get_hpx_time();
+extern "C" double omp_get_wtime();

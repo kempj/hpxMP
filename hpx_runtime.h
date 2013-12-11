@@ -18,6 +18,7 @@
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
 
+#include <hpx/util/high_resolution_timer.hpp>
 
 typedef void *frame_pointer_t;
 typedef int omp_tid;
@@ -32,6 +33,7 @@ using hpx::lcos::future;
 using std::cout;
 using std::endl;
 using std::vector;
+using hpx::util::high_resolution_timer;
 
 struct thread_data {
     int thread_num;
@@ -45,20 +47,23 @@ class hpx_runtime {
         int get_thread_num();
         int get_num_threads();
         void barrier_wait();
-        bool run_mtx(int);
-        bool run_mtx(void*(*work_function)(int tid), int lock_id);
+        void lock(int lock_id);
+        void unlock(int lock_id);
         int new_mtx();
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent);
         void task_wait();
+        double get_time();
         
     private:
         bool hpx_initialized = false;
-        mutex_type single_mtx;
+//        mutex_type single_mtx;
         mutex_type init_mtx;
         barrier *globalBarrier;
         int num_threads;
-        vector<mutex_type> lock_list;
+        vector<mutex_type*> lock_list;
+        //map<mutex_type> lock_map;
+        high_resolution_timer walltime;
 };
 

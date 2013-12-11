@@ -54,7 +54,6 @@ int __ompc_get_local_thread_num() {
     return hpx_backend.get_thread_num();
 }
 
-
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                            int *p_lower, int *p_upper, 
                            int *p_stride, int incr, 
@@ -122,7 +121,7 @@ int __ompc_master(int global_tid){
 
 void __ompc_end_master(int global_tid){
 }
-
+/*
 void* single_worker(int tid) {
     int num_threads = __ompc_get_num_threads();
     if(current_single_thread == -1 && single_counter == 0) {
@@ -132,25 +131,39 @@ void* single_worker(int tid) {
         single_counter++;
     }
     return (void*)(current_single_thread == tid);
-}
+}*/
 
-int __ompc_single(int global_tid){
-    bool is_first = hpx_backend.run_mtx(single_worker, single_mtx_id);
-    if(is_first) {
+int __ompc_single(int tid){
+    //bool is_first = hpx_backend.run_mtx(single_worker, single_mtx_id);
+    hpx_backend.lock(single_mtx_id);
+    int num_threads = __ompc_get_num_threads();
+    if(current_single_thread == -1 && single_counter == 0) {
+        current_single_thread = tid;
+        single_counter = 1 - num_threads;
+    } else {
+        single_counter++;
+    }
+    hpx_backend.unlock(single_mtx_id);
+    if(current_single_thread == tid) {
         return 1;
     }
     return 0;
 }
-
+/*
 void* end_single_worker(int tid) {
     if(single_counter == 0) {
         current_single_thread = -1;
     }
     return (void*)(0);
-}
+}*/
 
-void __ompc_end_single(int global_tid){
-    hpx_backend.run_mtx(end_single_worker, single_mtx_id);
+void __ompc_end_single(int tid){
+    //hpx_backend.run_mtx(end_single_worker, single_mtx_id);
+    hpx_backend.lock(single_mtx_id);
+    if(single_counter == 0) {
+        current_single_thread = -1;
+    }
+    hpx_backend.unlock(single_mtx_id);
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -187,6 +200,19 @@ void __ompc_end_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
 
+void __ompc_critical(int gtid, int **lck) {
+    if(*lck == NULL){
+        *lck = new int;
+        **lck = 0;
+        int lock_id = hpx_backend.new_mtx();
+    }
+    hpx_backend.lock(**lck);
+}
+
+void __ompc_end_critical(omp_int32 gtid, omp_int32 **lck) {
+    hpx_backend.unlock(**lck);
+}
+
 //OMP Library functions
 //TODO: move to another file
 int omp_get_num_threads() {
@@ -201,4 +227,6 @@ int omp_get_thread_num() {
     return __ompc_get_local_thread_num();
 }
 
-
+double omp_get_wtime() {
+    return hpx_backend.get_time();
+}

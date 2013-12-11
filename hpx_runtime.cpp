@@ -6,17 +6,31 @@
 
 #include "hpx_runtime.h"
 
+double hpx_runtime::get_time() {
+    return walltime.now();
+
+}
 int hpx_runtime::get_num_threads() {
     return num_threads;
 }
-
+/*
 bool hpx_runtime::run_mtx(void*(*work_function)(int tid), int lock_id) {
     mutex_type::scoped_lock l(lock_list[lock_id]);
     return work_function(get_thread_num());
+}*/
+void hpx_runtime::lock(int lock_id) {
+    //assert(lock_id < lock_list.size());
+    lock_list[lock_id]->lock();
+
+}
+
+void hpx_runtime::unlock(int lock_id) {
+    lock_list[lock_id]->unlock();
 }
 
 int hpx_runtime::new_mtx(){
-    lock_list.push_back(mutex_type());
+    mutex_type *new_mutex = new mutex_type;
+    lock_list.push_back(new_mutex);
     return lock_list.size() - 1;
 
 }
