@@ -20,20 +20,22 @@ bool hpx_runtime::run_mtx(void*(*work_function)(int tid), int lock_id) {
 }*/
 void hpx_runtime::lock(int lock_id) {
     //assert(lock_id < lock_list.size());
-    lock_list[lock_id]->lock();
-
+    lock_map[lock_id].lock();
 }
 
 void hpx_runtime::unlock(int lock_id) {
-    lock_list[lock_id]->unlock();
+    lock_map[lock_id].unlock();
 }
 
 int hpx_runtime::new_mtx(){
-    mutex_type *new_mutex = new mutex_type;
+/*    mutex_type *new_mutex = new mutex_type;
     lock_list.push_back(new_mutex);
-    return lock_list.size() - 1;
+    return lock_list.size() - 1;*/
+    lock_map[lock_map.size()];
+    return lock_map.size() -1;
 
 }
+
 void hpx_runtime::barrier_wait(){
     globalBarrier->wait();
 }
@@ -116,7 +118,8 @@ void hpx_runtime::init(int Nthreads) {
         // FIXME: Should we do escaping?    
         for (boost::uint64_t i = 0; i < hpx_args.size(); ++i) {
             cout << "arg[" << i << "]: " << hpx_args[i] << endl;
-            argv[i + 1] = strdup(hpx_args[i].c_str());
+            //argv[i + 1] = strdup(hpx_args[i].c_str());
+            argv[i + 1] = const_cast<char*>(hpx_args[i].c_str());
         }
     } else {
         argc = 2;

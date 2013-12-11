@@ -19,6 +19,7 @@
 #include <boost/cstdint.hpp>
 
 #include <hpx/util/high_resolution_timer.hpp>
+#include <map>
 
 typedef void *frame_pointer_t;
 typedef int omp_tid;
@@ -33,6 +34,7 @@ using hpx::lcos::future;
 using std::cout;
 using std::endl;
 using std::vector;
+using std::map;
 using hpx::util::high_resolution_timer;
 
 struct thread_data {
@@ -62,8 +64,8 @@ class hpx_runtime {
         mutex_type init_mtx;
         barrier *globalBarrier;
         int num_threads;
-        vector<mutex_type*> lock_list;
-        //map<mutex_type> lock_map;
+        //vector<mutex_type*> lock_list;
+        map<int, mutex_type> lock_map;
         high_resolution_timer walltime;
 };
 
