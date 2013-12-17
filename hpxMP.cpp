@@ -101,6 +101,18 @@ void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
     }
 }
 
+void __ompc_scheduler_init_4( omp_int32 global_tid,
+                              omp_sched_t schedtype,
+                              omp_int32 lower, omp_int32 upper,
+                              omp_int32 stride, omp_int32 chunk){
+}
+
+void __ompc_scheduler_init_8( omp_int32 global_tid,
+                              omp_sched_t schedtype,
+                              omp_int64 lower, omp_int64 upper,
+                              omp_int64 stride, omp_int64 chunk){
+}
+
 void __ompc_barrier() {
     __ompc_ebarrier();
 }
@@ -231,7 +243,7 @@ double omp_get_wtime() {
 }
 
 void omp_init_lock(volatile omp_lock_t *lock) {
-    int64_t new_id = hpx_backend.new_mtx();
+    int new_id = hpx_backend.new_mtx();
     *lock = reinterpret_cast<omp_lock_t>(new_id);
 }
 
@@ -239,15 +251,17 @@ void omp_destroy_lock(volatile omp_lock_t *lock) {
 }
 
 void omp_set_lock(volatile omp_lock_t *lock) {
-    int64_t lock_id = reinterpret_cast<int64_t>(*lock);
+    int lock_id = *((int*)lock);
     hpx_backend.lock(lock_id);
 }
 
 void omp_unset_lock(volatile omp_lock_t *lock) {
-    int64_t lock_id = reinterpret_cast<int64_t>(*lock);
+    int lock_id = *((int*)lock);
     hpx_backend.unlock(lock_id);
 }
 
 int omp_test_lock(volatile omp_lock_t *lock) {
+    if(hpx_backend.trylock(*((int*)lock)))
+        return 1;
     return 0;
 }

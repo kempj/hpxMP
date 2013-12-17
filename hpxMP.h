@@ -55,6 +55,16 @@ extern "C" void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtyp
                                       omp_int64 *pupper, omp_int64 *pstride,
                                       omp_int64 incr, omp_int64 chunk );
 
+extern "C" void __ompc_scheduler_init_4( omp_int32 global_tid,
+                                         omp_sched_t schedtype,
+                                         omp_int32 lower, omp_int32 upper,
+                                         omp_int32 stride, omp_int32 chunk);
+
+extern "C" void __ompc_scheduler_init_8( omp_int32 global_tid,
+                                         omp_sched_t schedtype,
+                                         omp_int64 lower, omp_int64 upper,
+                                         omp_int64 stride, omp_int64 chunk);
+
 extern "C" void __ompc_ebarrier();
 extern "C" void __ompc_barrier();
 
