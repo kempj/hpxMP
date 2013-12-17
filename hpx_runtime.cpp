@@ -18,16 +18,17 @@ bool hpx_runtime::run_mtx(void*(*work_function)(int tid), int lock_id) {
     mutex_type::scoped_lock l(lock_list[lock_id]);
     return work_function(get_thread_num());
 }*/
-void hpx_runtime::lock(int lock_id) {
+
+void hpx_runtime::lock(int64_t lock_id) {
     //assert(lock_id < lock_list.size());
     lock_map[lock_id].lock();
 }
 
-void hpx_runtime::unlock(int lock_id) {
+void hpx_runtime::unlock(int64_t lock_id) {
     lock_map[lock_id].unlock();
 }
 
-int hpx_runtime::new_mtx(){
+int64_t hpx_runtime::new_mtx(){
 /*    mutex_type *new_mutex = new mutex_type;
     lock_list.push_back(new_mutex);
     return lock_list.size() - 1;*/

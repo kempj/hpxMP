@@ -49,9 +49,9 @@ class hpx_runtime {
         int get_thread_num();
         int get_num_threads();
         void barrier_wait();
-        void lock(int lock_id);
-        void unlock(int lock_id);
-        int new_mtx();
+        void lock(int64_t lock_id);
+        void unlock(int64_t lock_id);
+        int64_t new_mtx();
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent);

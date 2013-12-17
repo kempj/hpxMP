@@ -81,3 +81,22 @@ extern "C" int omp_get_max_threads();
 extern "C" int omp_get_thread_num();
 //extern "C" timespec get_hpx_time();
 extern "C" double omp_get_wtime();
+
+typedef void *omp_lock_t;
+//typedef void *omp_nest_lock_t;
+
+extern "C" void omp_init_lock(volatile omp_lock_t *lock);
+//extern "C" void omp_init_nest_lock(volatile omp_nest_lock_t *lock);
+
+extern "C" void omp_destroy_lock(volatile omp_lock_t *lock);
+//extern "C" void omp_destroy_nest_lock(volatile omp_nest_lock_t *lock);
+
+extern "C" void omp_set_lock(volatile omp_lock_t *lock);
+//extern "C" void omp_set_nest_lock(volatile omp_nest_lock_t *lock);
+
+extern "C" void omp_unset_lock(volatile omp_lock_t *lock);
+//extern "C" void omp_unset_nest_lock(volatile omp_nest_lock_t *lock);
+
+extern "C" int omp_test_lock(volatile omp_lock_t *lock);
+//extern "C" int omp_test_nest_lock(volatile omp_nest_lock_t *lock);
+

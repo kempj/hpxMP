@@ -203,8 +203,7 @@ void __ompc_end_serialized_parallel(int global_tid) {
 void __ompc_critical(int gtid, int **lck) {
     if(*lck == NULL){
         *lck = new int;
-        **lck = 0;
-        int lock_id = hpx_backend.new_mtx();
+        **lck = (int)hpx_backend.new_mtx();
     }
     hpx_backend.lock(**lck);
 }
@@ -229,4 +228,26 @@ int omp_get_thread_num() {
 
 double omp_get_wtime() {
     return hpx_backend.get_time();
+}
+
+void omp_init_lock(volatile omp_lock_t *lock) {
+    int64_t new_id = hpx_backend.new_mtx();
+    *lock = reinterpret_cast<omp_lock_t>(new_id);
+}
+
+void omp_destroy_lock(volatile omp_lock_t *lock) {
+}
+
+void omp_set_lock(volatile omp_lock_t *lock) {
+    int64_t lock_id = reinterpret_cast<int64_t>(*lock);
+    hpx_backend.lock(lock_id);
+}
+
+void omp_unset_lock(volatile omp_lock_t *lock) {
+    int64_t lock_id = reinterpret_cast<int64_t>(*lock);
+    hpx_backend.unlock(lock_id);
+}
+
+int omp_test_lock(volatile omp_lock_t *lock) {
+    return 0;
 }
