@@ -65,6 +65,14 @@ extern "C" void __ompc_scheduler_init_8( omp_int32 global_tid,
                                          omp_int64 lower, omp_int64 upper,
                                          omp_int64 stride, omp_int64 chunk);
 
+extern "C" omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
+                                             omp_int32 *plower, omp_int32 *pupper,
+                                             omp_int32 *pstride);
+
+extern "C" omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
+                                             omp_int64 *plower, omp_int64 *pupper,
+                                             omp_int64 *pstride);
+
 extern "C" void __ompc_ebarrier();
 extern "C" void __ompc_barrier();
 
@@ -85,6 +93,10 @@ extern "C" void __ompc_task_exit();
 
 extern "C" void __ompc_task_firstprivates_alloc(void **firstprivates, int size);
 extern "C" void __ompc_task_firstprivates_free(void *firstprivates);
+
+extern "C" void __ompc_reduction(omp_int32 gtid, omp_int32 **lck);
+extern "C" void __ompc_end_reduction(omp_int32 gtid, omp_int32 **lck);
+
 
 extern "C" int omp_get_num_threads();
 extern "C" int omp_get_max_threads();

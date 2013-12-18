@@ -105,12 +105,34 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int32 lower, omp_int32 upper,
                               omp_int32 stride, omp_int32 chunk){
+    //cout << "Not implemented" << endl;
 }
 
 void __ompc_scheduler_init_8( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int64 lower, omp_int64 upper,
                               omp_int64 stride, omp_int64 chunk){
+    //cout << "Not implemented" << endl;
+}
+
+omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
+                                  omp_int32 *plower, omp_int32 *pupper,
+                                  omp_int32 *pstride){
+    //cout << "Not implemented" << endl;
+    return 0;
+}
+
+omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
+                                  omp_int64 *plower, omp_int64 *pupper,
+                                  omp_int64 *pstride){
+    //cout << "Not implemented" << endl;
+    return 0;
+}
+
+void __ompc_reduction(omp_int32 gtid, omp_int32 **lck){
+}
+
+void __ompc_end_reduction(omp_int32 gtid, omp_int32 **lck){
 }
 
 void __ompc_barrier() {
@@ -215,7 +237,7 @@ void __ompc_end_serialized_parallel(int global_tid) {
 void __ompc_critical(int gtid, int **lck) {
     if(*lck == NULL){
         *lck = new int;
-        **lck = (int)hpx_backend.new_mtx();
+        **lck = hpx_backend.new_mtx();
     }
     hpx_backend.lock(**lck);
 }
