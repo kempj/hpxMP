@@ -103,6 +103,9 @@ extern "C" int omp_get_max_threads();
 extern "C" int omp_get_thread_num();
 //extern "C" timespec get_hpx_time();
 extern "C" double omp_get_wtime();
+extern "C" void omp_set_nested();
+extern "C" int omp_in_parallel();
+extern "C" void omp_set_dynamic(int dynamic_threads);
 
 typedef void *omp_lock_t;
 //typedef void *omp_nest_lock_t;

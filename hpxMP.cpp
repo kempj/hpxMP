@@ -155,20 +155,8 @@ int __ompc_master(int global_tid){
 
 void __ompc_end_master(int global_tid){
 }
-/*
-void* single_worker(int tid) {
-    int num_threads = __ompc_get_num_threads();
-    if(current_single_thread == -1 && single_counter == 0) {
-        current_single_thread = tid;
-        single_counter = 1 - num_threads;
-    } else {
-        single_counter++;
-    }
-    return (void*)(current_single_thread == tid);
-}*/
 
 int __ompc_single(int tid){
-    //bool is_first = hpx_backend.run_mtx(single_worker, single_mtx_id);
     hpx_backend.lock(single_mtx_id);
     int num_threads = __ompc_get_num_threads();
     if(current_single_thread == -1 && single_counter == 0) {
@@ -183,16 +171,8 @@ int __ompc_single(int tid){
     }
     return 0;
 }
-/*
-void* end_single_worker(int tid) {
-    if(single_counter == 0) {
-        current_single_thread = -1;
-    }
-    return (void*)(0);
-}*/
 
 void __ompc_end_single(int tid){
-    //hpx_backend.run_mtx(end_single_worker, single_mtx_id);
     hpx_backend.lock(single_mtx_id);
     if(single_counter == 0) {
         current_single_thread = -1;
@@ -286,4 +266,18 @@ int omp_test_lock(volatile omp_lock_t *lock) {
     if(hpx_backend.trylock(*((int*)lock)))
         return 1;
     return 0;
+}
+
+void omp_set_nested() {
+    //nested is not implemented
+}
+
+int omp_in_parallel(void){
+    return started;
+}
+
+void omp_set_dynamic(int dynamic_threads){
+    //The omp_set_dynamic routine enables or disables dynamic adjustment of the
+    //number of threads available for the execution of subsequent parallel regions by
+    //setting the value of the dyn-var ICV.
 }
