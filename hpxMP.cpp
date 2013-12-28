@@ -196,6 +196,7 @@ void __ompc_task_firstprivates_free(void *firstprivates){
 void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
+
     hpx_backend.create_task( task_func, frame_pointer, firstprivates, 
                              may_delay, is_tied, blocks_parent);
 }
@@ -226,6 +227,15 @@ void __ompc_end_critical(omp_int32 gtid, omp_int32 **lck) {
     hpx_backend.unlock(**lck);
 }
 
+omp_int32 __ompc_copyin_thdprv(int num,...) {
+    return 0;
+}
+
+omp_int32 __ompc_copyprivate( omp_int32 mpsp_status,
+                              void *cppriv, 
+                              void(*cp)(void* src, void* dst) ) {
+    return 0;
+}
 //OMP Library functions
 //TODO: move to another file
 int omp_get_num_threads() {
@@ -242,6 +252,10 @@ int omp_get_thread_num() {
 
 double omp_get_wtime() {
     return hpx_backend.get_time();
+}
+double omp_get_wtick() {
+    //high resolution elapsed_min
+    return .000000001;
 }
 
 void omp_init_lock(volatile omp_lock_t *lock) {
@@ -268,8 +282,29 @@ int omp_test_lock(volatile omp_lock_t *lock) {
     return 0;
 }
 
+void omp_init_nest_lock(volatile omp_nest_lock_t *lock) {
+    //unimplmented
+}
+
+void omp_destroy_nest_lock(volatile omp_nest_lock_t *lock) {
+    //unimplmented
+}
+
+void omp_set_nest_lock(volatile omp_nest_lock_t *lock) {
+    //unimplmented
+}
+
+void omp_unset_nest_lock(volatile omp_nest_lock_t *lock) {
+    //unimplmented
+}
+
+int omp_test_nest_lock(volatile omp_nest_lock_t *lock) {
+    //unimplmented
+    return 1;
+}
+
 void omp_set_nested() {
-    //nested is not implemented
+    //unimplmented
 }
 
 int omp_in_parallel(void){
