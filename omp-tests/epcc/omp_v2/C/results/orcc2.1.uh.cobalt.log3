@@ -1,0 +1,1020 @@
+Running OpenMP benchmark on 4 thread(s)
+Assumed clock rate = 1500 MHz 
+Delay length = 2
+Delay time  = 130.498409 cycles
+
+--------------------------------------------------------
+Computing reference time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                21.736169   21.733046   21.745205    0.002648      1
+
+Reference_time_1 =                        21.736169 microseconds +/- 0.005190
+
+--------------------------------------------------------
+Computing STATIC time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                36.773026   33.890009   54.637909    4.429315      1
+
+STATIC time =                           36.773026 microseconds +/- 8.681458
+STATIC overhead =                       15.036857 microseconds +/- 8.686648
+
+--------------------------------------------------------
+Computing STATIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                39.225340   38.352966   42.210102    1.020801      0
+
+STATIC 1 time =                           39.225340 microseconds +/- 2.000770
+STATIC 1 overhead =                       17.489171 microseconds +/- 2.005961
+
+--------------------------------------------------------
+Computing STATIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                38.200307   35.930872   40.875912    1.240447      0
+
+STATIC 2 time =                           38.200307 microseconds +/- 2.431276
+STATIC 2 overhead =                       16.464138 microseconds +/- 2.436466
+
+--------------------------------------------------------
+Computing STATIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                42.742217   34.490824   56.405067    7.879528      0
+
+STATIC 4 time =                           42.742217 microseconds +/- 15.443876
+STATIC 4 overhead =                       21.006048 microseconds +/- 15.449066
+
+--------------------------------------------------------
+Computing STATIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                36.316705   35.025120   38.075924    0.835167      0
+
+STATIC 8 time =                           36.316705 microseconds +/- 1.636927
+STATIC 8 overhead =                       14.580536 microseconds +/- 1.642117
+
+--------------------------------------------------------
+Computing STATIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                36.621857   34.888029   40.849924    1.636473      0
+
+STATIC 16 time =                           36.621857 microseconds +/- 3.207487
+STATIC 16 overhead =                       14.885688 microseconds +/- 3.212677
+
+--------------------------------------------------------
+Computing STATIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                37.559485   34.183025   39.565086    1.319688      0
+
+STATIC 32 time =                           37.559485 microseconds +/- 2.586588
+STATIC 32 overhead =                       15.823317 microseconds +/- 2.591778
+
+--------------------------------------------------------
+Computing STATIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                38.010800   33.681870   59.528828    6.654896      1
+
+STATIC 64 time =                           38.010800 microseconds +/- 13.043596
+STATIC 64 overhead =                       16.274631 microseconds +/- 13.048786
+
+--------------------------------------------------------
+Computing STATIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.750782   34.241915   38.622141    1.275693      0
+
+STATIC 128 time =                           35.750782 microseconds +/- 2.500358
+STATIC 128 overhead =                       14.014614 microseconds +/- 2.505548
+
+--------------------------------------------------------
+Computing STATIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.657954   34.360170   40.054083    1.340435      1
+
+STATIC 256 time =                           35.657954 microseconds +/- 2.627252
+STATIC 256 overhead =                       13.921785 microseconds +/- 2.632442
+
+--------------------------------------------------------
+Computing DYNAMIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                891.552413   851.881027   924.305201    19.563636      0
+
+DYNAMIC 1 time =                           891.552413 microseconds +/- 38.344728
+DYNAMIC 1 overhead =                       869.816244 microseconds +/- 38.349918
+
+--------------------------------------------------------
+Computing DYNAMIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                552.362454   546.874046   565.586805    4.423824      0
+
+DYNAMIC 2 time =                           552.362454 microseconds +/- 8.670696
+DYNAMIC 2 overhead =                       530.626285 microseconds +/- 8.675886
+
+--------------------------------------------------------
+Computing DYNAMIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                358.763921   357.043028   360.680103    1.129168      0
+
+DYNAMIC 4 time =                           358.763921 microseconds +/- 2.213169
+DYNAMIC 4 overhead =                       337.027752 microseconds +/- 2.218359
+
+--------------------------------------------------------
+Computing DYNAMIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                233.122098   226.607084   243.569851    5.524881      0
+
+DYNAMIC 8 time =                           233.122098 microseconds +/- 10.828766
+DYNAMIC 8 overhead =                       211.385930 microseconds +/- 10.833957
+
+--------------------------------------------------------
+Computing DYNAMIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                160.525882   159.065008   163.180113    0.804478      1
+
+DYNAMIC 16 time =                           160.525882 microseconds +/- 1.576777
+DYNAMIC 16 overhead =                       138.789713 microseconds +/- 1.581967
+
+--------------------------------------------------------
+Computing DYNAMIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                94.920993   92.993975   97.718954    1.384030      0
+
+DYNAMIC 32 time =                           94.920993 microseconds +/- 2.712699
+DYNAMIC 32 overhead =                       73.184824 microseconds +/- 2.717889
+
+--------------------------------------------------------
+Computing DYNAMIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                62.925434   60.459852   66.875935    1.352817      0
+
+DYNAMIC 64 time =                           62.925434 microseconds +/- 2.651522
+DYNAMIC 64 overhead =                       41.189265 microseconds +/- 2.656712
+
+--------------------------------------------------------
+Computing DYNAMIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                51.783788   50.944090   53.199053    0.496593      0
+
+DYNAMIC 128 time =                           51.783788 microseconds +/- 0.973323
+DYNAMIC 128 overhead =                       30.047619 microseconds +/- 0.978513
+
+--------------------------------------------------------
+Computing DYNAMIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                49.160111   48.520088   49.772024    0.283956      0
+
+DYNAMIC 256 time =                           49.160111 microseconds +/- 0.556553
+DYNAMIC 256 overhead =                       27.423942 microseconds +/- 0.561744
+
+--------------------------------------------------------
+Computing GUIDED 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                85.607076   84.115982   86.545229    0.666992      0
+
+GUIDED 1 time =                           85.607076 microseconds +/- 1.307305
+GUIDED 1 overhead =                       63.870907 microseconds +/- 1.312495
+
+--------------------------------------------------------
+Computing GUIDED 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                82.073867   80.473900   84.719181    1.291300      0
+
+GUIDED 2 time =                           82.073867 microseconds +/- 2.530949
+GUIDED 2 overhead =                       60.337698 microseconds +/- 2.536139
+
+--------------------------------------------------------
+Computing GUIDED 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                79.883552   78.973055   80.958843    0.599371      0
+
+GUIDED 4 time =                           79.883552 microseconds +/- 1.174767
+GUIDED 4 overhead =                       58.147383 microseconds +/- 1.179957
+
+--------------------------------------------------------
+Computing GUIDED 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                78.161836   75.510025   83.081961    2.096051      0
+
+GUIDED 8 time =                           78.161836 microseconds +/- 4.108261
+GUIDED 8 overhead =                       56.425667 microseconds +/- 4.113451
+
+--------------------------------------------------------
+Computing GUIDED 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                72.831047   71.366072   75.449944    1.069457      0
+
+GUIDED 16 time =                           72.831047 microseconds +/- 2.096136
+GUIDED 16 overhead =                       51.094878 microseconds +/- 2.101327
+
+--------------------------------------------------------
+Computing GUIDED 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                67.823517   66.377878   68.815947    0.784423      0
+
+GUIDED 32 time =                           67.823517 microseconds +/- 1.537469
+GUIDED 32 overhead =                       46.087348 microseconds +/- 1.542659
+
+--------------------------------------------------------
+Computing GUIDED 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                59.562695   58.170080   62.021971    0.860150      0
+
+GUIDED 64 time =                           59.562695 microseconds +/- 1.685895
+GUIDED 64 overhead =                       37.826526 microseconds +/- 1.691085
+
+--------------------------------------------------------
+Computing GUIDED 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                51.818204   50.287008   53.026915    0.693474      0
+
+GUIDED 128 time =                           51.818204 microseconds +/- 1.359209
+GUIDED 128 overhead =                       30.082035 microseconds +/- 1.364400
+Running OpenMP benchmark on 4 thread(s)
+Assumed clock rate = 1500 MHz 
+Delay length = 2
+Delay time  = 130.677223 cycles
+
+--------------------------------------------------------
+Computing reference time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                21.971679   21.734953   22.922993    0.440894      0
+
+Reference_time_1 =                        21.971679 microseconds +/- 0.864151
+
+--------------------------------------------------------
+Computing STATIC time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                47.770119   38.029909   51.399946    3.283745      0
+
+STATIC time =                           47.770119 microseconds +/- 6.436140
+STATIC overhead =                       25.798440 microseconds +/- 7.300291
+
+--------------------------------------------------------
+Computing STATIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                56.260490   49.873114   73.716879    6.993780      0
+
+STATIC 1 time =                           56.260490 microseconds +/- 13.707808
+STATIC 1 overhead =                       34.288812 microseconds +/- 14.571960
+
+--------------------------------------------------------
+Computing STATIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                53.019166   45.089960   58.699846    3.622866      0
+
+STATIC 2 time =                           53.019166 microseconds +/- 7.100818
+STATIC 2 overhead =                       31.047487 microseconds +/- 7.964970
+
+--------------------------------------------------------
+Computing STATIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                49.669492   41.373014   53.881168    3.544289      0
+
+STATIC 4 time =                           49.669492 microseconds +/- 6.946806
+STATIC 4 overhead =                       27.697814 microseconds +/- 7.810957
+
+--------------------------------------------------------
+Computing STATIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                50.093508   44.090986   55.909872    2.919989      0
+
+STATIC 8 time =                           50.093508 microseconds +/- 5.723179
+STATIC 8 overhead =                       28.121829 microseconds +/- 6.587330
+
+--------------------------------------------------------
+Computing STATIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                50.886154   38.736105   80.025196    8.173271      1
+
+STATIC 16 time =                           50.886154 microseconds +/- 16.019612
+STATIC 16 overhead =                       28.914475 microseconds +/- 16.883764
+
+--------------------------------------------------------
+Computing STATIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                46.862864   35.269976   81.243992    13.232436      0
+
+STATIC 32 time =                           46.862864 microseconds +/- 25.935575
+STATIC 32 overhead =                       24.891186 microseconds +/- 26.799727
+
+--------------------------------------------------------
+Computing STATIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                39.864683   33.077002   49.420118    5.532098      0
+
+STATIC 64 time =                           39.864683 microseconds +/- 10.842912
+STATIC 64 overhead =                       17.893004 microseconds +/- 11.707063
+
+--------------------------------------------------------
+Computing STATIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                37.633967   34.008026   45.293093    2.917538      0
+
+STATIC 128 time =                           37.633967 microseconds +/- 5.718374
+STATIC 128 overhead =                       15.662289 microseconds +/- 6.582526
+
+--------------------------------------------------------
+Computing STATIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                34.408462   33.694029   35.090923    0.391530      0
+
+STATIC 256 time =                           34.408462 microseconds +/- 0.767398
+STATIC 256 overhead =                       12.436783 microseconds +/- 1.631550
+
+--------------------------------------------------------
+Computing DYNAMIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                870.365524   841.969967   890.930891    8.434107      1
+
+DYNAMIC 1 time =                           870.365524 microseconds +/- 16.530849
+DYNAMIC 1 overhead =                       848.393846 microseconds +/- 17.395001
+
+--------------------------------------------------------
+Computing DYNAMIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                561.692333   552.645922   567.360163    4.988097      0
+
+DYNAMIC 2 time =                           561.692333 microseconds +/- 9.776671
+DYNAMIC 2 overhead =                       539.720654 microseconds +/- 10.640822
+
+--------------------------------------------------------
+Computing DYNAMIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                347.644567   340.658903   351.814985    2.805827      0
+
+DYNAMIC 4 time =                           347.644567 microseconds +/- 5.499420
+DYNAMIC 4 overhead =                       325.672889 microseconds +/- 6.363572
+
+--------------------------------------------------------
+Computing DYNAMIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                230.031574   228.977919   232.825994    0.825102      1
+
+DYNAMIC 8 time =                           230.031574 microseconds +/- 1.617201
+DYNAMIC 8 overhead =                       208.059895 microseconds +/- 2.481352
+
+--------------------------------------------------------
+Computing DYNAMIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                165.325093   163.735151   166.676998    0.638991      0
+
+DYNAMIC 16 time =                           165.325093 microseconds +/- 1.252421
+DYNAMIC 16 overhead =                       143.353415 microseconds +/- 2.116573
+
+--------------------------------------------------------
+Computing DYNAMIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                96.722615   94.285965   117.403030    4.981927      1
+
+DYNAMIC 32 time =                           96.722615 microseconds +/- 9.764577
+DYNAMIC 32 overhead =                       74.750936 microseconds +/- 10.628729
+
+--------------------------------------------------------
+Computing DYNAMIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                64.904761   64.172983   66.300869    0.535963      0
+
+DYNAMIC 64 time =                           64.904761 microseconds +/- 1.050488
+DYNAMIC 64 overhead =                       42.933083 microseconds +/- 1.914640
+
+--------------------------------------------------------
+Computing DYNAMIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                52.178621   51.601887   53.525925    0.479109      0
+
+DYNAMIC 128 time =                           52.178621 microseconds +/- 0.939053
+DYNAMIC 128 overhead =                       30.206943 microseconds +/- 1.803204
+
+--------------------------------------------------------
+Computing DYNAMIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                49.173164   48.362017   50.652981    0.493459      0
+
+DYNAMIC 256 time =                           49.173164 microseconds +/- 0.967179
+DYNAMIC 256 overhead =                       27.201486 microseconds +/- 1.831330
+
+--------------------------------------------------------
+Computing GUIDED 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                90.955138   86.078882   121.867180    9.569622      1
+
+GUIDED 1 time =                           90.955138 microseconds +/- 18.756459
+GUIDED 1 overhead =                       68.983459 microseconds +/- 19.620611
+
+--------------------------------------------------------
+Computing GUIDED 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                84.293997   82.786083   89.254856    1.685055      0
+
+GUIDED 2 time =                           84.293997 microseconds +/- 3.302707
+GUIDED 2 overhead =                       62.322319 microseconds +/- 4.166859
+
+--------------------------------------------------------
+Computing GUIDED 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                81.295002   80.446005   82.830906    0.531786      0
+
+GUIDED 4 time =                           81.295002 microseconds +/- 1.042301
+GUIDED 4 overhead =                       59.323323 microseconds +/- 1.906452
+
+--------------------------------------------------------
+Computing GUIDED 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                78.506696   77.673912   79.639912    0.556172      0
+
+GUIDED 8 time =                           78.506696 microseconds +/- 1.090097
+GUIDED 8 overhead =                       56.535017 microseconds +/- 1.954248
+
+--------------------------------------------------------
+Computing GUIDED 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                74.370325   73.518038   75.397968    0.489584      0
+
+GUIDED 16 time =                           74.370325 microseconds +/- 0.959584
+GUIDED 16 overhead =                       52.398646 microseconds +/- 1.823735
+
+--------------------------------------------------------
+Computing GUIDED 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                70.297015   69.278002   73.916912    1.568821      0
+
+GUIDED 32 time =                           70.297015 microseconds +/- 3.074889
+GUIDED 32 overhead =                       48.325336 microseconds +/- 3.939041
+
+--------------------------------------------------------
+Computing GUIDED 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                61.445844   60.060978   65.572023    1.768707      0
+
+GUIDED 64 time =                           61.445844 microseconds +/- 3.466665
+GUIDED 64 overhead =                       39.474165 microseconds +/- 4.330816
+
+--------------------------------------------------------
+Computing GUIDED 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                52.479303   51.671028   54.232121    0.562294      1
+
+GUIDED 128 time =                           52.479303 microseconds +/- 1.102096
+GUIDED 128 overhead =                       30.507624 microseconds +/- 1.966247
+Running OpenMP benchmark on 4 thread(s)
+Assumed clock rate = 1500 MHz 
+Delay length = 2
+Delay time  = 128.996372 cycles
+
+--------------------------------------------------------
+Computing reference time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                21.766508   21.723986   21.953821    0.065190      0
+
+Reference_time_1 =                        21.766508 microseconds +/- 0.127772
+
+--------------------------------------------------------
+Computing STATIC time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                34.704089   34.097195   36.839962    0.574391      1
+
+STATIC time =                           34.704089 microseconds +/- 1.125806
+STATIC overhead =                       12.937582 microseconds +/- 1.253578
+
+--------------------------------------------------------
+Computing STATIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                38.801193   38.022041   39.582968    0.481874      0
+
+STATIC 1 time =                           38.801193 microseconds +/- 0.944473
+STATIC 1 overhead =                       17.034686 microseconds +/- 1.072245
+
+--------------------------------------------------------
+Computing STATIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                37.108696   36.078930   38.763046    0.576418      0
+
+STATIC 2 time =                           37.108696 microseconds +/- 1.129778
+STATIC 2 overhead =                       15.342188 microseconds +/- 1.257551
+
+--------------------------------------------------------
+Computing STATIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.933805   35.388947   36.837101    0.370527      0
+
+STATIC 4 time =                           35.933805 microseconds +/- 0.726232
+STATIC 4 overhead =                       14.167297 microseconds +/- 0.854004
+
+--------------------------------------------------------
+Computing STATIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.735166   35.259008   36.460876    0.278737      0
+
+STATIC 8 time =                           35.735166 microseconds +/- 0.546325
+STATIC 8 overhead =                       13.968658 microseconds +/- 0.674097
+
+--------------------------------------------------------
+Computing STATIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.352993   34.886122   36.215067    0.371217      0
+
+STATIC 16 time =                           35.352993 microseconds +/- 0.727584
+STATIC 16 overhead =                       13.586485 microseconds +/- 0.855357
+
+--------------------------------------------------------
+Computing STATIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                36.934400   34.474134   40.215015    2.032534      0
+
+STATIC 32 time =                           36.934400 microseconds +/- 3.983767
+STATIC 32 overhead =                       15.167892 microseconds +/- 4.111539
+
+--------------------------------------------------------
+Computing STATIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.007250   34.525871   35.503864    0.275211      0
+
+STATIC 64 time =                           35.007250 microseconds +/- 0.539413
+STATIC 64 overhead =                       13.240743 microseconds +/- 0.667185
+
+--------------------------------------------------------
+Computing STATIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                34.951472   34.448147   35.542011    0.309156      0
+
+STATIC 128 time =                           34.951472 microseconds +/- 0.605946
+STATIC 128 overhead =                       13.184965 microseconds +/- 0.733718
+
+--------------------------------------------------------
+Computing STATIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.820067   34.816980   38.784027    1.106253      0
+
+STATIC 256 time =                           35.820067 microseconds +/- 2.168256
+STATIC 256 overhead =                       14.053559 microseconds +/- 2.296029
+
+--------------------------------------------------------
+Computing DYNAMIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                855.733490   827.968836   901.608944    16.148600      0
+
+DYNAMIC 1 time =                           855.733490 microseconds +/- 31.651255
+DYNAMIC 1 overhead =                       833.966982 microseconds +/- 31.779027
+
+--------------------------------------------------------
+Computing DYNAMIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                474.373603   448.742867   520.225048    22.605062      0
+
+DYNAMIC 2 time =                           474.373603 microseconds +/- 44.305921
+DYNAMIC 2 overhead =                       452.607095 microseconds +/- 44.433694
+
+--------------------------------------------------------
+Computing DYNAMIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                283.807075   274.984837   302.078962    5.597258      1
+
+DYNAMIC 4 time =                           283.807075 microseconds +/- 10.970626
+DYNAMIC 4 overhead =                       262.040567 microseconds +/- 11.098398
+
+--------------------------------------------------------
+Computing DYNAMIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                237.807083   234.579086   246.667862    2.332642      1
+
+DYNAMIC 8 time =                           237.807083 microseconds +/- 4.571979
+DYNAMIC 8 overhead =                       216.040576 microseconds +/- 4.699751
+
+--------------------------------------------------------
+Computing DYNAMIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                170.322359   168.746948   177.414894    1.854109      1
+
+DYNAMIC 16 time =                           170.322359 microseconds +/- 3.634053
+DYNAMIC 16 overhead =                       148.555851 microseconds +/- 3.761826
+
+--------------------------------------------------------
+Computing DYNAMIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                106.575549   104.604959   107.963085    0.895112      0
+
+DYNAMIC 32 time =                           106.575549 microseconds +/- 1.754420
+DYNAMIC 32 overhead =                       84.809041 microseconds +/- 1.882192
+
+--------------------------------------------------------
+Computing DYNAMIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                66.986215   65.804005   68.271875    0.655729      0
+
+DYNAMIC 64 time =                           66.986215 microseconds +/- 1.285229
+DYNAMIC 64 overhead =                       45.219707 microseconds +/- 1.413001
+
+--------------------------------------------------------
+Computing DYNAMIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                54.822028   53.580999   61.245918    1.653007      1
+
+DYNAMIC 128 time =                           54.822028 microseconds +/- 3.239893
+DYNAMIC 128 overhead =                       33.055520 microseconds +/- 3.367665
+
+--------------------------------------------------------
+Computing DYNAMIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                50.735593   49.786091   52.813053    0.783695      0
+
+DYNAMIC 256 time =                           50.735593 microseconds +/- 1.536042
+DYNAMIC 256 overhead =                       28.969085 microseconds +/- 1.663814
+
+--------------------------------------------------------
+Computing GUIDED 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                88.877535   87.157011   95.788002    1.813118      1
+
+GUIDED 1 time =                           88.877535 microseconds +/- 3.553712
+GUIDED 1 overhead =                       67.111027 microseconds +/- 3.681484
+
+--------------------------------------------------------
+Computing GUIDED 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                85.416090   83.588123   93.216896    1.997633      1
+
+GUIDED 2 time =                           85.416090 microseconds +/- 3.915360
+GUIDED 2 overhead =                       63.649583 microseconds +/- 4.043133
+
+--------------------------------------------------------
+Computing GUIDED 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                92.566967   81.277847   138.044119    19.522261      0
+
+GUIDED 4 time =                           92.566967 microseconds +/- 38.263631
+GUIDED 4 overhead =                       70.800459 microseconds +/- 38.391403
+
+--------------------------------------------------------
+Computing GUIDED 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                79.942214   78.818083   81.171989    0.649520      0
+
+GUIDED 8 time =                           79.942214 microseconds +/- 1.273059
+GUIDED 8 overhead =                       58.175707 microseconds +/- 1.400831
+
+--------------------------------------------------------
+Computing GUIDED 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                76.790369   75.083971   83.983183    1.929096      1
+
+GUIDED 16 time =                           76.790369 microseconds +/- 3.781028
+GUIDED 16 overhead =                       55.023861 microseconds +/- 3.908801
+
+--------------------------------------------------------
+Computing GUIDED 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                70.920181   69.859028   75.527191    1.247320      1
+
+GUIDED 32 time =                           70.920181 microseconds +/- 2.444747
+GUIDED 32 overhead =                       49.153674 microseconds +/- 2.572519
+
+--------------------------------------------------------
+Computing GUIDED 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                61.280882   60.159922   64.267874    0.837639      1
+
+GUIDED 64 time =                           61.280882 microseconds +/- 1.641773
+GUIDED 64 overhead =                       39.514375 microseconds +/- 1.769546
+
+--------------------------------------------------------
+Computing GUIDED 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                53.145564   52.368879   54.306030    0.560532      0
+
+GUIDED 128 time =                           53.145564 microseconds +/- 1.098642
+GUIDED 128 overhead =                       31.379056 microseconds +/- 1.226414
+Running OpenMP benchmark on 4 thread(s)
+Assumed clock rate = 1500 MHz 
+Delay length = 2
+Delay time  = 136.971474 cycles
+
+--------------------------------------------------------
+Computing reference time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                22.788751   21.901131   24.681807    1.084721      0
+
+Reference_time_1 =                        22.788751 microseconds +/- 2.126054
+
+--------------------------------------------------------
+Computing STATIC time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.420787   33.935070   37.274122    1.169315      0
+
+STATIC time =                           35.420787 microseconds +/- 2.291858
+STATIC overhead =                       12.632036 microseconds +/- 4.417911
+
+--------------------------------------------------------
+Computing STATIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                39.212811   37.758112   40.678978    1.149443      0
+
+STATIC 1 time =                           39.212811 microseconds +/- 2.252908
+STATIC 1 overhead =                       16.424060 microseconds +/- 4.378962
+
+--------------------------------------------------------
+Computing STATIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                37.636268   35.856962   40.313959    1.394652      0
+
+STATIC 2 time =                           37.636268 microseconds +/- 2.733517
+STATIC 2 overhead =                       14.847517 microseconds +/- 4.859571
+
+--------------------------------------------------------
+Computing STATIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                36.273110   34.785032   38.122892    1.270769      0
+
+STATIC 4 time =                           36.273110 microseconds +/- 2.490707
+STATIC 4 overhead =                       13.484359 microseconds +/- 4.616761
+
+--------------------------------------------------------
+Computing STATIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                36.092520   34.501076   38.309097    1.312104      0
+
+STATIC 8 time =                           36.092520 microseconds +/- 2.571724
+STATIC 8 overhead =                       13.303769 microseconds +/- 4.697778
+
+--------------------------------------------------------
+Computing STATIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.697305   34.074068   37.538052    1.196070      0
+
+STATIC 16 time =                           35.697305 microseconds +/- 2.344296
+STATIC 16 overhead =                       12.908554 microseconds +/- 4.470350
+
+--------------------------------------------------------
+Computing STATIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.652900   34.245014   37.032843    1.069202      0
+
+STATIC 32 time =                           35.652900 microseconds +/- 2.095636
+STATIC 32 overhead =                       12.864149 microseconds +/- 4.221690
+
+--------------------------------------------------------
+Computing STATIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                42.730999   33.885002   51.547050    6.352293      0
+
+STATIC 64 time =                           42.730999 microseconds +/- 12.450495
+STATIC 64 overhead =                       19.942248 microseconds +/- 14.576549
+
+--------------------------------------------------------
+Computing STATIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.189843   33.933878   36.966085    1.072684      0
+
+STATIC 128 time =                           35.189843 microseconds +/- 2.102462
+STATIC 128 overhead =                       12.401092 microseconds +/- 4.228515
+
+--------------------------------------------------------
+Computing STATIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                35.272300   33.842802   37.010908    1.061998      0
+
+STATIC 256 time =                           35.272300 microseconds +/- 2.081516
+STATIC 256 overhead =                       12.483549 microseconds +/- 4.207570
+
+--------------------------------------------------------
+Computing DYNAMIC 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                917.927754   915.121078   930.643797    3.400236      1
+
+DYNAMIC 1 time =                           917.927754 microseconds +/- 6.664462
+DYNAMIC 1 overhead =                       895.139003 microseconds +/- 8.790516
+
+--------------------------------------------------------
+Computing DYNAMIC 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                563.149714   528.042078   568.801880    9.752318      1
+
+DYNAMIC 2 time =                           563.149714 microseconds +/- 19.114543
+DYNAMIC 2 overhead =                       540.360963 microseconds +/- 21.240597
+
+--------------------------------------------------------
+Computing DYNAMIC 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                367.668533   363.080978   378.498793    3.365619      1
+
+DYNAMIC 4 time =                           367.668533 microseconds +/- 6.596613
+DYNAMIC 4 overhead =                       344.879782 microseconds +/- 8.722667
+
+--------------------------------------------------------
+Computing DYNAMIC 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                224.374330   219.273806   228.693962    2.181857      0
+
+DYNAMIC 8 time =                           224.374330 microseconds +/- 4.276440
+DYNAMIC 8 overhead =                       201.585579 microseconds +/- 6.402494
+
+--------------------------------------------------------
+Computing DYNAMIC 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                166.826952   164.585829   169.300079    1.264101      0
+
+DYNAMIC 16 time =                           166.826952 microseconds +/- 2.477638
+DYNAMIC 16 overhead =                       144.038200 microseconds +/- 4.603692
+
+--------------------------------------------------------
+Computing DYNAMIC 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                97.308040   95.637083   99.849939    1.256748      0
+
+DYNAMIC 32 time =                           97.308040 microseconds +/- 2.463226
+DYNAMIC 32 overhead =                       74.519289 microseconds +/- 4.589280
+
+--------------------------------------------------------
+Computing DYNAMIC 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                65.466070   62.660933   67.778111    1.307702      0
+
+DYNAMIC 64 time =                           65.466070 microseconds +/- 2.563095
+DYNAMIC 64 overhead =                       42.677319 microseconds +/- 4.689149
+
+--------------------------------------------------------
+Computing DYNAMIC 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                53.112638   50.976038   55.209160    1.288967      0
+
+DYNAMIC 128 time =                           53.112638 microseconds +/- 2.526375
+DYNAMIC 128 overhead =                       30.323887 microseconds +/- 4.652429
+
+--------------------------------------------------------
+Computing DYNAMIC 256 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                49.759674   47.541142   51.465034    1.267410      0
+
+DYNAMIC 256 time =                           49.759674 microseconds +/- 2.484123
+DYNAMIC 256 overhead =                       26.970923 microseconds +/- 4.610177
+
+--------------------------------------------------------
+Computing GUIDED 1 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                87.244725   84.489107   89.807034    1.168202      0
+
+GUIDED 1 time =                           87.244725 microseconds +/- 2.289675
+GUIDED 1 overhead =                       64.455974 microseconds +/- 4.415729
+
+--------------------------------------------------------
+Computing GUIDED 2 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                84.281588   81.477880   88.071823    1.664106      0
+
+GUIDED 2 time =                           84.281588 microseconds +/- 3.261647
+GUIDED 2 overhead =                       61.492836 microseconds +/- 5.387701
+
+--------------------------------------------------------
+Computing GUIDED 4 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                81.212783   78.691959   84.496021    1.573126      0
+
+GUIDED 4 time =                           81.212783 microseconds +/- 3.083326
+GUIDED 4 overhead =                       58.424032 microseconds +/- 5.209380
+
+--------------------------------------------------------
+Computing GUIDED 8 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                78.733099   76.395988   80.274105    1.133770      0
+
+GUIDED 8 time =                           78.733099 microseconds +/- 2.222190
+GUIDED 8 overhead =                       55.944347 microseconds +/- 4.348244
+
+--------------------------------------------------------
+Computing GUIDED 16 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                83.494389   72.738886   125.340223    18.518175      0
+
+GUIDED 16 time =                           83.494389 microseconds +/- 36.295623
+GUIDED 16 overhead =                       60.705638 microseconds +/- 38.421677
+
+--------------------------------------------------------
+Computing GUIDED 32 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                69.808805   67.557096   70.759773    1.076921      0
+
+GUIDED 32 time =                           69.808805 microseconds +/- 2.110764
+GUIDED 32 overhead =                       47.020054 microseconds +/- 4.236818
+
+--------------------------------------------------------
+Computing GUIDED 64 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                60.755801   58.547020   62.862873    1.215267      0
+
+GUIDED 64 time =                           60.755801 microseconds +/- 2.381922
+GUIDED 64 overhead =                       37.967050 microseconds +/- 4.507976
+
+--------------------------------------------------------
+Computing GUIDED 128 time
+
+Sample_size       Average     Min         Max          S.D.          Outliers
+ 20                52.805662   50.189018   55.189848    1.609578      0
+
+GUIDED 128 time =                           52.805662 microseconds +/- 3.154773
+GUIDED 128 overhead =                       30.016911 microseconds +/- 5.280827
