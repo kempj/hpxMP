@@ -167,25 +167,25 @@ void hpx_runtime::create_task(omp_task_func taskfunc, void *frame_pointer,
     auto *data = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     int current_tid = data->thread_num;
-    data->task_handles.push_back(hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
+    data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
 }
 
 void hpx_runtime::task_wait() {
     auto *data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    hpx::wait(data->task_handles);
+    hpx::wait_all(data->task_handles);
     data->task_handles.clear();
 }
 
 void ompc_fork_worker( int Nthreads, omp_task_func task_func, 
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
-    vector<hpx::lcos::future<void>> threads;
+    vector<hpx::lcos::unique_future<void>> threads;
     threads.reserve(Nthreads);
     for(int i = 0; i < Nthreads; i++) {
         threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));
     }
-    hpx::lcos::wait(threads);
+    hpx::wait_all(threads);
     // Let the main thread know that we're done.
     {
         boost::mutex::scoped_lock lk(mtx);
