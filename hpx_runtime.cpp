@@ -85,11 +85,13 @@ void fini_runtime() {
       , "fini_runtime_worker");
 }
 
-void hpx_runtime::init(int Nthreads) {
+//void hpx_runtime::init(int Nthreads) {
+hpx_runtime::hpx_runtime(int Nthreads) {
     mutex_type::scoped_lock l(init_mtx);
 
-    if (hpx_initialized)
-        return;
+//    if (hpx_initialized)
+//        return;
+
     if(Nthreads > 0)
         num_threads = Nthreads;
     else
@@ -177,7 +179,7 @@ void hpx_runtime::task_wait() {
     data->task_handles.clear();
 }
 
-void ompc_fork_worker( int Nthreads, omp_task_func task_func, 
+void ompc_fork_worker( int Nthreads, omp_task_func task_func,
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
     vector<hpx::lcos::unique_future<void>> threads;
@@ -186,7 +188,7 @@ void ompc_fork_worker( int Nthreads, omp_task_func task_func,
         threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));
     }
     hpx::wait_all(threads);
-    // Let the main thread know that we're done.
+     //Let the main thread know that we're done.
     {
         boost::mutex::scoped_lock lk(mtx);
         running = true;
@@ -210,4 +212,3 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
             cond.wait(lk);
     }
 }
-

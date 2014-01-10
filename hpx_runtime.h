@@ -44,7 +44,7 @@ struct thread_data {
 
 class hpx_runtime {
     public:
-        void init(int num_threads);
+        hpx_runtime(int num_threads);
         void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
         int get_thread_num();
         int get_num_threads();
