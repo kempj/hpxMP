@@ -10,9 +10,10 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <memory>
 
 using namespace std;
-hpx_runtime *hpx_backend = 0;
+unique_ptr<hpx_runtime> hpx_backend;
 
 bool started = false;
 int single_counter = 0;
@@ -35,8 +36,8 @@ void omp_thread_func(void *firstprivates, void *fp) {
 }
 
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
-    if(hpx_backend == 0)
-        hpx_backend = new hpx_runtime(Nthreads);
+    if(!hpx_backend)
+        hpx_backend = unique_ptr<hpx_runtime>(new hpx_runtime(Nthreads));
     if(single_mtx_id == -1) 
         single_mtx_id = hpx_backend->new_mtx();
     if(Nthreads <= 0)

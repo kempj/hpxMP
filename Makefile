@@ -1,19 +1,30 @@
+CC=g++-4.8
 all: libopenmp.so.1
 	
+
+debug: hpxMPd.o hpx_runtimed.o
+	$(CC) -g -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMPd.o hpx_runtimed.o `pkg-config --cflags --libs hpx_application_debug`
+
 hpxMPopt.o: hpxMP.cpp hpxMP.h
-	g++ -g -O3 -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
+	$(CC) -g -O3 -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
+
+hpx_runtimed.o: hpx_runtime.cpp
+	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtimed.o `pkg-config --cflags --libs hpx_application_debug`
+
+hpxMPd.o: hpxMP.cpp hpxMP.h
+	$(CC) -g -fPIC -c hpxMP.cpp -o hpxMPd.o `pkg-config --cflags --libs hpx_application_debug`
 
 opt: hpxMPopt.o
-	g++ -O3 -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMP.o `pkg-config --cflags --libs hpx_application`
+	$(CC) -O3 -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMP.o `pkg-config --cflags --libs hpx_application`
 
 libopenmp.so.1: hpxMP.o hpx_runtime.o
-	g++ -g -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMP.o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
+	$(CC) -g -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMP.o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
 
 hpx_runtime.o: hpx_runtime.cpp
-	g++ -g -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
+	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
 
 hpxMP.o: hpxMP.cpp hpxMP.h
-	g++ -g -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
+	$(CC) -g -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
 
 clean:
 	rm -rf *.o

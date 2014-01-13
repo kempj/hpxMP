@@ -13,11 +13,6 @@ double hpx_runtime::get_time() {
 int hpx_runtime::get_num_threads() {
     return num_threads;
 }
-/*
-bool hpx_runtime::run_mtx(void*(*work_function)(int tid), int lock_id) {
-    mutex_type::scoped_lock l(lock_list[lock_id]);
-    return work_function(get_thread_num());
-}*/
 
 bool hpx_runtime::trylock(int lock_id){
     return lock_map[lock_id].try_lock();
@@ -38,7 +33,6 @@ int hpx_runtime::new_mtx(){
     return lock_list.size() - 1;*/
     lock_map[lock_map.size()];
     return lock_map.size() -1;
-
 }
 
 void hpx_runtime::barrier_wait(){
@@ -51,7 +45,6 @@ int hpx_runtime::get_thread_num() {
                     hpx::threads::get_thread_data(thread_id) );
     return data->thread_num;
 }
-
 int hpx_main() {
     assert(false);
     return 1;
@@ -85,12 +78,15 @@ void fini_runtime() {
       , "fini_runtime_worker");
 }
 
+hpx_runtime::~hpx_runtime(){
+    delete globalBarrier;
+    hpx::stop();
+}
+
 //void hpx_runtime::init(int Nthreads) {
+
 hpx_runtime::hpx_runtime(int Nthreads) {
     mutex_type::scoped_lock l(init_mtx);
-
-//    if (hpx_initialized)
-//        return;
 
     if(Nthreads > 0)
         num_threads = Nthreads;
@@ -150,9 +146,8 @@ hpx_runtime::hpx_runtime(int Nthreads) {
         if (!running)
             cond.wait(lk);
     }
-    atexit(fini_runtime);
+//    atexit(fini_runtime);
     delete[] argv;
-    hpx_initialized = true;
 }
 
 void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
