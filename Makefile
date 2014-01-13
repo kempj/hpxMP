@@ -5,14 +5,14 @@ all: libopenmp.so.1
 debug: hpxMPd.o hpx_runtimed.o
 	$(CC) -g -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMPd.o hpx_runtimed.o `pkg-config --cflags --libs hpx_application_debug`
 
-hpxMPopt.o: hpxMP.cpp hpxMP.h
-	$(CC) -g -O3 -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
-
 hpx_runtimed.o: hpx_runtime.cpp
 	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtimed.o `pkg-config --cflags --libs hpx_application_debug`
 
 hpxMPd.o: hpxMP.cpp hpxMP.h
 	$(CC) -g -fPIC -c hpxMP.cpp -o hpxMPd.o `pkg-config --cflags --libs hpx_application_debug`
+
+hpxMPopt.o: hpxMP.cpp hpxMP.h
+	$(CC) -g -O3 -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs hpx_application`
 
 opt: hpxMPopt.o
 	$(CC) -O3 -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMP.o `pkg-config --cflags --libs hpx_application`

@@ -44,8 +44,7 @@ struct thread_data {
 
 class hpx_runtime {
     public:
-        hpx_runtime(int num_threads);
-        ~hpx_runtime();
+        void init(int Nthreads);
         void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
         int get_thread_num();
         int get_num_threads();
@@ -59,15 +58,16 @@ class hpx_runtime {
                          int is_tied, int blocks_parent);
         void task_wait();
         double get_time();
+        void delete_hpx_objects();
         
     private:
 //        bool hpx_initialized = false;
 //        mutex_type single_mtx;
-        mutex_type init_mtx;
+//        mutex_type *init_mtx;
         barrier *globalBarrier;
         int num_threads;
         //vector<mutex_type*> lock_list;
         map<int, mutex_type> lock_map;
-        high_resolution_timer walltime;
+        high_resolution_timer *walltime;
 };
 

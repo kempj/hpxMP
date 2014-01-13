@@ -7,7 +7,7 @@
 #include "hpx_runtime.h"
 
 double hpx_runtime::get_time() {
-    return walltime.now();
+    return walltime->now();
 
 }
 int hpx_runtime::get_num_threads() {
@@ -28,9 +28,6 @@ void hpx_runtime::unlock(int lock_id) {
 }
 
 int hpx_runtime::new_mtx(){
-/*    mutex_type *new_mutex = new mutex_type;
-    lock_list.push_back(new_mutex);
-    return lock_list.size() - 1;*/
     lock_map[lock_map.size()];
     return lock_map.size() -1;
 }
@@ -62,8 +59,10 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 
 void fini_runtime_worker(boost::mutex& mtx,
         boost::condition& cond, bool& running) {
+
     hpx::stop();
 }
+
 
 void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
@@ -73,27 +72,35 @@ void fini_runtime() {
     bool running = false;
 
     hpx::applier::register_thread_nullary(
-        HPX_STD_BIND(&fini_runtime_worker, 
+        HPX_STD_BIND(fini_runtime_worker, 
             boost::ref(mtx), boost::ref(cond), boost::ref(running))
       , "fini_runtime_worker");
 }
 
-hpx_runtime::~hpx_runtime(){
+/*hpx_runtime::~hpx_runtime(){
     delete globalBarrier;
     hpx::stop();
+}*/
+void delete_globals(hpx_runtime RT) {
+    RT.delete_hpx_objects();
+}
+void hpx_runtime::delete_hpx_objects() {
+    delete walltime;
+    delete globalBarrier;
 }
 
-//void hpx_runtime::init(int Nthreads) {
-
-hpx_runtime::hpx_runtime(int Nthreads) {
-    mutex_type::scoped_lock l(init_mtx);
+//hpx_runtime::hpx_runtime(int Nthreads) {
+void hpx_runtime::init(int Nthreads) {
+    //mutex_type::scoped_lock l(init_mtx);
 
     if(Nthreads > 0)
         num_threads = Nthreads;
     else
         num_threads = hpx::threads::hardware_concurrency();
-
+        
+    walltime = new high_resolution_timer;
     globalBarrier = new barrier(num_threads);
+
     cout << "Starting HPX OpenMP runtime" << endl; 
 
     using namespace boost::assign;
@@ -146,7 +153,8 @@ hpx_runtime::hpx_runtime(int Nthreads) {
         if (!running)
             cond.wait(lk);
     }
-//    atexit(fini_runtime);
+    hpx::register_shutdown_function(HPX_STD_BIND(&delete_hpx_objects));
+    atexit(fini_runtime);
     delete[] argv;
 }
 
