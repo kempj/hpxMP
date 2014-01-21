@@ -42,6 +42,7 @@ int hpx_runtime::get_thread_num() {
                     hpx::threads::get_thread_data(thread_id) );
     return data->thread_num;
 }
+
 int hpx_main() {
     assert(false);
     return 1;
@@ -77,19 +78,11 @@ void fini_runtime() {
       , "fini_runtime_worker");
 }
 
-/*hpx_runtime::~hpx_runtime(){
-    delete globalBarrier;
-    hpx::stop();
-}*/
-void delete_globals(hpx_runtime RT) {
-    RT.delete_hpx_objects();
-}
 void hpx_runtime::delete_hpx_objects() {
     delete walltime;
     delete globalBarrier;
 }
 
-//hpx_runtime::hpx_runtime(int Nthreads) {
 void hpx_runtime::init(int Nthreads) {
     //mutex_type::scoped_lock l(init_mtx);
 
@@ -153,7 +146,7 @@ void hpx_runtime::init(int Nthreads) {
         if (!running)
             cond.wait(lk);
     }
-    hpx::register_shutdown_function(HPX_STD_BIND(&delete_hpx_objects));
+    hpx::register_shutdown_function(HPX_STD_BIND(&hpx_runtime::delete_hpx_objects, this));
     atexit(fini_runtime);
     delete[] argv;
 }
