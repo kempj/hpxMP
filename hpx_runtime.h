@@ -30,7 +30,7 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 typedef hpx::lcos::local::spinlock mutex_type;
 
 using hpx::lcos::local::barrier;
-using hpx::lcos::unique_future;
+using hpx::lcos::shared_future;
 using std::cout;
 using std::endl;
 using std::vector;
@@ -39,12 +39,13 @@ using hpx::util::high_resolution_timer;
 
 struct thread_data {
     int thread_num;
-    vector<unique_future<void>> task_handles;
+    vector<shared_future<void>> task_handles;
 };
 
 class hpx_runtime {
     public:
-        void init(int Nthreads);
+//        void init(int Nthreads);
+        hpx_runtime(int Nthreads);        
         void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
         int get_thread_num();
         int get_num_threads();
@@ -61,13 +62,9 @@ class hpx_runtime {
         void delete_hpx_objects();
         
     private:
-//        bool hpx_initialized = false;
-//        mutex_type single_mtx;
-//        mutex_type *init_mtx;
-        barrier *globalBarrier;
+        boost::shared_ptr<barrier> globalBarrier;
         int num_threads;
-        //vector<mutex_type*> lock_list;
         map<int, mutex_type> lock_map;
-        high_resolution_timer *walltime;
+        boost::shared_ptr<high_resolution_timer> walltime;
 };
 

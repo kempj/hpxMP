@@ -6,6 +6,8 @@
 
 #include "hpx_runtime.h"
 
+extern boost::shared_ptr<hpx_runtime> hpx_backend;
+
 double hpx_runtime::get_time() {
     return walltime->now();
 
@@ -58,12 +60,22 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     }
 }
 
-void fini_runtime_worker(boost::mutex& mtx,
-        boost::condition& cond, bool& running) {
-
+void fini_runtime_worker(boost::mutex* mtx,
+        boost::condition* cond, bool* running) {
+    
+    //hpx_backend.reset();
+    cout << "about to stop" << endl;
     hpx::stop();
-}
+    cout << "stopped" << endl;
 
+    /*
+    {
+        boost::mutex::scoped_lock lk(*mtx);
+        *running = true;
+        cond->notify_all();
+    }
+    */
+}
 
 void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
@@ -74,27 +86,36 @@ void fini_runtime() {
 
     hpx::applier::register_thread_nullary(
         HPX_STD_BIND(fini_runtime_worker, 
-            boost::ref(mtx), boost::ref(cond), boost::ref(running))
+            &mtx, &cond, &running)
       , "fini_runtime_worker");
-}
+    cout << "HPX is down" << endl;
 
+ /*
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        cout << "entered fini_runtime() critical section" << endl;
+        if(!running)
+            cond.wait(lk);
+    }
+*/
+}
+/*
 void hpx_runtime::delete_hpx_objects() {
     delete walltime;
     delete globalBarrier;
 }
-
-void hpx_runtime::init(int Nthreads) {
-    //mutex_type::scoped_lock l(init_mtx);
+*/
+//void hpx_runtime::init(int Nthreads) {
+hpx_runtime::hpx_runtime(int Nthreads) {
+//    mutex_type::scoped_lock l(init_mtx);
 
     if(Nthreads > 0)
         num_threads = Nthreads;
     else
         num_threads = hpx::threads::hardware_concurrency();
         
-    walltime = new high_resolution_timer;
-    globalBarrier = new barrier(num_threads);
-
-    cout << "Starting HPX OpenMP runtime" << endl; 
+    walltime.reset(new high_resolution_timer);
+    globalBarrier.reset(new barrier(num_threads));
 
     using namespace boost::assign;
     std::vector<std::string> cfg;
@@ -115,7 +136,7 @@ void hpx_runtime::init(int Nthreads) {
                 boost::algorithm::token_compress_on);
 
         // FIXME: For correctness check for signed overflow.
-        argc = hpx_args.size() + 2;
+        argc = hpx_args.size() + 3;
         argv = new char*[argc];
 
         // FIXME: Should we do escaping?    
@@ -125,17 +146,24 @@ void hpx_runtime::init(int Nthreads) {
             argv[i + 1] = const_cast<char*>(hpx_args[i].c_str());
         }
     } else {
-        argc = 2;
+        argc = 3;
         argv = new char*[argc];
     }
     argv[0] = const_cast<char*>("hpxMP");
-    argv[argc - 1] = const_cast<char*>("-Ihpx.stacks.use_guard_pages=0");
+    argv[argc - 2] = const_cast<char*>("-Ihpx.stacks.use_guard_pages=0");
+    argv[argc - 1] = const_cast<char*>("--hpx:debug-hpx-log");
+
+    for (boost::uint64_t i = 0; i < argc; ++i) {
+        cout << "argv[" << i << "]: " << argv[i] << endl;
+    }
     HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 
     boost::mutex local_mtx;
     boost::condition cond;
     bool running = false;
+
+    cout << "Starting HPX OpenMP runtime" << endl; 
 
     hpx::start(f, desc_cmdline, argc, argv, cfg,
         HPX_STD_BIND(&wait_for_startup, 
@@ -146,7 +174,7 @@ void hpx_runtime::init(int Nthreads) {
         if (!running)
             cond.wait(lk);
     }
-    hpx::register_shutdown_function(HPX_STD_BIND(&hpx_runtime::delete_hpx_objects, this));
+//    hpx::register_shutdown_function(HPX_STD_BIND(&hpx_runtime::delete_hpx_objects, this));
     atexit(fini_runtime);
     delete[] argv;
 }
@@ -178,7 +206,7 @@ void hpx_runtime::task_wait() {
 void ompc_fork_worker( int Nthreads, omp_task_func task_func,
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
-    vector<hpx::lcos::unique_future<void>> threads;
+    vector<hpx::lcos::shared_future<void>> threads;
     threads.reserve(Nthreads);
     for(int i = 0; i < Nthreads; i++) {
         threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));

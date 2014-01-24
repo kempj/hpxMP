@@ -12,10 +12,10 @@
 #include <string>
 
 using namespace std;
-hpx_runtime hpx_backend;
+boost::shared_ptr<hpx_runtime> hpx_backend;
 
 bool started = false;
-bool running = false;
+boost::atomic<bool> running(false);
 int single_counter = 0;
 int current_single_thread = -1;
 int single_mtx_id = -1;
@@ -35,19 +35,25 @@ void omp_thread_func(void *firstprivates, void *fp) {
     thread_func(tid, fp);
 }
 
+//overwrites global in openmp
+int __ompc_init_rtl(int num_threads) {
+    return 0;
+}
+
 void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
     if(!running) {
         running = true;
-        hpx_backend.init(Nthreads);
+//        hpx_backend.init(Nthreads);
+        hpx_backend.reset(new hpx_runtime(Nthreads));       
     }
     if(single_mtx_id == -1) 
-        single_mtx_id = hpx_backend.new_mtx();
+        single_mtx_id = hpx_backend->new_mtx();
     if(Nthreads <= 0)
-        Nthreads = hpx_backend.get_num_threads();
+        Nthreads = hpx_backend->get_num_threads();
     thread_func = micro_task;
     assert(!started);
     started = true;
-    hpx_backend.fork(Nthreads, omp_thread_func, fp);
+    hpx_backend->fork(Nthreads, omp_thread_func, fp);
     started = false;
 }
 
@@ -55,7 +61,7 @@ int __ompc_can_fork() {
     return !started;
 }
 int __ompc_get_local_thread_num() {
-    return hpx_backend.get_thread_num();
+    return hpx_backend->get_thread_num();
 }
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
@@ -144,11 +150,11 @@ void __ompc_barrier() {
 }
 
 void __ompc_ebarrier() {
-    hpx_backend.barrier_wait();
+    hpx_backend->barrier_wait();
 }
 
 int __ompc_get_num_threads(){
-    return hpx_backend.get_num_threads();
+    return hpx_backend->get_num_threads();
 }
 
 int __ompc_master(int global_tid){
@@ -161,7 +167,7 @@ void __ompc_end_master(int global_tid){
 }
 
 int __ompc_single(int tid){
-    hpx_backend.lock(single_mtx_id);
+    hpx_backend->lock(single_mtx_id);
     int num_threads = __ompc_get_num_threads();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
@@ -169,7 +175,7 @@ int __ompc_single(int tid){
     } else {
         single_counter++;
     }
-    hpx_backend.unlock(single_mtx_id);
+    hpx_backend->unlock(single_mtx_id);
     if(current_single_thread == tid) {
         return 1;
     }
@@ -177,11 +183,11 @@ int __ompc_single(int tid){
 }
 
 void __ompc_end_single(int tid){
-    hpx_backend.lock(single_mtx_id);
+    hpx_backend->lock(single_mtx_id);
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    hpx_backend.unlock(single_mtx_id);
+    hpx_backend->unlock(single_mtx_id);
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -201,12 +207,12 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
 
-    hpx_backend.create_task( task_func, frame_pointer, firstprivates, 
+    hpx_backend->create_task( task_func, frame_pointer, firstprivates, 
                              may_delay, is_tied, blocks_parent);
 }
 
 void __ompc_task_wait(){
-    hpx_backend.task_wait();
+    hpx_backend->task_wait();
 }
 
 void __ompc_task_exit(){
@@ -222,13 +228,13 @@ void __ompc_end_serialized_parallel(int global_tid) {
 void __ompc_critical(int gtid, int **lck) {
     if(*lck == NULL){
         *lck = new int;
-        **lck = hpx_backend.new_mtx();
+        **lck = hpx_backend->new_mtx();
     }
-    hpx_backend.lock(**lck);
+    hpx_backend->lock(**lck);
 }
 
 void __ompc_end_critical(omp_int32 gtid, omp_int32 **lck) {
-    hpx_backend.unlock(**lck);
+    hpx_backend->unlock(**lck);
 }
 
 omp_int32 __ompc_copyin_thdprv(int num,...) {
@@ -243,11 +249,11 @@ omp_int32 __ompc_copyprivate( omp_int32 mpsp_status,
 //OMP Library functions
 //TODO: move to another file
 int omp_get_num_threads() {
-    return hpx_backend.get_num_threads();
+    return hpx_backend->get_num_threads();
 }
 
 int omp_get_max_threads() {
-    return hpx_backend.get_num_threads();
+    return hpx_backend->get_num_threads();
 }
 
 int omp_get_thread_num() {
@@ -255,7 +261,7 @@ int omp_get_thread_num() {
 }
 
 double omp_get_wtime() {
-    return hpx_backend.get_time();
+    return hpx_backend->get_time();
 }
 double omp_get_wtick() {
     //high resolution elapsed_min
@@ -263,7 +269,7 @@ double omp_get_wtick() {
 }
 
 void omp_init_lock(volatile omp_lock_t *lock) {
-    int new_id = hpx_backend.new_mtx();
+    int new_id = hpx_backend->new_mtx();
     *lock = reinterpret_cast<omp_lock_t>(new_id);
 }
 
@@ -272,16 +278,16 @@ void omp_destroy_lock(volatile omp_lock_t *lock) {
 
 void omp_set_lock(volatile omp_lock_t *lock) {
     int lock_id = *((int*)lock);
-    hpx_backend.lock(lock_id);
+    hpx_backend->lock(lock_id);
 }
 
 void omp_unset_lock(volatile omp_lock_t *lock) {
     int lock_id = *((int*)lock);
-    hpx_backend.unlock(lock_id);
+    hpx_backend->unlock(lock_id);
 }
 
 int omp_test_lock(volatile omp_lock_t *lock) {
-    if(hpx_backend.trylock(*((int*)lock)))
+    if(hpx_backend->trylock(*((int*)lock)))
         return 1;
     return 0;
 }
