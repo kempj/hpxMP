@@ -1,4 +1,4 @@
-CC=~/openUH/bin/uhcc
+#CC=~/openUH/bin/uhcc
 all: parallel for nested-parallel task barrier master single
 
 for: omp-for.c
