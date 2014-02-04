@@ -64,10 +64,10 @@ void fini_runtime_worker(boost::mutex* mtx,
         boost::condition* cond, bool* running) {
     
     //hpx_backend.reset();
-    cout << "about to stop" << endl;
+//    cout << "about to stop" << endl;
 //    hpx::stop();
     hpx::get_runtime().stop();
-    cout << "stopped" << endl;
+//    cout << "stopped" << endl;
 
     /*
     {
@@ -85,34 +85,10 @@ void fini_runtime() {
     boost::condition cond;
     bool running = false;
 
-/*
-    hpx::applier::register_thread_nullary(
-        HPX_STD_BIND(fini_runtime_worker, 
-            &mtx, &cond, &running)
-      , "fini_runtime_worker");
-*/
-//    cout << "HPX is down" << endl;
-
- /*
-    {
-        boost::mutex::scoped_lock lk(mtx);
-        cout << "entered fini_runtime() critical section" << endl;
-        if(!running)
-            cond.wait(lk);
-    }
-*/
     hpx::get_runtime().stop();
 }
-/*
-void hpx_runtime::delete_hpx_objects() {
-    delete walltime;
-    delete globalBarrier;
-}
-*/
-//void hpx_runtime::init(int Nthreads) {
-hpx_runtime::hpx_runtime(int Nthreads) {
-//    mutex_type::scoped_lock l(init_mtx);
 
+hpx_runtime::hpx_runtime(int Nthreads) {
     if(Nthreads > 0)
         num_threads = Nthreads;
     else
@@ -124,41 +100,36 @@ hpx_runtime::hpx_runtime(int Nthreads) {
     using namespace boost::assign;
     std::vector<std::string> cfg;
     cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(num_threads);
+    cfg += "hpx.stacks.use_guard_pages=0";
     cfg += "hpx.run_hpx_main!=0";
 
     char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
 
     int argc;
     char ** argv;
+    std::vector<std::string> hpx_args;
 
     if (hpx_args_raw) { 
         std::string tmp(hpx_args_raw);
 
-        std::vector<std::string> hpx_args;
         boost::algorithm::split(hpx_args, tmp,
             boost::algorithm::is_any_of(";"),
                 boost::algorithm::token_compress_on);
 
         // FIXME: For correctness check for signed overflow.
-        argc = hpx_args.size() + 2;
+        argc = hpx_args.size() + 1;
         argv = new char*[argc];
 
         // FIXME: Should we do escaping?    
         for (boost::uint64_t i = 0; i < hpx_args.size(); ++i) {
-            cout << "arg[" << i << "]: " << hpx_args[i] << endl;
-            //argv[i + 1] = strdup(hpx_args[i].c_str());
             argv[i + 1] = const_cast<char*>(hpx_args[i].c_str());
         }
     } else {
-        argc = 2;
+        argc = 1;
         argv = new char*[argc];
     }
     argv[0] = const_cast<char*>("hpxMP");
-    argv[argc - 1] = const_cast<char*>("-Ihpx.stacks.use_guard_pages=0");
 
-    for (boost::uint64_t i = 0; i < argc; ++i) {
-        cout << "argv[" << i << "]: " << argv[i] << endl;
-    }
     HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 
@@ -177,7 +148,7 @@ hpx_runtime::hpx_runtime(int Nthreads) {
         if (!running)
             cond.wait(lk);
     }
-//    hpx::register_shutdown_function(HPX_STD_BIND(&hpx_runtime::delete_hpx_objects, this));
+
     atexit(fini_runtime);
     delete[] argv;
 }
@@ -239,3 +210,4 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
             cond.wait(lk);
     }
 }
+
