@@ -235,7 +235,7 @@ void stage2(double *A, int offset, int *sizedim, int *start, int N, int M)
     futures.push_back(hpx::async(&ProcessBlockOnColumn, &A[(x+start[i])*N+y], &A[x*N+y], L1, L2, N));
     futures.push_back(hpx::async(&ProcessBlockOnRow, &A[x*N+(y+start[i])], &A[x*N+y], L1, L3, N));
   }
-  hpx::wait(futures);
+  hpx::wait_all(futures);
 }
 
 void stage3(double *A, int offset, int *sizedim, int *start, int N, int M)
@@ -254,7 +254,7 @@ void stage3(double *A, int offset, int *sizedim, int *start, int N, int M)
       L3 = sizedim[j];
       futures.push_back(hpx::async(ProcessInnerBlock, &A[(x+start[i])*N+(y+start[j])],  &A[x*N+(y+start[j])], &A[(x+start[i])*N+y], L1, L2, L3, N));
     }
-    hpx::wait(futures);
+    hpx::wait_all(futures);
 }
 
 void ProcessDiagonalBlock(double *A, int L1, int N)
