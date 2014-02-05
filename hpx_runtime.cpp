@@ -83,7 +83,7 @@ void fini_runtime() {
 
     boost::mutex mtx;
     boost::condition cond;
-    bool running = false;
+    //bool running = false;
 
     hpx::get_runtime().stop();
 }

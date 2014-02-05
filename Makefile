@@ -65,3 +65,13 @@ fib-test: libopenmp.so.1 ./omp-tests/omp-fib
 lu-test: libopenmp.so.1 ./omp-tests/omp-lu
 	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-lu 1000 10
 
+epcc: schedbench taskbench 
+
+syncbench:
+	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/syncbench
+
+schedbench:
+	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/schedbench
+
+taskbench:
+	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/taskbench
