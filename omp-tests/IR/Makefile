@@ -26,3 +26,5 @@ master:
 thrdprvt:
 	$(CC) ../omp-thrdprvt.c -fopenmp -CLIST:emit_nested_pu:before_cg -Wb,-trlow,-tslow 
 
+lu:
+	$(CC) ../omp-lu.c -fopenmp -CLIST:emit_nested_pu:before_cg -Wb,-trlow,-tslow 

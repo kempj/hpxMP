@@ -41,7 +41,7 @@
 
 
 //#define DEBUG 1
-//#define CHECK 1
+#define CHECK 1
 #define MEASURE 1
 
 void Print_Matrix (double *v, int M, int N);
@@ -69,8 +69,8 @@ unsigned long GetTickCount()
     return (tv.tv_sec * 1000000) + (tv.tv_usec);
 }
 
-int N = 100;
-int Block = 1;
+int N = 1000;
+int Block = 10;
 int M=1; //number of blocks per dimension
 
 int main (int argc, char *argv[])
@@ -195,9 +195,12 @@ int main (int argc, char *argv[])
     for (j=0;j<N;j++){
       temp2=0;
       for (k=0;k<N;k++)
-	temp2+=L[i*N+k]*U[k*N+j];
+          temp2+=L[i*N+k]*U[k*N+j];
       if ((A2[i*N+j]-temp2)/A2[i*N+j] >0.1 || (A2[i*N+j]-temp2)/A2[i*N+j] <-0.1)
-	temp++;
+      {
+          temp++;
+          printf("Error at: [%d, %d\n]",i,j);
+      }
     }
   printf("Errors = %d \n", temp);
 #endif

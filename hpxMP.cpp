@@ -216,6 +216,11 @@ void __ompc_task_wait(){
 }
 
 void __ompc_task_exit(){
+    //The main 'thread' tasks need to wait for all chilren tasks to finish,
+    // even if the child tasks don't wait on their child tasks to finish.
+    // This is a simple solution that forces all tasks to wait on child tasks 
+    // to finish. This is not incorrect, but it could hurt performance.
+    hpx_backend->task_wait();
 }
 
 void __ompc_serialized_parallel(int global_tid) {
