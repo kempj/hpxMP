@@ -1345,8 +1345,8 @@ int main(int argc, char *argv[]) {
     //time2 = omp_get_wtime();
     //printf("naive time = %f seconds\n", time2-time1);
 
-    if(compare_matrix(bots_arg_size,R_naive,bots_arg_size,R_serial,bots_arg_size))
-        printf("Naive Correct\n");
+    //if(compare_matrix(bots_arg_size,R_naive,bots_arg_size,R_serial,bots_arg_size))
+    //    printf("Naive Correct\n");
 
     time1 = omp_get_wtime();
     blocking_mult(A,B,R_blocking,block_size, bots_arg_size);
