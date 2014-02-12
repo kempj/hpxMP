@@ -1311,7 +1311,7 @@ int main(int argc, char *argv[]) {
     if(argc > 1)
         bots_arg_size = atoi(argv[1]);
     if(argc > 2)
-        bots_arg_size = atoi(argv[2]);
+        block_size = atoi(argv[2]);
 
     if ((bots_arg_size & (bots_arg_size - 1)) != 0 || (bots_arg_size % 16) != 0) {
         printf("Error: matrix size (%d) must be a power of 2 and a multiple of %d\n", bots_arg_size, 16);
