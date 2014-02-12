@@ -1340,10 +1340,10 @@ int main(int argc, char *argv[]) {
     if(compare_matrix(bots_arg_size,R_strassen,bots_arg_size,R_serial,bots_arg_size))
         printf("Strassen Correct\n");
 
-    time1 = omp_get_wtime();
-    naive_mult(A,B,R_naive,bots_arg_size);
-    time2 = omp_get_wtime();
-    printf("naive time = %f seconds\n", time2-time1);
+    //time1 = omp_get_wtime();
+    //naive_mult(A,B,R_naive,bots_arg_size);
+    //time2 = omp_get_wtime();
+    //printf("naive time = %f seconds\n", time2-time1);
 
     if(compare_matrix(bots_arg_size,R_naive,bots_arg_size,R_serial,bots_arg_size))
         printf("Naive Correct\n");
