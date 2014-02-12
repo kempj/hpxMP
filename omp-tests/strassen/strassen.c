@@ -1282,6 +1282,7 @@ void naive_mult(REAL *A, REAL *B, REAL *C, int n) {
 
 void blocking_mult(REAL *A, REAL *B, REAL *C, int block_size, int size) {
     int i,j,k,l,m,n;
+#pragma omp parallel for shared(A,B,C) private(i,j,k,l,m,n)
     for(i = 0; i < size; i += block_size) {
         for(j = 0; j < size; j += block_size) {
             for(k = 0; k < size; k += block_size) {
