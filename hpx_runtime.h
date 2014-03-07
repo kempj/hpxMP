@@ -55,8 +55,8 @@ class hpx_runtime {
         void unlock(int lock_id);
         int new_mtx();
         void create_task(omp_task_func taskfunc, void *frame_pointer,
-                         void *firstprivates, int may_delay,
-                         int is_tied, int blocks_parent);
+                         void *firstprivates,// int may_delay,
+                         int is_tied);//, int blocks_parent);
         void task_wait();
         double get_time();
         void delete_hpx_objects();

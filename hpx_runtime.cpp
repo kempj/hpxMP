@@ -90,7 +90,7 @@ void fini_runtime() {
 
 hpx_runtime::hpx_runtime(int Nthreads) {
     if(Nthreads > 0)
-        num_threads = Nthreads;
+        num_threads = Nthreads;//This would prevent later parallel regions from having more than Nthreads threads.
     else
         num_threads = hpx::threads::hardware_concurrency();
         
@@ -161,9 +161,8 @@ void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, vo
     task_func(firstprivates, fp);
 }
 
-void hpx_runtime::create_task(omp_task_func taskfunc, void *frame_pointer,
-                 void *firstprivates, int may_delay,
-                 int is_tied, int blocks_parent) {
+void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
+                               void *firstprivates, int is_tied) {
     auto *data = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     int current_tid = data->thread_num;
