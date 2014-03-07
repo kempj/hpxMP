@@ -215,12 +215,12 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
     // variables in nested tasks. Since the current hpxMP implementation
     // calls a taskwait at the end of each task, the blocks_parent variable
     // is not used.
-    //if(may_delay == 0) {
-    //   task_func(firstprivates, frame_pointer);
-    //} else {
+    if(may_delay == 0) {
+       task_func(firstprivates, frame_pointer);
+    } else {
         hpx_backend->create_task( task_func, frame_pointer, firstprivates,
                                   is_tied);
-    //}
+    }
 }
 
 void __ompc_task_wait(){
