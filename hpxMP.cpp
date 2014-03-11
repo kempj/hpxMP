@@ -270,6 +270,7 @@ int omp_get_num_threads() {
 }
 
 int omp_get_max_threads() {
+    //TODO: what if backend has not started yet?
     return hpx_backend->get_num_threads();
 }
 
