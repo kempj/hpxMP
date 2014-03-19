@@ -33,3 +33,9 @@ lu: omp-lu.c
 	
 thrdprvt: omp-thrdprvt.c
 	$(CC) omp-thrdprvt.c -fopenmp -o omp-thrdprvt
+
+fort: test.f90
+	uhf90 -g -mp ./test.f90 -o ftest
+
+ftest: fort
+	LD_PRELOAD=../libopenmp.so.1 ./ftest

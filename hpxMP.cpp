@@ -31,6 +31,8 @@ int init_num_threads() {
 }
 
 void omp_thread_func(void *firstprivates, void *fp) {
+    //Threads do not need first privates. 
+    //This function allows a thread to be handled the same way a task is.
     int tid = __ompc_get_local_thread_num();
     thread_func(tid, fp);
 }
@@ -61,7 +63,16 @@ int __ompc_can_fork() {
     return !started;
 }
 int __ompc_get_local_thread_num() {
-    return hpx_backend->get_thread_num();
+    //TODO: what if backend has not started yet?
+    if(!running) {
+        running = true;
+        hpx_backend.reset(new hpx_runtime(0));
+    }
+    if(!started) {
+        return 0;
+    } else {
+        return hpx_backend->get_thread_num();
+    }
 }
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
@@ -69,6 +80,7 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                            int *p_stride, int incr, 
                            int chunk) {
     int thread_num = __ompc_get_local_thread_num();
+    //should I use this or tid?
     int size;
     int *tmp;
     int num_threads = __ompc_get_num_threads();
@@ -271,6 +283,10 @@ int omp_get_num_threads() {
 
 int omp_get_max_threads() {
     //TODO: what if backend has not started yet?
+    if(!running) {
+        running = true;
+        hpx_backend.reset(new hpx_runtime(0));
+    }                      
     return hpx_backend->get_num_threads();
 }
 
