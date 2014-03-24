@@ -19,6 +19,9 @@ boost::atomic<bool> running(false);
 int single_counter = 0;
 int current_single_thread = -1;
 int single_mtx_id = -1;
+int crit_mtx_id = -1;
+int lock_mtx_id = -1;
+int print_mtx_id = -1;
 
 omp_micro thread_func = 0;
 
@@ -48,8 +51,14 @@ void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
 //        hpx_backend.init(Nthreads);
         hpx_backend.reset(new hpx_runtime(Nthreads));       
     }
+    if(print_mtx_id == -1) 
+        print_mtx_id = hpx_backend->new_mtx();
     if(single_mtx_id == -1) 
         single_mtx_id = hpx_backend->new_mtx();
+    if(crit_mtx_id == -1)
+        crit_mtx_id = hpx_backend->new_mtx();
+    if(lock_mtx_id == -1)
+        lock_mtx_id = hpx_backend->new_mtx();
     if(Nthreads <= 0)
         Nthreads = hpx_backend->get_num_threads();
     thread_func = micro_task;
@@ -75,29 +84,28 @@ int __ompc_get_local_thread_num() {
     }
 }
 
+//ignoring chunk size input, assuming it is one
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                            int *p_lower, int *p_upper, 
                            int *p_stride, int incr, 
                            int chunk) {
-    int thread_num = __ompc_get_local_thread_num();
-    //should I use this or tid?
-    int size;
-    int *tmp;
-    int num_threads = __ompc_get_num_threads();
-    if(*p_upper < *p_lower) {
-        tmp = p_upper;
-        p_upper = p_lower;
-        p_lower = tmp;
-    }
-    size = *p_upper - *p_lower + 1;
-    int chunk_size = size/num_threads;
-    if(thread_num < size % num_threads) {
-        *p_lower += thread_num * (chunk_size+incr);
-        *p_upper = *p_lower + chunk_size ;
-    } else {
-        *p_lower += (size % num_threads) * (chunk_size+incr) + (thread_num - size % num_threads ) * chunk_size;
-        *p_upper = *p_lower + chunk_size - incr;
-    }
+//    hpx_backend->lock(print_mtx_id);
+//    cout << "Thread " << thread_num << " of " << num_threads <<  endl
+//         << "\t" << *p_lower << "-" << *p_upper << ", " << *p_stride << endl;
+
+    int team_size = omp_get_num_threads();
+    int trip_count = (*p_upper - *p_lower) / incr + 1;
+    int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
+    int stride = (trip_count / team_size + adjustment + 1) * incr;
+    int block_size = (trip_count / team_size + adjustment) * incr;
+
+    int my_lower = *p_lower + global_tid * stride;
+    int my_upper = my_lower + block_size;
+    *p_lower = my_lower;
+    *p_upper = my_upper;
+
+ //   cout << "\t" << *p_lower << "-" << *p_upper << ", " << *p_stride << endl;
+ //   hpx_backend->unlock(print_mtx_id);
 }
 
 void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
@@ -255,9 +263,13 @@ void __ompc_end_serialized_parallel(int global_tid) {
 }
 
 void __ompc_critical(int gtid, int **lck) {
-    if(*lck == NULL){
-        *lck = new int;
-        **lck = hpx_backend->new_mtx();
+    if(*lck == NULL) {
+        hpx_backend->lock(crit_mtx_id);
+        if(*lck == NULL){
+            *lck = new int;
+            **lck = hpx_backend->new_mtx();
+        }
+        hpx_backend->unlock(crit_mtx_id);
     }
     hpx_backend->lock(**lck);
 }
@@ -266,13 +278,20 @@ void __ompc_end_critical(omp_int32 gtid, omp_int32 **lck) {
     hpx_backend->unlock(**lck);
 }
 
+omp_int32 __ompc_get_thdprv( void *** thdprv_p, omp_int64 size, 
+                             void *datap, omp_int32 global_tid) {
+    cout << "unimplemented function called: __ompc_get_thdprv" << endl;
+    return 1;
+}
 omp_int32 __ompc_copyin_thdprv(int num,...) {
+    cout << "unimplemented function called: __ompc_copyin_thdprv" << endl;
     return 0;
 }
 
 omp_int32 __ompc_copyprivate( omp_int32 mpsp_status,
                               void *cppriv, 
                               void(*cp)(void* src, void* dst) ) {
+    cout << "unimplemented function called: __ompc_copyprivate" << endl;
     return 0;
 }
 //OMP Library functions
@@ -303,7 +322,10 @@ double omp_get_wtick() {
 }
 
 void omp_init_lock(volatile omp_lock_t *lock) {
+    hpx_backend->lock(lock_mtx_id);
     int new_id = hpx_backend->new_mtx();
+    hpx_backend->unlock(lock_mtx_id);
+
     *lock = reinterpret_cast<omp_lock_t>(new_id);
 }
 
