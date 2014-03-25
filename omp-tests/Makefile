@@ -28,6 +28,9 @@ single: omp-single.c
 master: omp-master.c
 	$(CC) omp-master.c -fopenmp -o omp-master
 
+reduction: omp-reduction.c
+	$(CC) omp-reduction.c -fopenmp -o omp-reduction
+
 lu: omp-lu.c
 	$(CC) omp-lu.c -fopenmp -o omp-lu
 	

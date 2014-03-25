@@ -93,6 +93,10 @@ hpx_runtime::hpx_runtime(int Nthreads) {
         num_threads = Nthreads;//This would prevent later parallel regions from having more than Nthreads threads.
     else
         num_threads = hpx::threads::hardware_concurrency();
+    
+    char const* omp_num_threads = getenv("OMP_NUM_THREADS");
+    if(omp_num_threads != NULL)
+        num_threads = atoi(omp_num_threads);
         
     walltime.reset(new high_resolution_timer);
     globalBarrier.reset(new barrier(num_threads));

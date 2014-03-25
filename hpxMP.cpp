@@ -93,14 +93,23 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
 //    cout << "Thread " << thread_num << " of " << num_threads <<  endl
 //         << "\t" << *p_lower << "-" << *p_upper << ", " << *p_stride << endl;
 
+    //copied very directly from the openUH OpenMP runtime:
+    int block_size, stride, my_lower, my_upper;
     int team_size = omp_get_num_threads();
-    int trip_count = (*p_upper - *p_lower) / incr + 1;
-    int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
-    int stride = (trip_count / team_size + adjustment + 1) * incr;
-    int block_size = (trip_count / team_size + adjustment) * incr;
-
-    int my_lower = *p_lower + global_tid * stride;
-    int my_upper = my_lower + block_size;
+    if (schedtype == OMP_SCHED_STATIC_EVEN) {
+        int trip_count = (*p_upper - *p_lower) / incr + 1;
+        int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
+        stride = (trip_count / team_size + adjustment + 1) * incr;
+        block_size = (trip_count / team_size + adjustment) * incr;
+        my_lower = *p_lower + global_tid * stride;
+        my_upper = my_lower + block_size;
+    } else { /* OMP_SCHED_STATIC*/
+        block_size = (chunk - 1) * incr;
+        stride = chunk * incr;
+        my_lower = *p_lower + global_tid * stride;
+        my_upper = my_lower + block_size;
+        *p_stride = stride * team_size;
+    }
     *p_lower = my_lower;
     *p_upper = my_upper;
 
@@ -111,58 +120,60 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
 void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
                       omp_int64 *p_lower, omp_int64 *p_upper, omp_int64 *p_stride,
                       omp_int64 incr, omp_int64 chunk ){
-    omp_int64 thread_num = __ompc_get_local_thread_num();
-    omp_int64 size;
-    omp_int64 *tmp;
-    int num_threads = __ompc_get_num_threads();
-    if(*p_upper < *p_lower) {
-        tmp = p_upper;
-        p_upper = p_lower;
-        p_lower = tmp;
+    omp_int64 block_size, stride, my_lower, my_upper;
+    int team_size = omp_get_num_threads();
+    if (schedtype == OMP_SCHED_STATIC_EVEN) {
+        omp_int64 trip_count = (*p_upper - *p_lower) / incr + 1;
+        omp_int64 adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
+        stride = (trip_count / team_size + adjustment + 1) * incr;
+        block_size = (trip_count / team_size + adjustment) * incr;
+        my_lower = *p_lower + global_tid * stride;
+        my_upper = my_lower + block_size;
+    } else { /* OMP_SCHED_STATIC*/
+        block_size = (chunk - 1) * incr;
+        stride = chunk * incr;
+        my_lower = *p_lower + global_tid * stride;
+        my_upper = my_lower + block_size;
+        *p_stride = stride * team_size;
     }
-    size = *p_upper - *p_lower + 1;
-    int chunk_size = size/num_threads;
-    if(thread_num < size % num_threads) {
-        *p_lower += thread_num * (chunk_size+incr);
-        *p_upper = *p_lower + chunk_size ;
-    } else {
-        *p_lower += (size % num_threads) * (chunk_size+incr) + (thread_num - size % num_threads ) * chunk_size;
-        *p_upper = *p_lower + chunk_size - incr;
-    }
+    *p_lower = my_lower;
+    *p_upper = my_upper;
 }
 
 void __ompc_scheduler_init_4( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int32 lower, omp_int32 upper,
                               omp_int32 stride, omp_int32 chunk){
-    //cout << "Not implemented" << endl;
+    cout << "Not implemented: __ompc_scheduler_init_4" << endl;
 }
 
 void __ompc_scheduler_init_8( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int64 lower, omp_int64 upper,
                               omp_int64 stride, omp_int64 chunk){
-    //cout << "Not implemented" << endl;
+    cout << "Not implemented: __ompc_scheduler_init_8" << endl;
 }
 
 omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *plower, omp_int32 *pupper,
                                   omp_int32 *pstride){
-    //cout << "Not implemented" << endl;
+    cout << "Not implemented: __ompc_schedule_next_4" << endl;
     return 0;
 }
 
 omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
                                   omp_int64 *plower, omp_int64 *pupper,
                                   omp_int64 *pstride){
-    //cout << "Not implemented" << endl;
+    cout << "Not implemented: __ompc_schedule_next_8" << endl;
     return 0;
 }
 
 void __ompc_reduction(omp_int32 gtid, omp_int32 **lck){
+    __ompc_critical(gtid, lck);
 }
 
 void __ompc_end_reduction(omp_int32 gtid, omp_int32 **lck){
+    __ompc_end_critical(gtid, lck);
 }
 
 void __ompc_barrier() {
@@ -263,9 +274,9 @@ void __ompc_end_serialized_parallel(int global_tid) {
 }
 
 void __ompc_critical(int gtid, int **lck) {
-    if(*lck == NULL) {
+    if(*lck == NULL || **lck < 0) {
         hpx_backend->lock(crit_mtx_id);
-        if(*lck == NULL){
+        if(*lck == NULL || **lck < 0){
             *lck = new int;
             **lck = hpx_backend->new_mtx();
         }
