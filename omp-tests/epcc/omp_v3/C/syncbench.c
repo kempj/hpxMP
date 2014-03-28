@@ -76,19 +76,19 @@ int main(int argc, char **argv) {
     benchmark("LOCK/UNLOCK", &testlock);
 
     /* TEST ORDERED SECTION */
-    benchmark("ORDERED", &testorder);
+    //benchmark("ORDERED", &testorder);
 
     /* GENERATE NEW REFERENCE TIME */
     reference("reference time 2", &referatom);
 
     /* TEST ATOMIC */
-    benchmark("ATOMIC", &testatom);
+    //benchmark("ATOMIC", &testatom);
 
     /* GENERATE NEW REFERENCE TIME */
-    reference("reference time 3", &referred);
+    //reference("reference time 3", &referred);
 
     /* TEST REDUCTION (1 var)  */
-    benchmark("REDUCTION", &testred);
+    //benchmark("REDUCTION", &testred);
 
 #ifdef PARAVERTRACE
     Extrae_fini();
