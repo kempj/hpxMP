@@ -246,6 +246,10 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
     // variables in nested tasks. Since the current hpxMP implementation
     // calls a taskwait at the end of each task, the blocks_parent variable
     // is not used.
+
+    // TODO: Optimization, store is_tied in the thread/task, and whenever 
+    // waiting on it, check it, or possibly have a separate vector to store
+    // untied tasks
     if(may_delay == 0) {
        task_func(firstprivates, frame_pointer);
     } else {
@@ -263,7 +267,10 @@ void __ompc_task_exit(){
     // even if the child tasks don't wait on their child tasks to finish.
     // This is a simple solution that forces all tasks to wait on child tasks 
     // to finish. This is not incorrect, but it could hurt performance.
-    hpx_backend->task_wait();
+
+    // If the information of whether or not the current thread was a 'task'
+    // or a 'thread' was stored, this could be avoided
+    hpx_backend->thread_wait();
 }
 
 void __ompc_serialized_parallel(int global_tid) {

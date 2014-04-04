@@ -38,6 +38,7 @@ using std::map;
 using hpx::util::high_resolution_timer;
 
 struct thread_data {
+    bool is_thread;
     int thread_num;
     vector<shared_future<void>> task_handles;
 };
@@ -58,6 +59,7 @@ class hpx_runtime {
                          void *firstprivates,// int may_delay,
                          int is_tied);//, int blocks_parent);
         void task_wait();
+        void thread_wait();
         double get_time();
         void delete_hpx_objects();
         
