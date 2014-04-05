@@ -38,6 +38,7 @@ void omp_thread_func(void *firstprivates, void *fp) {
     //This function allows a thread to be handled the same way a task is.
     int tid = __ompc_get_local_thread_num();
     thread_func(tid, fp);
+    hpx_backend->thread_wait();
 }
 
 //overwrites global in openmp
@@ -270,7 +271,8 @@ void __ompc_task_exit(){
 
     // If the information of whether or not the current thread was a 'task'
     // or a 'thread' was stored, this could be avoided
-    hpx_backend->thread_wait();
+    //
+    // moved into the actual thread function
 }
 
 void __ompc_serialized_parallel(int global_tid) {

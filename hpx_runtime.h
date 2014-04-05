@@ -31,6 +31,7 @@ typedef hpx::lcos::local::spinlock mutex_type;
 
 using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
+using hpx::lcos::unique_future;
 using std::cout;
 using std::endl;
 using std::vector;
@@ -38,14 +39,12 @@ using std::map;
 using hpx::util::high_resolution_timer;
 
 struct thread_data {
-    bool is_thread;
     int thread_num;
-    vector<shared_future<void>> task_handles;
+    vector<unique_future<void>> task_handles;
 };
 
 class hpx_runtime {
     public:
-//        void init(int Nthreads);
         hpx_runtime(int Nthreads);        
         void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
         int get_thread_num();
@@ -68,5 +67,7 @@ class hpx_runtime {
         int num_threads;
         map<int, mutex_type> lock_map;
         boost::shared_ptr<high_resolution_timer> walltime;
+        vector<vector<shared_future<void>>> thread_handles;
+
 };
 

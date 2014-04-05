@@ -100,6 +100,7 @@ hpx_runtime::hpx_runtime(int Nthreads) {
         
     walltime.reset(new high_resolution_timer);
     globalBarrier.reset(new barrier(num_threads));
+    thread_handles.reserve(num_threads);
 
     using namespace boost::assign;
     std::vector<std::string> cfg;
@@ -157,10 +158,9 @@ hpx_runtime::hpx_runtime(int Nthreads) {
     delete[] argv;
 }
 
-void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp, bool is_thread) {
+void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
     thread_data *data_struct = new thread_data();
     data_struct->thread_num = thread_num;
-    data_struct->is_thread = is_thread;
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
     task_func(firstprivates, fp);
@@ -171,7 +171,8 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     auto *data = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     int current_tid = data->thread_num;
-    data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer, false));
+    data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
+    thread_handles[current_tid].push_back(data->task_handles.back().share());
 }
 
 void hpx_runtime::task_wait() {
@@ -184,19 +185,17 @@ void hpx_runtime::task_wait() {
 void hpx_runtime::thread_wait() {
     auto *data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    if(data->is_thread) {
-        hpx::wait_all(data->task_handles);
-        data->task_handles.clear();
-    }
+    hpx::wait_all(thread_handles[data->thread_num]);
+    thread_handles[data->thread_num].clear();
 }
 
 void ompc_fork_worker( int Nthreads, omp_task_func task_func,
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
-    vector<hpx::lcos::shared_future<void>> threads;
+    vector<hpx::lcos::unique_future<void>> threads;
     threads.reserve(Nthreads);
     for(int i = 0; i < Nthreads; i++) {
-        threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp, true));
+        threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));
     }
     hpx::wait_all(threads);
      //Let the main thread know that we're done.
