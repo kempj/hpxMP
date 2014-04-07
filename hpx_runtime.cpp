@@ -163,7 +163,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     auto exec = data->exec;
     int current_tid = data->thread_num;
-    data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer, exec));
+    data->task_handles.push_back( hpx::async(exec, task_setup, taskfunc, current_tid, firstprivates, frame_pointer, exec));
 }
 
 void hpx_runtime::task_wait() {
