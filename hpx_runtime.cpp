@@ -4,6 +4,9 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+
+#define  HPX_LIMIT 6
+
 #include "hpx_runtime.h"
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
@@ -100,7 +103,6 @@ hpx_runtime::hpx_runtime(int Nthreads) {
         
     walltime.reset(new high_resolution_timer);
     globalBarrier.reset(new barrier(num_threads));
-    thread_handles.reserve(num_threads);
 
     using namespace boost::assign;
     std::vector<std::string> cfg;
@@ -158,10 +160,12 @@ hpx_runtime::hpx_runtime(int Nthreads) {
     delete[] argv;
 }
 
-void task_setup(omp_task_func task_func, int thread_num, void *firstprivates, void *fp) {
+void task_setup( omp_task_func task_func, int thread_num, void *firstprivates,
+                 void *fp, local_queue_executor exec) {
     thread_data *data_struct = new thread_data();
     data_struct->thread_num = thread_num;
     auto thread_id = hpx::threads::get_self_id();
+    data_struct->exec = exec;
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
     task_func(firstprivates, fp);
 }
@@ -170,9 +174,9 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int is_tied) {
     auto *data = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    auto exec = data->exec;
     int current_tid = data->thread_num;
-    data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
-    thread_handles[current_tid].push_back(data->task_handles.back().share());
+    data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer, exec));
 }
 
 void hpx_runtime::task_wait() {
@@ -183,10 +187,6 @@ void hpx_runtime::task_wait() {
 }
 
 void hpx_runtime::thread_wait() {
-    auto *data = reinterpret_cast<thread_data*>(
-                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    hpx::wait_all(thread_handles[data->thread_num]);
-    thread_handles[data->thread_num].clear();
 }
 
 void ompc_fork_worker( int Nthreads, omp_task_func task_func,
@@ -194,10 +194,13 @@ void ompc_fork_worker( int Nthreads, omp_task_func task_func,
                        boost::condition& cond, bool& running) {
     vector<hpx::lcos::unique_future<void>> threads;
     threads.reserve(Nthreads);
-    for(int i = 0; i < Nthreads; i++) {
-        threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));
+    {
+        local_queue_executor exec;
+        for(int i = 0; i < Nthreads; i++) {
+            threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp, exec));
+        }
+        hpx::wait_all(threads);
     }
-    hpx::wait_all(threads);
      //Let the main thread know that we're done.
     {
         boost::mutex::scoped_lock lk(mtx);

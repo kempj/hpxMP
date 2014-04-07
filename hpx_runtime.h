@@ -21,6 +21,9 @@
 #include <hpx/util/high_resolution_timer.hpp>
 #include <map>
 
+#include <hpx/include/thread_executors.hpp>
+
+
 typedef void *frame_pointer_t;
 typedef int omp_tid;
 typedef void (*omp_micro)(int , frame_pointer_t);
@@ -29,6 +32,7 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
 typedef hpx::lcos::local::spinlock mutex_type;
 
+using hpx::threads::executors::local_queue_executor;
 using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
 using hpx::lcos::unique_future;
@@ -40,6 +44,7 @@ using hpx::util::high_resolution_timer;
 
 struct thread_data {
     int thread_num;
+    local_queue_executor exec;
     vector<unique_future<void>> task_handles;
 };
 
@@ -67,7 +72,6 @@ class hpx_runtime {
         int num_threads;
         map<int, mutex_type> lock_map;
         boost::shared_ptr<high_resolution_timer> walltime;
-        vector<vector<shared_future<void>>> thread_handles;
-
+        //vector<vector<shared_future<void>>> thread_handles;
 };
 

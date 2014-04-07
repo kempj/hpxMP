@@ -38,7 +38,7 @@ void omp_thread_func(void *firstprivates, void *fp) {
     //This function allows a thread to be handled the same way a task is.
     int tid = __ompc_get_local_thread_num();
     thread_func(tid, fp);
-    hpx_backend->thread_wait();
+    //hpx_backend->thread_wait();
 }
 
 //overwrites global in openmp
