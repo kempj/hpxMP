@@ -66,19 +66,7 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 void fini_runtime_worker(boost::mutex* mtx,
         boost::condition* cond, bool* running) {
     
-    //hpx_backend.reset();
-//    cout << "about to stop" << endl;
-//    hpx::stop();
     hpx::get_runtime().stop();
-//    cout << "stopped" << endl;
-
-    /*
-    {
-        boost::mutex::scoped_lock lk(*mtx);
-        *running = true;
-        cond->notify_all();
-    }
-    */
 }
 
 void fini_runtime() {
@@ -86,7 +74,6 @@ void fini_runtime() {
 
     boost::mutex mtx;
     boost::condition cond;
-    //bool running = false;
 
     hpx::get_runtime().stop();
 }
@@ -184,9 +171,6 @@ void hpx_runtime::task_wait() {
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     hpx::wait_all(data->task_handles);
     data->task_handles.clear();
-}
-
-void hpx_runtime::thread_wait() {
 }
 
 void ompc_fork_worker( int Nthreads, omp_task_func task_func,

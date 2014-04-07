@@ -63,7 +63,6 @@ class hpx_runtime {
                          void *firstprivates,// int may_delay,
                          int is_tied);//, int blocks_parent);
         void task_wait();
-        void thread_wait();
         double get_time();
         void delete_hpx_objects();
         
@@ -72,6 +71,5 @@ class hpx_runtime {
         int num_threads;
         map<int, mutex_type> lock_map;
         boost::shared_ptr<high_resolution_timer> walltime;
-        //vector<vector<shared_future<void>>> thread_handles;
 };
 
