@@ -11,3 +11,6 @@ lu-utils.o: lu-utils.cpp
 
 lu-local.o: lu-local.cpp
 	g++ -o lu-local.o -c lu-local.cpp `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=lu-local.o
+
+exec: exec_test.cpp
+	g++ -g exec_test.cpp -o test-exec `pkg-config --cflags --libs hpx_application`
