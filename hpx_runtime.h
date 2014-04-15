@@ -32,10 +32,10 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
 typedef hpx::lcos::local::spinlock mutex_type;
 
-using hpx::threads::executors::local_queue_executor;
+using hpx::threads::executors::local_priority_queue_executor;
 using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
-using hpx::lcos::unique_future;
+using hpx::lcos::future;
 using std::cout;
 using std::endl;
 using std::vector;
@@ -44,8 +44,8 @@ using hpx::util::high_resolution_timer;
 
 struct thread_data {
     int thread_num;
-    local_queue_executor exec;
-    vector<unique_future<void>> task_handles;
+    local_priority_queue_executor exec;
+    vector<shared_future<void>> task_handles;
 };
 
 class hpx_runtime {

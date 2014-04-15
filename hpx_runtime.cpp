@@ -148,7 +148,7 @@ hpx_runtime::hpx_runtime(int Nthreads) {
 }
 
 void task_setup( omp_task_func task_func, int thread_num, void *firstprivates,
-                 void *fp, local_queue_executor exec) {
+                 void *fp, local_priority_queue_executor exec) {
     thread_data *data_struct = new thread_data();
     data_struct->thread_num = thread_num;
     auto thread_id = hpx::threads::get_self_id();
@@ -176,10 +176,10 @@ void hpx_runtime::task_wait() {
 void ompc_fork_worker( int Nthreads, omp_task_func task_func,
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
-    vector<hpx::lcos::unique_future<void>> threads;
-    threads.reserve(Nthreads);
     {
-        local_queue_executor exec;
+        vector<hpx::lcos::future<void>> threads;
+        threads.reserve(Nthreads);
+        local_priority_queue_executor exec;
         for(int i = 0; i < Nthreads; i++) {
             threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp, exec));
         }
