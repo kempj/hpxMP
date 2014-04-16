@@ -65,13 +65,25 @@ fib-test: libopenmp.so.1 ./omp-tests/omp-fib
 lu-test: libopenmp.so.1 ./omp-tests/omp-lu
 	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-lu 1000 10
 
-epcc: schedbench taskbench 
+epcc: schedbench-test taskbench-test
 
-syncbench:
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/syncbench
+syncbench-test: libopenmp.so.1 syncbench
+	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/syncbench --outer-repetitions 2
 
-schedbench:
+schedbench-test: libopenmp.so.1 schedbench
 	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/schedbench
 
+taskbench-test: libopenmp.so.1 taskbench
+	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/taskbench --outer-repetitions 2
+
+syncbench:
+	cd omp-tests/epcc/omp_v3/C; make syncbench
+
+schedbench:
+	cd omp-tests/epcc/omp_v3/C; make schedbench
+
 taskbench:
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/taskbench
+	cd omp-tests/epcc/omp_v3/C; make taskbench
+
+buildTests:
+	cd omp-tests; make

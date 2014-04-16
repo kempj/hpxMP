@@ -42,3 +42,4 @@ fort: test.f90
 
 ftest: fort
 	LD_PRELOAD=../libopenmp.so.1 ./ftest
+
