@@ -140,6 +140,11 @@ void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
     *p_upper = my_upper;
 }
 
+//These functions essentially store the paramaters of an array,
+// the chunk size, stride, and schedule type.
+// to be used later when calculating the bounds and stride
+// in __ompc_schedule_next_4/8
+// storing them in the thread pointer struct will probably work
 void __ompc_scheduler_init_4( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int32 lower, omp_int32 upper,
@@ -158,6 +163,15 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *plower, omp_int32 *pupper,
                                   omp_int32 *pstride){
     cout << "Not implemented: __ompc_schedule_next_4" << endl;
+    //switch (schedule_type) {
+    //    case OMP_SCHED_STATIC_EVEN:
+    //    case OMP_SCHED_STATIC:
+    //    case OMP_SCHED_GUIDED:
+    //    case OMP_SCHED_DYNAMIC:
+    //    case OMP_SCHED_ORDERED_STATIC_EVEN:
+    //    case OMP_SCHED_ORDERED_STATIC:
+    //    case OMP_SCHED_ORDERED_DYNAMIC:
+    //    case OMP_SCHED_ORDERED_GUIDED:
     return 0;
 }
 
@@ -183,7 +197,7 @@ void __ompc_barrier() {
 void __ompc_ebarrier() {
     //This is added because a barrier is supposed to wait for all current tasks to finish.
     //In the case where tasks were spawned, but taskwait was not called, this is needed
-    //TODO: needs to be reworked for executor
+    //TODO: needs to be reworked for executor to wait on all child tasks
     hpx_backend->task_wait();
 
     hpx_backend->barrier_wait();
