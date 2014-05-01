@@ -11,7 +11,7 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-void env_init(){
+void hpx_runtime::env_init(){
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
     if(omp_num_threads != NULL){
         num_threads = atoi(omp_num_threads);
@@ -143,7 +143,6 @@ int hpx_main() {
     // and the vectors of futures
     return hpx::finalize();
 }
-
  
 void hpx_runtime::fork(int Nthreads, omp_task_func func, frame_pointer_t parent_fp) { 
     if(Nthreads > 0)
@@ -160,6 +159,5 @@ void hpx_runtime::fork(int Nthreads, omp_task_func func, frame_pointer_t parent_
     globalBarrier.reset(new barrier(num_threads));
 
     hpx::init(argc, argv, cfg);
-    delete[] argv;
 }
 

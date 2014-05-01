@@ -327,10 +327,10 @@ int omp_get_thread_num() {
 
 //OpenMP 3.1 spec, section 3.2.5
 int omp_get_num_procs() {
-    if(!hpx_runtime) {
-        hpx_backend.reset(new hpx_runtime());       
+    if(!hpx_backend) {
+        hpx_backend.reset(new hpx_runtime());
     }
-    return hpx_runtime->get_num_procs();
+    return hpx_backend->get_num_procs();
 }
 
 //OpenMP 3.1 spec, section 3.2.6

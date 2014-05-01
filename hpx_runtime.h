@@ -53,6 +53,7 @@ class hpx_runtime {
         void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
         int get_thread_num();
         int get_num_threads();
+        int get_num_procs();
         void set_num_threads(int nthreads);
         void barrier_wait();
         void lock(int lock_id);
@@ -68,6 +69,7 @@ class hpx_runtime {
         omp_task_func task_func;
         frame_pointer_t fp;
         int threads_requested;
+        void env_init();
         
     private:
         boost::shared_ptr<barrier> globalBarrier;
