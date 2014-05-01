@@ -6,7 +6,8 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
-#include <hpx/hpx_start.hpp>
+//#include <hpx/hpx_start.hpp>
+#include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/util/static.hpp>
@@ -21,7 +22,6 @@
 #include <hpx/util/high_resolution_timer.hpp>
 #include <map>
 
-#include <hpx/include/thread_executors.hpp>
 
 
 typedef void *frame_pointer_t;
@@ -31,8 +31,8 @@ typedef void (*omp_micro)(int , frame_pointer_t);
 typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
 typedef hpx::lcos::local::spinlock mutex_type;
+typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
-using hpx::threads::executors::local_priority_queue_executor;
 using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
 using hpx::lcos::future;
@@ -44,16 +44,16 @@ using hpx::util::high_resolution_timer;
 
 struct thread_data {
     int thread_num;
-    local_priority_queue_executor exec;
     vector<shared_future<void>> task_handles;
 };
 
 class hpx_runtime {
     public:
-        hpx_runtime(int Nthreads);        
+        hpx_runtime();
         void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
         int get_thread_num();
         int get_num_threads();
+        void set_num_threads(int nthreads);
         void barrier_wait();
         void lock(int lock_id);
         bool trylock(int lock_id);
@@ -65,11 +65,18 @@ class hpx_runtime {
         void task_wait();
         double get_time();
         void delete_hpx_objects();
+        omp_task_func task_func;
+        frame_pointer_t fp;
+        int threads_requested;
         
     private:
         boost::shared_ptr<barrier> globalBarrier;
         int num_threads;
-        map<int, mutex_type> lock_map;
+        int num_procs;
+        vector<mtx_ptr> lock_list;
         boost::shared_ptr<high_resolution_timer> walltime;
+        std::vector<std::string> cfg;
+        int argc;
+        char ** argv;
 };
 

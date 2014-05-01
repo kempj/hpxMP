@@ -15,7 +15,7 @@ using namespace std;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 
 bool started = false;
-boost::atomic<bool> running(false);
+//boost::atomic<bool> running(false);
 int single_counter = 0;
 int current_single_thread = -1;
 int single_mtx_id = -1;
@@ -23,21 +23,20 @@ int crit_mtx_id = -1;
 int lock_mtx_id = -1;
 int print_mtx_id = -1;
 
-omp_micro thread_func = 0;
+omp_micro fork_func = 0;
 
-int init_num_threads() {
-    int numThreads = 0;
-    auto envNum = getenv("OMP_NUM_THREADS");
-    if( envNum != 0)
-       numThreads = atoi(envNum);
-    return numThreads;
+void mtx_setup() {
+    print_mtx_id = hpx_backend->new_mtx();
+    single_mtx_id = hpx_backend->new_mtx();
+    crit_mtx_id = hpx_backend->new_mtx();
+    lock_mtx_id = hpx_backend->new_mtx();
 }
 
+//This function allows a thread to be handled the same way a task is.
 void omp_thread_func(void *firstprivates, void *fp) {
-    //Threads do not need first privates. 
-    //This function allows a thread to be handled the same way a task is.
-    int tid = __ompc_get_local_thread_num();
-    thread_func(tid, fp);
+    mtx_setup();
+    int tid = hpx_backend->get_thread_num();
+    fork_func(tid, fp);
 }
 
 //overwrites global in openmp
@@ -45,43 +44,20 @@ int __ompc_init_rtl(int num_threads) {
     return 0;
 }
 
-void __ompc_fork(int Nthreads, omp_micro micro_task, frame_pointer_t fp) {
-    if(!running) {
-        running = true;
-//        hpx_backend.init(Nthreads);
-        hpx_backend.reset(new hpx_runtime(Nthreads));       
+void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
+    assert(nthreads >= 0);
+    if(!hpx_backend) {
+        hpx_backend.reset(new hpx_runtime());
     }
-    if(print_mtx_id == -1) 
-        print_mtx_id = hpx_backend->new_mtx();
-    if(single_mtx_id == -1) 
-        single_mtx_id = hpx_backend->new_mtx();
-    if(crit_mtx_id == -1)
-        crit_mtx_id = hpx_backend->new_mtx();
-    if(lock_mtx_id == -1)
-        lock_mtx_id = hpx_backend->new_mtx();
-    if(Nthreads <= 0)
-        Nthreads = hpx_backend->get_num_threads();
-    thread_func = micro_task;
-    assert(!started);
+    fork_func = micro_task;
+    assert(!started);//Nested parallelism is disabled
     started = true;
-    hpx_backend->fork(Nthreads, omp_thread_func, fp);
+    hpx_backend->fork(nthreads, omp_thread_func, fp);
     started = false;
 }
 
 int __ompc_can_fork() {
     return !started;
-}
-int __ompc_get_local_thread_num() {
-    //TODO: what if backend has not started yet?
-    if(!running) {
-        running = true;
-        hpx_backend.reset(new hpx_runtime(0));
-    }
-    if(!started) {
-        return 0;
-    } else {
-        return hpx_backend->get_thread_num();
-    }
 }
 
 //ignoring chunk size input, assuming it is one
@@ -89,10 +65,6 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                            int *p_lower, int *p_upper, 
                            int *p_stride, int incr, 
                            int chunk) {
-//    hpx_backend->lock(print_mtx_id);
-//    cout << "Thread " << thread_num << " of " << num_threads <<  endl
-//         << "\t" << *p_lower << "-" << *p_upper << ", " << *p_stride << endl;
-
     //copied very directly from the openUH OpenMP runtime:
     int block_size, stride, my_lower, my_upper;
     int team_size = omp_get_num_threads();
@@ -112,9 +84,6 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
     }
     *p_lower = my_lower;
     *p_upper = my_upper;
-
- //   cout << "\t" << *p_lower << "-" << *p_upper << ", " << *p_stride << endl;
- //   hpx_backend->unlock(print_mtx_id);
 }
 
 void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
@@ -191,15 +160,17 @@ void __ompc_end_reduction(omp_int32 gtid, omp_int32 **lck){
 }
 
 void __ompc_barrier() {
+    //TODO: double check that this behaves the same as an explicit barrier
+    // specifically do all explicit tasks need to finish
     __ompc_ebarrier();
 }
 
 void __ompc_ebarrier() {
-    //This is added because a barrier is supposed to wait for all current tasks to finish.
-    //In the case where tasks were spawned, but taskwait was not called, this is needed
+    //This is added because a barrier is supposed to wait for all current 
+    // tasks to finish. In the case where tasks were spawned, but taskwait 
+    // was not called, this is needed.
     //TODO: needs to be reworked for executor to wait on all child tasks
     hpx_backend->task_wait();
-
     hpx_backend->barrier_wait();
 }
 
@@ -278,15 +249,6 @@ void __ompc_task_wait(){
 }
 
 void __ompc_task_exit(){
-    //The main 'thread' tasks need to wait for all chilren tasks to finish,
-    // even if the child tasks don't wait on their child tasks to finish.
-    // This is a simple solution that forces all tasks to wait on child tasks 
-    // to finish. This is not incorrect, but it could hurt performance.
-
-    // If the information of whether or not the current thread was a 'task'
-    // or a 'thread' was stored, this could be avoided
-    //
-    // moved into the actual thread function
 }
 
 void __ompc_serialized_parallel(int global_tid) {
@@ -301,7 +263,9 @@ void __ompc_critical(int gtid, int **lck) {
         hpx_backend->lock(crit_mtx_id);
         if(*lck == NULL || **lck < 0){
             *lck = new int;
+            hpx_backend->lock(lock_mtx_id);
             **lck = hpx_backend->new_mtx();
+            hpx_backend->unlock(lock_mtx_id);
         }
         hpx_backend->unlock(crit_mtx_id);
     }
@@ -328,33 +292,87 @@ omp_int32 __ompc_copyprivate( omp_int32 mpsp_status,
     cout << "unimplemented function called: __ompc_copyprivate" << endl;
     return 0;
 }
-//OMP Library functions
-//TODO: move to another file
-int omp_get_num_threads() {
-    return hpx_backend->get_num_threads();
+
+int __ompc_get_local_thread_num() {
+    if(hpx_backend && started) {
+        return hpx_backend->get_thread_num();
+    }
+    return 0;
+}
+//OpenMP 3.1 spec, section 3.2.1
+void omp_set_num_threads(int nthreads){
+    hpx_backend->set_num_threads(nthreads);
 }
 
+//OpenMP 3.1 spec, section 3.2.2
+//can be called from outside a parallel region
+int omp_get_num_threads() {
+    if(hpx_backend && started)
+        return hpx_backend->get_num_threads();
+    return 1;
+}
+
+//OpenMP 3.1 spec, section 3.2.3
 int omp_get_max_threads() {
-    //TODO: what if backend has not started yet?
-    if(!running) {
-        running = true;
-        hpx_backend.reset(new hpx_runtime(0));
+    if(!hpx_backend) {
+        hpx_backend.reset(new hpx_runtime());
     }                      
     return hpx_backend->get_num_threads();
 }
 
+//OpenMP 3.1 spec, section 3.2.4
 int omp_get_thread_num() {
     return __ompc_get_local_thread_num();
 }
 
-double omp_get_wtime() {
-    return hpx_backend->get_time();
-}
-double omp_get_wtick() {
-    //high resolution elapsed_min
-    return .000000001;
+//OpenMP 3.1 spec, section 3.2.5
+int omp_get_num_procs() {
+    if(!hpx_runtime) {
+        hpx_backend.reset(new hpx_runtime());       
+    }
+    return hpx_runtime->get_num_procs();
 }
 
+//OpenMP 3.1 spec, section 3.2.6
+int omp_in_parallel(){
+    return started;
+}
+
+//OpenMP 3.1 spec, section 3.2.7
+void omp_set_dynamic(int dynamic_threads){
+    //The omp_set_dynamic routine enables or disables dynamic adjustment of the
+    //number of threads available for the execution of subsequent parallel regions by
+    //setting the value of the dyn-var ICV.
+}
+//OpenMP 3.1 spec, section 3.2.8
+//int omp_get_dynamic(void);
+//OpenMP 3.1 spec, section 3.2.9
+void omp_set_nested(int nested){
+}
+//OpenMP 3.1 spec, section 3.2.10
+//int omp_get_nested(void);
+//OpenMP 3.1 spec, section 3.2.11
+//void omp_set_schedule(omp_sched_t kind, int modifier);
+//OpenMP 3.1 spec, section 3.2.12
+//void omp_get_schedule(omp_sched_t * kind, int * modifier );
+//OpenMP 3.1 spec, section 3.2.13
+//int omp_get_thread_limit(void);
+//OpenMP 3.1 spec, section 3.2.14
+//void omp_set_max_active_levels (int max_levels);
+//OpenMP 3.1 spec, section 3.2.15
+//int omp_get_max_active_levels(void);
+//OpenMP 3.1 spec, section 3.2.16
+//int omp_get_level (void);
+//OpenMP 3.1 spec, section 3.2.17
+//int omp_get_ancestor_thread_num (int level);
+//OpenMP 3.1 spec, section 3.2.18
+//int omp_get_team_size (int level);
+//OpenMP 3.1 spec, section 3.2.19
+//int omp_get_active_level (void);
+//OpenMP 3.1 spec, section 3.2.20
+//int omp_in_final(void);
+
+//OpenMP 3.1 spec, section 3.3.1
 void omp_init_lock(volatile omp_lock_t *lock) {
     hpx_backend->lock(lock_mtx_id);
     int new_id = hpx_backend->new_mtx();
@@ -363,39 +381,44 @@ void omp_init_lock(volatile omp_lock_t *lock) {
     *lock = reinterpret_cast<omp_lock_t>(new_id);
 }
 
-void omp_destroy_lock(volatile omp_lock_t *lock) {
-}
-
-void omp_set_lock(volatile omp_lock_t *lock) {
-    int lock_id = *((int*)lock);
-    hpx_backend->lock(lock_id);
-}
-
-void omp_unset_lock(volatile omp_lock_t *lock) {
-    int lock_id = *((int*)lock);
-    hpx_backend->unlock(lock_id);
-}
-
-int omp_test_lock(volatile omp_lock_t *lock) {
-    if(hpx_backend->trylock(*((int*)lock)))
-        return 1;
-    return 0;
-}
-
 void omp_init_nest_lock(volatile omp_nest_lock_t *lock) {
     //unimplmented
+}
+
+
+//OpenMP 3.1 spec, section 3.3.2
+void omp_destroy_lock(volatile omp_lock_t *lock) {
 }
 
 void omp_destroy_nest_lock(volatile omp_nest_lock_t *lock) {
     //unimplmented
 }
 
+//OpenMP 3.1 spec, section 3.3.3
+void omp_set_lock(volatile omp_lock_t *lock) {
+    int lock_id = *((int*)lock);
+    hpx_backend->lock(lock_id);
+}
+
 void omp_set_nest_lock(volatile omp_nest_lock_t *lock) {
     //unimplmented
 }
 
+//OpenMP 3.1 spec, section 3.3.4
+void omp_unset_lock(volatile omp_lock_t *lock) {
+    int lock_id = *((int*)lock);
+    hpx_backend->unlock(lock_id);
+}
+
 void omp_unset_nest_lock(volatile omp_nest_lock_t *lock) {
     //unimplmented
+}
+
+//OpenMP 3.1 spec, section 3.3.5
+int omp_test_lock(volatile omp_lock_t *lock) {
+    if(hpx_backend->trylock(*((int*)lock)))
+        return 1;
+    return 0;
 }
 
 int omp_test_nest_lock(volatile omp_nest_lock_t *lock) {
@@ -403,16 +426,14 @@ int omp_test_nest_lock(volatile omp_nest_lock_t *lock) {
     return 1;
 }
 
-void omp_set_nested() {
-    //unimplmented
+//OpenMP 3.1 spec, section 3.4.1
+double omp_get_wtime() {
+    return hpx_backend->get_time();
 }
 
-int omp_in_parallel(void){
-    return started;
+//OpenMP 3.1 spec, section 3.4.2
+double omp_get_wtick() {
+    //high resolution elapsed_min
+    return .000000001;
 }
 
-void omp_set_dynamic(int dynamic_threads){
-    //The omp_set_dynamic routine enables or disables dynamic adjustment of the
-    //number of threads available for the execution of subsequent parallel regions by
-    //setting the value of the dyn-var ICV.
-}
