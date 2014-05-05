@@ -70,13 +70,17 @@ class hpx_runtime {
         frame_pointer_t fp;
         int threads_requested;
         void env_init();
-        
-    private:
-        boost::shared_ptr<barrier> globalBarrier;
-        int num_threads;
-        int num_procs;
+        mutex_type runtime_mtx;
         vector<mtx_ptr> lock_list;
         boost::shared_ptr<high_resolution_timer> walltime;
+        boost::shared_ptr<barrier> globalBarrier;
+        int single_mtx_id; 
+        int crit_mtx_id;
+        int lock_mtx_id;
+        
+    private:
+        int num_threads;
+        int num_procs;
         std::vector<std::string> cfg;
         int argc;
         char ** argv;

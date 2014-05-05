@@ -10,31 +10,23 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <boost/shared_ptr.hpp>
 
 using namespace std;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 
 bool started = false;
-//boost::atomic<bool> running(false);
 int single_counter = 0;
 int current_single_thread = -1;
-int single_mtx_id = -1;
-int crit_mtx_id = -1;
-int lock_mtx_id = -1;
-int print_mtx_id = -1;
+//int hpx_backend->single_mtx_id = -1;
+//int hpx_backend->crit_mtx_id = -1;
+//int hpx_backend->lock_mtx_id = -1;
+//int print_mtx_id = -1;
 
 omp_micro fork_func = 0;
 
-void mtx_setup() {
-    print_mtx_id = hpx_backend->new_mtx();
-    single_mtx_id = hpx_backend->new_mtx();
-    crit_mtx_id = hpx_backend->new_mtx();
-    lock_mtx_id = hpx_backend->new_mtx();
-}
-
 //This function allows a thread to be handled the same way a task is.
 void omp_thread_func(void *firstprivates, void *fp) {
-    mtx_setup();
     int tid = hpx_backend->get_thread_num();
     fork_func(tid, fp);
 }
@@ -188,7 +180,7 @@ void __ompc_end_master(int global_tid){
 }
 
 int __ompc_single(int tid){
-    hpx_backend->lock(single_mtx_id);
+    hpx_backend->lock(hpx_backend->single_mtx_id);
     int num_threads = __ompc_get_num_threads();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
@@ -196,7 +188,7 @@ int __ompc_single(int tid){
     } else {
         single_counter++;
     }
-    hpx_backend->unlock(single_mtx_id);
+    hpx_backend->unlock(hpx_backend->single_mtx_id);
     if(current_single_thread == tid) {
         return 1;
     }
@@ -204,11 +196,11 @@ int __ompc_single(int tid){
 }
 
 void __ompc_end_single(int tid){
-    hpx_backend->lock(single_mtx_id);
+    hpx_backend->lock(hpx_backend->single_mtx_id);
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    hpx_backend->unlock(single_mtx_id);
+    hpx_backend->unlock(hpx_backend->single_mtx_id);
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -260,14 +252,14 @@ void __ompc_end_serialized_parallel(int global_tid) {
 
 void __ompc_critical(int gtid, int **lck) {
     if(*lck == NULL || **lck < 0) {
-        hpx_backend->lock(crit_mtx_id);
+        hpx_backend->lock(hpx_backend->crit_mtx_id);
         if(*lck == NULL || **lck < 0){
             *lck = new int;
-            hpx_backend->lock(lock_mtx_id);
+            hpx_backend->lock(hpx_backend->lock_mtx_id);
             **lck = hpx_backend->new_mtx();
-            hpx_backend->unlock(lock_mtx_id);
+            hpx_backend->unlock(hpx_backend->lock_mtx_id);
         }
-        hpx_backend->unlock(crit_mtx_id);
+        hpx_backend->unlock(hpx_backend->crit_mtx_id);
     }
     hpx_backend->lock(**lck);
 }
@@ -374,9 +366,9 @@ void omp_set_nested(int nested){
 
 //OpenMP 3.1 spec, section 3.3.1
 void omp_init_lock(volatile omp_lock_t *lock) {
-    hpx_backend->lock(lock_mtx_id);
+    hpx_backend->lock(hpx_backend->lock_mtx_id);
     int new_id = hpx_backend->new_mtx();
-    hpx_backend->unlock(lock_mtx_id);
+    hpx_backend->unlock(hpx_backend->lock_mtx_id);
 
     *lock = reinterpret_cast<omp_lock_t>(new_id);
 }

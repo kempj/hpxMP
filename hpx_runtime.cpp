@@ -11,12 +11,13 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-void hpx_runtime::env_init(){
+hpx_runtime::hpx_runtime() {
+    num_procs = hpx::threads::hardware_concurrency();
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
     if(omp_num_threads != NULL){
         num_threads = atoi(omp_num_threads);
     } else { 
-        num_threads = 0;
+        num_threads = num_procs;
     }
         
     using namespace boost::assign;
@@ -50,14 +51,6 @@ void hpx_runtime::env_init(){
     argv[0] = const_cast<char*>("hpxMP");
 }
 
-hpx_runtime::hpx_runtime() {
-    env_init();
-    num_procs = hpx::threads::hardware_concurrency();
-    if(0 == num_threads) {
-        num_threads = num_procs;
-    }
-}
-
 double hpx_runtime::get_time() {
     return walltime->now();
 }
@@ -87,10 +80,10 @@ void hpx_runtime::unlock(int lock_id) {
 }
 
 int hpx_runtime::new_mtx(){
-    int map_size = lock_list.size();
-    mtx_ptr temp_mtx(new mutex_type);
-    lock_list.push_back(temp_mtx);
-    return map_size;
+    cout << "mutex " << lock_list.size() << " allocated" << endl;
+    //I need a mutex here to protect access to the vector
+    lock_list.emplace_back(new mutex_type());
+    return lock_list.size() - 1;
 }
 
 void hpx_runtime::barrier_wait(){
@@ -128,7 +121,14 @@ void hpx_runtime::task_wait() {
     data->task_handles.clear();
 }
 
+void mtx_setup() {
+    hpx_backend->single_mtx_id = hpx_backend->new_mtx();
+    hpx_backend->crit_mtx_id = hpx_backend->new_mtx();
+    hpx_backend->lock_mtx_id = hpx_backend->new_mtx();
+}
+
 int hpx_main() {
+    mtx_setup();
     int num_threads = hpx_backend->threads_requested;
     omp_task_func task_func = hpx_backend->task_func;
     frame_pointer_t fp = hpx_backend->fp;
@@ -141,6 +141,9 @@ int hpx_main() {
     hpx::wait_all(threads);
     //TODO:Need to delete hpx data structures, like the barrier, locks, 
     // and the vectors of futures
+    hpx_backend->walltime.reset();
+    hpx_backend->globalBarrier.reset();
+    hpx_backend->lock_list.clear();
     return hpx::finalize();
 }
  
@@ -158,6 +161,8 @@ void hpx_runtime::fork(int Nthreads, omp_task_func func, frame_pointer_t parent_
     walltime.reset(new high_resolution_timer);
     globalBarrier.reset(new barrier(num_threads));
 
+    cout << "starting hpx" << endl;
     hpx::init(argc, argv, cfg);
+    cout << "stopping hpx" << endl;
 }
 
