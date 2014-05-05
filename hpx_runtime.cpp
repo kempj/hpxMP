@@ -80,7 +80,6 @@ void hpx_runtime::unlock(int lock_id) {
 }
 
 int hpx_runtime::new_mtx(){
-    cout << "mutex " << lock_list.size() << " allocated" << endl;
     //I need a mutex here to protect access to the vector
     lock_list.emplace_back(new mutex_type());
     return lock_list.size() - 1;
@@ -161,8 +160,6 @@ void hpx_runtime::fork(int Nthreads, omp_task_func func, frame_pointer_t parent_
     walltime.reset(new high_resolution_timer);
     globalBarrier.reset(new barrier(num_threads));
 
-    cout << "starting hpx" << endl;
     hpx::init(argc, argv, cfg);
-    cout << "stopping hpx" << endl;
 }
 
