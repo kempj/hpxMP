@@ -14,3 +14,6 @@ lu-local.o: lu-local.cpp
 
 exec: exec_test.cpp
 	g++ -g exec_test.cpp -o test-exec `pkg-config --cflags --libs hpx_application`
+
+exec-ptr: exec_ptr_test.cpp
+	g++ -g exec_ptr_test.cpp -o test-exec-ptr `pkg-config --cflags --libs hpx_application`

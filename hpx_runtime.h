@@ -4,8 +4,8 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <hpx/hpx.hpp>
-#include <hpx/hpx_fwd.hpp>
+//#include <hpx/hpx.hpp>
+//#include <hpx/hpx_fwd.hpp>
 //#include <hpx/hpx_start.hpp>
 #include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
@@ -23,6 +23,7 @@
 #include <map>
 
 
+#include <hpx/include/thread_executors.hpp>
 
 typedef void *frame_pointer_t;
 typedef int omp_tid;
@@ -33,6 +34,7 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 typedef hpx::lcos::local::spinlock mutex_type;
 typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
+using hpx::threads::executors::local_priority_queue_executor;
 using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
 using hpx::lcos::future;
@@ -77,6 +79,7 @@ class hpx_runtime {
         int single_mtx_id; 
         int crit_mtx_id;
         int lock_mtx_id;
+        boost::shared_ptr<local_priority_queue_executor> task_executor;
         
     private:
         int num_threads;

@@ -80,12 +80,13 @@ void hpx_runtime::unlock(int lock_id) {
 }
 
 int hpx_runtime::new_mtx(){
-    //I need a mutex here to protect access to the vector
     lock_list.emplace_back(new mutex_type());
     return lock_list.size() - 1;
 }
 
 void hpx_runtime::barrier_wait(){
+    //if thread = 0?
+    //task_executor.reset(new local_priority_queue_executor);
     globalBarrier->wait();
 }
 
@@ -110,6 +111,8 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     auto *data = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     int current_tid = data->thread_num;
+    //cout << *task_executor << endl;
+    //data->task_handles.push_back( hpx::async(*task_executor, task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
     data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
 }
 
@@ -127,21 +130,26 @@ void mtx_setup() {
 }
 
 int hpx_main() {
-    mtx_setup();
+    vector<hpx::lcos::future<void>> threads;
     int num_threads = hpx_backend->threads_requested;
+
+    mtx_setup();
+
+    hpx_backend->walltime.reset(new high_resolution_timer);
+    hpx_backend->globalBarrier.reset(new barrier(num_threads));
+//    hpx_backend->task_executor.reset(new local_priority_queue_executor);
+
     omp_task_func task_func = hpx_backend->task_func;
     frame_pointer_t fp = hpx_backend->fp;
 
-    vector<hpx::lcos::future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
         threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));
     }
     hpx::wait_all(threads);
-    //TODO:Need to delete hpx data structures, like the barrier, locks, 
-    // and the vectors of futures
     hpx_backend->walltime.reset();
     hpx_backend->globalBarrier.reset();
+//    hpx_backend->task_executor.reset();
     hpx_backend->lock_list.clear();
     return hpx::finalize();
 }
@@ -154,11 +162,6 @@ void hpx_runtime::fork(int Nthreads, omp_task_func func, frame_pointer_t parent_
 
     task_func = func;
     fp = parent_fp;
-
-    //These need to be reset each fork, but if the runtime shuts down,
-    // they need to be destroyed before hpx shuts down.
-    walltime.reset(new high_resolution_timer);
-    globalBarrier.reset(new barrier(num_threads));
 
     hpx::init(argc, argv, cfg);
 }

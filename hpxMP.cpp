@@ -18,10 +18,6 @@ boost::shared_ptr<hpx_runtime> hpx_backend;
 bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
-//int hpx_backend->single_mtx_id = -1;
-//int hpx_backend->crit_mtx_id = -1;
-//int hpx_backend->lock_mtx_id = -1;
-//int print_mtx_id = -1;
 
 omp_micro fork_func = 0;
 
@@ -152,8 +148,6 @@ void __ompc_end_reduction(omp_int32 gtid, omp_int32 **lck){
 }
 
 void __ompc_barrier() {
-    //TODO: double check that this behaves the same as an explicit barrier
-    // specifically do all explicit tasks need to finish
     __ompc_ebarrier();
 }
 
@@ -161,8 +155,8 @@ void __ompc_ebarrier() {
     //This is added because a barrier is supposed to wait for all current 
     // tasks to finish. In the case where tasks were spawned, but taskwait 
     // was not called, this is needed.
-    //TODO: needs to be reworked for executor to wait on all child tasks
     hpx_backend->task_wait();
+    //TODO: needs to be reworked for executor to wait on all child tasks
     hpx_backend->barrier_wait();
 }
 
