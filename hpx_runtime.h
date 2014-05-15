@@ -44,9 +44,13 @@ using std::vector;
 using std::map;
 using hpx::util::high_resolution_timer;
 
-struct thread_data {
-    int thread_num;
-    vector<shared_future<void>> task_handles;
+class thread_data {
+    public:
+        thread_data(int tid):thread_num(tid){};
+        mutex_type thread_mutex;
+        int thread_num;
+        vector<shared_future<void>> task_handles;
+        vector<shared_future<vector<shared_future<void>>>> child_tasks;
 };
 
 class hpx_runtime {

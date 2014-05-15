@@ -5,7 +5,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 
-#define  HPX_LIMIT 6
+#define  HPX_LIMIT 7
 
 #include "hpx_runtime.h"
 
@@ -85,8 +85,7 @@ int hpx_runtime::new_mtx(){
 }
 
 void hpx_runtime::barrier_wait(){
-    //if thread = 0?
-    //task_executor.reset(new local_priority_queue_executor);
+    //hpx::wait_all(data->child_tasks)
     globalBarrier->wait();
 }
 
@@ -97,23 +96,10 @@ int hpx_runtime::get_thread_num() {
     return data->thread_num;
 }
 
-void task_setup( omp_task_func task_func, int thread_num, void *firstprivates,
-                 void *fp) {
-    thread_data *data_struct = new thread_data();
-    data_struct->thread_num = thread_num;
-    auto thread_id = hpx::threads::get_self_id();
-    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
-    task_func(firstprivates, fp);
-}
-
-void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
-                               void *firstprivates, int is_tied) {
-    auto *data = reinterpret_cast<thread_data*>(
-            hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    int current_tid = data->thread_num;
-    //cout << *task_executor << endl;
-    //data->task_handles.push_back( hpx::async(*task_executor, task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
-    data->task_handles.push_back( hpx::async(task_setup, taskfunc, current_tid, firstprivates, frame_pointer));
+void mtx_setup() {
+    hpx_backend->single_mtx_id = hpx_backend->new_mtx();
+    hpx_backend->crit_mtx_id = hpx_backend->new_mtx();
+    hpx_backend->lock_mtx_id = hpx_backend->new_mtx();
 }
 
 void hpx_runtime::task_wait() {
@@ -123,10 +109,30 @@ void hpx_runtime::task_wait() {
     data->task_handles.clear();
 }
 
-void mtx_setup() {
-    hpx_backend->single_mtx_id = hpx_backend->new_mtx();
-    hpx_backend->crit_mtx_id = hpx_backend->new_mtx();
-    hpx_backend->lock_mtx_id = hpx_backend->new_mtx();
+void task_setup( omp_task_func task_func, void *firstprivates,
+                 void *fp, thread_data *parent_data) {
+    //TODO: use shared_ptr, since these are never de-allocated
+    thread_data *data_struct = new thread_data(parent_data->thread_num);
+    auto thread_id = hpx::threads::get_self_id();
+    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
+    task_func(firstprivates, fp);
+    {
+        hpx::lcos::local::spinlock::scoped_lock lk(parent_data->thread_mutex);
+        //shared_future<vector<shared_future<void>>> wait_future = hpx::when_all(data_struct->task_handles);
+        
+        parent_data->child_tasks.push_back(hpx::when_all(data_struct->task_handles));
+
+        //This has to be done after child tasks have finished appending their tasks to child_tasks.
+        //parent_data->child_tasks.push_back(hpx::async(hpx::wait_all, data_struct->child_tasks));
+    }
+}
+
+void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
+                               void *firstprivates, int is_tied) {
+    auto *data = reinterpret_cast<thread_data*>(
+            hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    //int current_tid = data->thread_num;
+    data->task_handles.push_back( hpx::async(task_setup, taskfunc, firstprivates, frame_pointer, data));
 }
 
 int hpx_main() {
@@ -137,19 +143,17 @@ int hpx_main() {
 
     hpx_backend->walltime.reset(new high_resolution_timer);
     hpx_backend->globalBarrier.reset(new barrier(num_threads));
-//    hpx_backend->task_executor.reset(new local_priority_queue_executor);
 
     omp_task_func task_func = hpx_backend->task_func;
     frame_pointer_t fp = hpx_backend->fp;
 
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async(task_setup, *task_func, i, (void*)0, fp));
+        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, new thread_data(i)));
     }
     hpx::wait_all(threads);
     hpx_backend->walltime.reset();
     hpx_backend->globalBarrier.reset();
-//    hpx_backend->task_executor.reset();
     hpx_backend->lock_list.clear();
     return hpx::finalize();
 }
