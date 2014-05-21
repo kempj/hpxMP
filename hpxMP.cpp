@@ -154,8 +154,7 @@ void __ompc_ebarrier() {
     //This is added because a barrier is supposed to wait for all current 
     // tasks to finish. In the case where tasks were spawned, but taskwait 
     // was not called, this is needed.
-    hpx_backend->task_wait();
-    //TODO: needs to be reworked for executor to wait on all child tasks
+    //hpx_backend->task_wait();
     hpx_backend->barrier_wait();
 }
 

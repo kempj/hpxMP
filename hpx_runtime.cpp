@@ -192,13 +192,12 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     data->task_handles.push_back( hpx::async(task_setup, taskfunc, firstprivates, frame_pointer, data));
 }
 
-void ompc_fork_worker( int Nthreads, omp_task_func task_func,
+void ompc_fork_worker( int num_threads, omp_task_func task_func,
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
 
     vector<hpx::lcos::future<void>> threads;
     vector<thread_data*> thread_data_vector;
-    int num_threads = hpx_backend->threads_requested;
     thread_data *tmp_data;
 
     threads.reserve(num_threads);
@@ -230,7 +229,7 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     bool running = false;
 
     hpx::applier::register_thread_nullary(
-            HPX_STD_BIND(&ompc_fork_worker, Nthreads, task_func, fp,
+            HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
                 boost::ref(mtx), boost::ref(cond), boost::ref(running))
             , "ompc_fork_worker");
     // Wait for the thread to run.
