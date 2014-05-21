@@ -11,8 +11,26 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
+void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
+    cout << "HPX OpenMP runtime has started" << endl;
+    // Let the main thread know that we're done.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        running = true;
+        cond.notify_all();
+    }
+}
+
+void fini_runtime() {
+    cout << "Stopping HPX OpenMP runtime" << endl;
+
+    boost::mutex mtx;
+    boost::condition cond;
+
+    hpx::get_runtime().stop();
+}
+
 hpx_runtime::hpx_runtime() {
-    cout << "starting hpx" << endl;
     num_procs = hpx::threads::hardware_concurrency();
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
     if(omp_num_threads != NULL){
@@ -20,6 +38,9 @@ hpx_runtime::hpx_runtime() {
     } else { 
         num_threads = num_procs;
     }
+
+    walltime.reset(new high_resolution_timer);
+    globalBarrier.reset(new barrier(num_threads));
         
     using namespace boost::assign;
     cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(num_threads);
@@ -50,6 +71,32 @@ hpx_runtime::hpx_runtime() {
         argv = new char*[argc];
     }
     argv[0] = const_cast<char*>("hpxMP");
+
+
+    HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
+    boost::program_options::options_description desc_cmdline; 
+
+    boost::mutex local_mtx;
+    boost::condition cond;
+    bool running = false;
+
+    cout << "Starting HPX OpenMP runtime" << endl; 
+
+    hpx::start(f, desc_cmdline, argc, argv, cfg,
+            HPX_STD_BIND(&wait_for_startup, 
+                boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
+
+    { // Wait for the thread to run.
+        boost::mutex::scoped_lock lk(local_mtx);
+        if (!running)
+            cond.wait(lk);
+    }
+
+    //Must be called while hpx is running
+    single_mtx_id = new_mtx();
+    crit_mtx_id = new_mtx();
+    lock_mtx_id = new_mtx();
+    atexit(fini_runtime);
 }
 
 double hpx_runtime::get_time() {
@@ -104,12 +151,6 @@ int hpx_runtime::get_thread_num() {
     return data->thread_num;
 }
 
-void mtx_setup() {
-    hpx_backend->single_mtx_id = hpx_backend->new_mtx();
-    hpx_backend->crit_mtx_id = hpx_backend->new_mtx();
-    hpx_backend->lock_mtx_id = hpx_backend->new_mtx();
-}
-
 void hpx_runtime::task_wait() {
     auto *data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
@@ -146,38 +187,52 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     data->task_handles.push_back( hpx::async(task_setup, taskfunc, firstprivates, frame_pointer, data));
 }
 
-int hpx_main() {
+void ompc_fork_worker( int Nthreads, omp_task_func task_func,
+                       frame_pointer_t fp, boost::mutex& mtx, 
+                       boost::condition& cond, bool& running) {
+
     vector<hpx::lcos::future<void>> threads;
+    vector<thread_data*> thread_data_vector;
     int num_threads = hpx_backend->threads_requested;
-
-    mtx_setup();
-
-    hpx_backend->walltime.reset(new high_resolution_timer);
-    hpx_backend->globalBarrier.reset(new barrier(num_threads));
-
-    omp_task_func task_func = hpx_backend->task_func;
-    frame_pointer_t fp = hpx_backend->fp;
+    thread_data *tmp_data;
 
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, new thread_data(i)));
+        tmp_data = new thread_data(i);
+        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, tmp_data));
+        thread_data_vector.push_back(tmp_data);
     }
     hpx::wait_all(threads);
-    hpx_backend->walltime.reset();
-    hpx_backend->globalBarrier.reset();
-    hpx_backend->lock_list.clear();
-    return hpx::finalize();
+    for(int i = 0; i < num_threads; i++) {
+        hpx::wait_all(thread_data_vector[i]->child_tasks);
+    }
+
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        running = true;
+        cond.notify_all();
+    }
 }
  
-void hpx_runtime::fork(int Nthreads, omp_task_func func, frame_pointer_t parent_fp) { 
+void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp) { 
     if(Nthreads > 0)
         threads_requested = Nthreads;
     else
         threads_requested = num_threads;
 
-    task_func = func;
-    fp = parent_fp;
+    boost::mutex mtx;
+    boost::condition cond;
+    bool running = false;
 
-    hpx::init(argc, argv, cfg);
+    hpx::applier::register_thread_nullary(
+            HPX_STD_BIND(&ompc_fork_worker, Nthreads, task_func, fp,
+                boost::ref(mtx), boost::ref(cond), boost::ref(running))
+            , "ompc_fork_worker");
+    // Wait for the thread to run.
+    {
+        boost::mutex::scoped_lock lk(mtx);
+        if (!running)
+            cond.wait(lk);
+    }
 }
 

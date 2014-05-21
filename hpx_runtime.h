@@ -4,10 +4,10 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-//#include <hpx/hpx.hpp>
+#include <hpx/hpx.hpp>
 //#include <hpx/hpx_fwd.hpp>
-//#include <hpx/hpx_start.hpp>
-#include <hpx/hpx_init.hpp>
+#include <hpx/hpx_start.hpp>
+//#include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/util/static.hpp>
@@ -72,8 +72,6 @@ class hpx_runtime {
         void task_wait();
         double get_time();
         void delete_hpx_objects();
-        omp_task_func task_func;
-        frame_pointer_t fp;
         int threads_requested;
         void env_init();
         mutex_type runtime_mtx;
