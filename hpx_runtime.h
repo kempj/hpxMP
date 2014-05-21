@@ -50,7 +50,6 @@ class thread_data {
         mutex_type thread_mutex;
         int thread_num;
         vector<shared_future<void>> task_handles;
-        //vector<shared_future<vector<shared_future<void>>>> child_tasks;
         vector<shared_future<void>> child_tasks;
 };
 

@@ -12,6 +12,7 @@
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 hpx_runtime::hpx_runtime() {
+    cout << "starting hpx" << endl;
     num_procs = hpx::threads::hardware_concurrency();
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
     if(omp_num_threads != NULL){
@@ -84,8 +85,15 @@ int hpx_runtime::new_mtx(){
     return lock_list.size() - 1;
 }
 
+//According to the spec, this should only be called from a "thread", 
+// and never from inside an openmp tasks.
+// This could potentially be taken advantage of, but currently is not.
 void hpx_runtime::barrier_wait(){
-    //hpx::wait_all(data->child_tasks)
+    auto thread_id = hpx::threads::get_self_id();
+    auto *data = reinterpret_cast<thread_data*>(
+                    hpx::threads::get_thread_data(thread_id) );
+    hpx::wait_all(data->task_handles);
+    hpx::wait_all(data->child_tasks);
     globalBarrier->wait();
 }
 
@@ -112,7 +120,7 @@ void hpx_runtime::task_wait() {
 void wait_on_tasks(thread_data *data_struct) {
     hpx::wait_all(data_struct->task_handles);
     //At this point, all child tasks must be finished, 
-    // so nothing will be appended to child tasks
+    // so nothing will be appended to child task vectors
     hpx::wait_all(data_struct->child_tasks);
 }
 
@@ -126,7 +134,6 @@ void task_setup( omp_task_func task_func, void *firstprivates,
     shared_future<void> child_task = hpx::async(wait_on_tasks, data_struct);
     {
         hpx::lcos::local::spinlock::scoped_lock lk(parent_data->thread_mutex);
-        //shared_future<vector<shared_future<void>>> wait_future = hpx::when_all(data_struct->task_handles);
         parent_data->child_tasks.push_back(child_task);
     }
 }

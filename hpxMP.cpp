@@ -48,7 +48,6 @@ int __ompc_can_fork() {
     return !started;
 }
 
-//ignoring chunk size input, assuming it is one
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                            int *p_lower, int *p_upper, 
                            int *p_stride, int incr, 
@@ -361,6 +360,9 @@ void omp_set_nested(int nested){
 
 //OpenMP 3.1 spec, section 3.3.1
 void omp_init_lock(volatile omp_lock_t *lock) {
+    if(!hpx_backend) {
+        hpx_backend.reset(new hpx_runtime());
+    }
     hpx_backend->lock(hpx_backend->lock_mtx_id);
     int new_id = hpx_backend->new_mtx();
     hpx_backend->unlock(hpx_backend->lock_mtx_id);
