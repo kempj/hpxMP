@@ -109,6 +109,13 @@ void hpx_runtime::task_wait() {
     data->task_handles.clear();
 }
 
+void wait_on_tasks(thread_data *data_struct) {
+    hpx::wait_all(data_struct->task_handles);
+    //At this point, all child tasks must be finished, 
+    // so nothing will be appended to child tasks
+    hpx::wait_all(data_struct->child_tasks);
+}
+
 void task_setup( omp_task_func task_func, void *firstprivates,
                  void *fp, thread_data *parent_data) {
     //TODO: use shared_ptr, since these are never de-allocated
@@ -116,14 +123,11 @@ void task_setup( omp_task_func task_func, void *firstprivates,
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
     task_func(firstprivates, fp);
+    shared_future<void> child_task = hpx::async(wait_on_tasks, data_struct);
     {
         hpx::lcos::local::spinlock::scoped_lock lk(parent_data->thread_mutex);
         //shared_future<vector<shared_future<void>>> wait_future = hpx::when_all(data_struct->task_handles);
-        
-        parent_data->child_tasks.push_back(hpx::when_all(data_struct->task_handles));
-
-        //This has to be done after child tasks have finished appending their tasks to child_tasks.
-        //parent_data->child_tasks.push_back(hpx::async(hpx::wait_all, data_struct->child_tasks));
+        parent_data->child_tasks.push_back(child_task);
     }
 }
 
