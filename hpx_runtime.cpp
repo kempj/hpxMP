@@ -42,6 +42,9 @@ hpx_runtime::hpx_runtime() {
     walltime.reset(new high_resolution_timer);
     globalBarrier.reset(new barrier(num_threads));
         
+    std::vector<std::string> cfg;
+    int argc;
+    char ** argv;
     using namespace boost::assign;
     cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(num_threads);
     cfg += "hpx.stacks.use_guard_pages=0";
@@ -97,6 +100,8 @@ hpx_runtime::hpx_runtime() {
     crit_mtx_id = new_mtx();
     lock_mtx_id = new_mtx();
     atexit(fini_runtime);
+
+    delete[] argv;
 }
 
 double hpx_runtime::get_time() {

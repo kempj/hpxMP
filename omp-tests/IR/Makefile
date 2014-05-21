@@ -11,6 +11,9 @@ nested-parallel:
 for:
 	$(CC) ../omp-for.c -fopenmp -CLIST:emit_nested_pu:before_cg 
 
+for-dynamic:
+	$(CC) ../omp-for-dynamic.c -fopenmp -CLIST:emit_nested_pu:before_cg 
+
 task:
 	$(CC) ../omp-task.c -fopenmp -CLIST:emit_nested_pu:before_cg 
 

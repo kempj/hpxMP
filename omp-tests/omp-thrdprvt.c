@@ -1,7 +1,7 @@
 #include <stdio.h>
 
-int x;
-#pragma omp threadprivate(x)
+int x, y;
+#pragma omp threadprivate(x,y)
 
 int main() {
 
@@ -9,25 +9,20 @@ int main() {
     {
         x = omp_get_thread_num();
     }
-/*
+
 #pragma omp parallel
     {
-        printf("%d %d\n", x, omp_get_thread_num());
-
+        if(x % 2 == 0)
+            y = x + 1;
+        else
+            y = 0;
     }
 #pragma omp parallel
     {
-        printf("%d %d\n", x, omp_get_thread_num());
-
+        printf("%d, %d %d\n", x, y, omp_get_thread_num());
     }
 #pragma omp parallel
     {
-        printf("%d %d\n", x, omp_get_thread_num());
-
-    }*/
-#pragma omp parallel
-    {
-        printf("%d %d\n", x, omp_get_thread_num());
-
+        printf("%d, %d %d\n", x, y, omp_get_thread_num());
     }
 }

@@ -23,7 +23,7 @@
 #include <map>
 
 
-#include <hpx/include/thread_executors.hpp>
+//#include <hpx/include/thread_executors.hpp>
 
 typedef void *frame_pointer_t;
 typedef int omp_tid;
@@ -81,13 +81,10 @@ class hpx_runtime {
         int single_mtx_id; 
         int crit_mtx_id;
         int lock_mtx_id;
-        boost::shared_ptr<local_priority_queue_executor> task_executor;
+        //boost::shared_ptr<local_priority_queue_executor> task_executor;
         
     private:
         int num_threads;
         int num_procs;
-        std::vector<std::string> cfg;
-        int argc;
-        char ** argv;
 };
 
