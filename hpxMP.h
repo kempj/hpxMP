@@ -109,6 +109,10 @@ extern "C" omp_int32 __ompc_copyprivate( omp_int32 mpsp_status,
 
 extern "C" int omp_get_num_threads();
 #pragma weak omp_get_num_threads_ = omp_get_num_threads
+
+extern "C" void omp_set_num_threads(int);
+#pragma weak omp_set_num_threads_ = omp_set_num_threads
+
 extern "C" int omp_get_max_threads();
 
 extern "C" int omp_get_max_threads_();
@@ -118,6 +122,9 @@ extern "C" int omp_get_thread_num();
 
 extern "C" int omp_get_thread_num_();
 #pragma weak omp_get_thread_num_ = omp_get_thread_num
+
+extern "C" int omp_get_num_procs();
+#pragma weak omp_get_num_procs_ = omp_get_num_procs
 
 //extern "C" timespec get_hpx_time();
 extern "C" double omp_get_wtime();

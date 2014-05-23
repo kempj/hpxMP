@@ -34,6 +34,7 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 typedef hpx::lcos::local::spinlock mutex_type;
 typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
+using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
 using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
@@ -47,10 +48,16 @@ using hpx::util::high_resolution_timer;
 class thread_data {
     public:
         thread_data(int tid):thread_num(tid){};
+        thread_data(thread_data *p): thread_num(p->thread_num),
+                                          parent(p){};
+        thread_data *parent;
         mutex_type thread_mutex;
         int thread_num;
+        int blocks_parent;
+        int blocking_children = 0;
+        bool is_finished = false;
+        bool has_dependants = false;
         vector<shared_future<void>> task_handles;
-        vector<shared_future<void>> child_tasks;
 };
 
 class hpx_runtime {
@@ -68,7 +75,7 @@ class hpx_runtime {
         int new_mtx();
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates,// int may_delay,
-                         int is_tied);//, int blocks_parent);
+                         int is_tied, int blocks_parent);
         void task_wait();
         double get_time();
         void delete_hpx_objects();
@@ -76,8 +83,8 @@ class hpx_runtime {
         void env_init();
         mutex_type runtime_mtx;
         vector<mtx_ptr> lock_list;
-        boost::shared_ptr<high_resolution_timer> walltime;
-        boost::shared_ptr<barrier> globalBarrier;
+        shared_ptr<high_resolution_timer> walltime;
+        shared_ptr<barrier> globalBarrier;
         int single_mtx_id; 
         int crit_mtx_id;
         int lock_mtx_id;

@@ -112,6 +112,10 @@ int hpx_runtime::get_num_threads() {
     return num_threads;
 }
 
+int hpx_runtime::get_num_procs() {
+    return num_procs;
+}
+
 void hpx_runtime::set_num_threads(int nthreads) {
     if(nthreads > 0) {
         num_threads = nthreads;
@@ -144,8 +148,9 @@ void hpx_runtime::barrier_wait(){
     auto thread_id = hpx::threads::get_self_id();
     auto *data = reinterpret_cast<thread_data*>(
                     hpx::threads::get_thread_data(thread_id) );
-    hpx::wait_all(data->task_handles);
-    hpx::wait_all(data->child_tasks);
+    //hpx::wait_all(data->task_handles);
+    data->wait_on_children();
+    //hpx::wait_all(data->child_tasks);
     globalBarrier->wait();
 }
 
@@ -162,7 +167,7 @@ void hpx_runtime::task_wait() {
     hpx::wait_all(data->task_handles);
     data->task_handles.clear();
 }
-
+/*
 void wait_on_tasks(thread_data *data_struct) {
     hpx::wait_all(data_struct->task_handles);
     //At this point, all child tasks must be finished, 
@@ -170,26 +175,102 @@ void wait_on_tasks(thread_data *data_struct) {
     hpx::wait_all(data_struct->child_tasks);
 }
 
+void thread_data::wait_on_children(){
+    vector<future<void>> wait_futures;
+    for(int i = 0;  i < child_tasks.size(); i++) {
+        wait_futures.push_back(hpx::async(wait_on_children, child_tasks[i]));
+    }
+    wait_all(wait_futures);
+
+}
+
+//children must be stored in such a way that destroying the parent waits on them
+// and then destroys the children
+// do tasks need to have references to their children at all?
+// Or will a counter work?
+void thread_data::add_child( omp_task_func task_func, void *firstprivates, 
+                             void *fp, int blocks_parent) {
+    thread_data *child_task = new thread_data(thread_num);
+    //set up thread state?
+    task_handles.push_back( hpx::async( task_setup, taskfunc, 
+                                        firstprivates, frame_pointer, 
+                                        parent_task, blocks_parent ));
+    if(blocks_parent) {
+        {
+            hpx::lcos::local::spinlock::scoped_lock lk(thread_mutex);
+            child_tasks.push_back(data_struct);
+        }
+    } else {
+        delete data_struct;
+    }
+    child_tasks.push_back();
+}
+*/
+
 void task_setup( omp_task_func task_func, void *firstprivates,
-                 void *fp, thread_data *parent_data) {
-    //TODO: use shared_ptr, since these are never de-allocated
-    thread_data *data_struct = new thread_data(parent_data->thread_num);
+                 void *fp, thread_data *parent_task, int blocks_parent) {
+    thread_data *task_data = new thread_data(parent_task);
+    task_data->blocks_parent = blocks_parent;
     auto thread_id = hpx::threads::get_self_id();
-    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(data_struct));
+    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
+
+    if(blocks_parent) {
+        {
+            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
+            parent_task->blocking_children += 1;
+            parent_task->has_dependents = true;
+        }
+    }
+
     task_func(firstprivates, fp);
-    shared_future<void> child_task = hpx::async(wait_on_tasks, data_struct);
-    {
-        hpx::lcos::local::spinlock::scoped_lock lk(parent_data->thread_mutex);
-        parent_data->child_tasks.push_back(child_task);
+
+    {//An atomic would probably be better here
+        hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
+        task_data->is_finished = true;    
+    }
+
+    while(task_data->blocking_children > 0) {
+        hpx::this_thread::yield();
+    }
+
+    //will all tasks with blocking children be deleted by children?
+    //A task will delete itself if:
+    if(task_data->has_dependents) {
+    }
+    if(!blocks_parent) {
+        if(!task_data->has_dependents){
+            delete task_data;
+        }
+        while(task_data->blocking_children > 0) {
+            hpx::this_thread::yield();
+        }
+    } else {
+        while(task_data->blocking_children > 0){
+            hpx::this_thread::yield();
+        }
+        while(!parent_task->is_finished){
+            hpx::this_thread::yield();
+        }
+        int remaining_children = 0;
+        {
+            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
+            parent_task->blocking_children -= 1;
+            remaining_children = parent_task->blocking_children;
+        }
+        if(remaining_children == 0){
+            delete parent_task;
+        }
     }
 }
 
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
-                               void *firstprivates, int is_tied) {
-    auto *data = reinterpret_cast<thread_data*>(
+                               void *firstprivates, int is_tied, 
+                               int blocks_parent) {
+    auto *parent_task = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    //int current_tid = data->thread_num;
-    data->task_handles.push_back( hpx::async(task_setup, taskfunc, firstprivates, frame_pointer, data));
+    parent_task->task_handles.push_back( 
+                    hpx::async( task_setup, taskfunc, firstprivates, 
+                                frame_pointer, parent_task, blocks_parent));
 }
 
 void ompc_fork_worker( int num_threads, omp_task_func task_func,
@@ -203,12 +284,12 @@ void ompc_fork_worker( int num_threads, omp_task_func task_func,
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
         tmp_data = new thread_data(i);
-        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, tmp_data));
+        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, tmp_data, 0));//Not sure if blocks_parent is correct here
         thread_data_vector.push_back(tmp_data);
     }
     hpx::wait_all(threads);
     for(int i = 0; i < num_threads; i++) {
-        hpx::wait_all(thread_data_vector[i]->child_tasks);
+        thread_data_vector[i]->wait_on_children();
     }
 
     {

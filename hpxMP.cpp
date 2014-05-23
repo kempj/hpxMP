@@ -225,7 +225,7 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
        task_func(firstprivates, frame_pointer);
     } else {
         hpx_backend->create_task( task_func, frame_pointer, firstprivates,
-                                  is_tied);
+                                  is_tied, blocks_parent);
     }
 }
 
