@@ -234,32 +234,33 @@ void task_setup( omp_task_func task_func, void *firstprivates,
     }
 
     //will all tasks with blocking children be deleted by children?
-    //A task will delete itself if:
-    if(task_data->has_dependents) {
+    
+    if(!task_data->has_dependents && !blocks_parent) {
+        delete task_data;
     }
-    if(!blocks_parent) {
-        if(!task_data->has_dependents){
-            delete task_data;
-        }
-        while(task_data->blocking_children > 0) {
-            hpx::this_thread::yield();
-        }
-    } else {
+    if(task_data->has_dependents && !blocks_parent) {
         while(task_data->blocking_children > 0){
             hpx::this_thread::yield();
         }
-        while(!parent_task->is_finished){
-            hpx::this_thread::yield();
-        }
-        int remaining_children = 0;
+        delete task_data;
+    }
+    if(!task_data->has_dependents && blocks_parent) {
         {
             hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
             parent_task->blocking_children -= 1;
-            remaining_children = parent_task->blocking_children;
         }
-        if(remaining_children == 0){
-            delete parent_task;
+        delete task_data;
+    }
+
+    if(task_data->has_dependents && blocks_parent) {
+        while(task_data->blocking_children > 0){
+            hpx::this_thread::yield();
         }
+        {
+            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
+            parent_task->blocking_children -= 1;
+        }
+        delete task_data;
     }
 }
 
