@@ -68,13 +68,13 @@ lu-test: libopenmp.so.1 ./omp-tests/omp-lu
 epcc: schedbench-test taskbench-test
 
 syncbench-test: libopenmp.so.1 syncbench
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/syncbench --outer-repetitions 2
+	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/syncbench
 
 schedbench-test: libopenmp.so.1 schedbench
 	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/schedbench
 
 taskbench-test: libopenmp.so.1 taskbench
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/taskbench --outer-repetitions 2
+	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/taskbench
 
 syncbench:
 	cd omp-tests/epcc/omp_v3/C; make syncbench
