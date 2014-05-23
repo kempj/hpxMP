@@ -50,9 +50,9 @@ class thread_data {
         thread_data(int tid):thread_num(tid){};
         thread_data(thread_data *p): thread_num(p->thread_num),
                                           parent(p){};
+        int thread_num;
         thread_data *parent;
         mutex_type thread_mutex;
-        int thread_num;
         int blocks_parent;
         int blocking_children = 0;
         bool is_finished = false;

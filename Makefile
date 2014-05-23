@@ -20,7 +20,7 @@ opt: hpxMPopt.o
 libopenmp.so.1: hpxMP.o hpx_runtime.o
 	$(CC) -g -O0 -shared -Wl,-soname,libopenmp.so.1,--version-script=libopenmp.vs -o libopenmp.so.1 hpxMP.o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
 
-hpx_runtime.o: hpx_runtime.cpp
+hpx_runtime.o: hpx_runtime.cpp hpx_runtime.h
 	$(CC) -g -O0 -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
 
 hpxMP.o: hpxMP.cpp hpxMP.h

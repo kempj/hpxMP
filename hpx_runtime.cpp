@@ -28,7 +28,7 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
 
-    boost::mutex mtx;
+    //boost::mutex mtx;
     boost::condition cond;
 
     hpx::get_runtime().stop();
@@ -220,22 +220,36 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                 frame_pointer, parent_task, blocks_parent));
 }
 
+//Thread tasks currently have no parent. In the future it might work out well
+// to have their parent be some sort of thread team object
+void thread_setup( omp_task_func task_func, void *firstprivates,
+                   void *fp, int tid) {
+    thread_data *task_data = new thread_data(tid);
+    auto thread_id = hpx::threads::get_self_id();
+    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
+
+    task_func(firstprivates, fp);
+
+    {//An atomic would probably be better here
+        hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
+        task_data->is_finished = true;    
+    }
+    while(task_data->blocking_children > 0) {
+        hpx::this_thread::yield();
+    }
+    delete task_data;
+}
+
 void ompc_fork_worker( int num_threads, omp_task_func task_func,
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
-
     vector<hpx::lcos::future<void>> threads;
-    vector<thread_data*> thread_data_vector;
-    thread_data *tmp_data;
-
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        tmp_data = new thread_data(i);
-        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, tmp_data, 0));
-        thread_data_vector.push_back(tmp_data);
+        threads.push_back( hpx::async( thread_setup, *task_func, (void*)0, fp, i));
     }
     hpx::wait_all(threads);
-    while(num_threads > 0) {
+    while(num_tasks > 0) {
         hpx::this_thread::yield();
     }
 
