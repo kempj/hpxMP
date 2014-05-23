@@ -11,6 +11,10 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
+#include <atomic>
+
+std::atomic<int> num_tasks(0);
+
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
     // Let the main thread know that we're done.
@@ -145,13 +149,16 @@ int hpx_runtime::new_mtx(){
 // and never from inside an openmp tasks.
 // This could potentially be taken advantage of, but currently is not.
 void hpx_runtime::barrier_wait(){
-    auto thread_id = hpx::threads::get_self_id();
-    auto *data = reinterpret_cast<thread_data*>(
-                    hpx::threads::get_thread_data(thread_id) );
+    //auto thread_id = hpx::threads::get_self_id();
+    //auto *data = reinterpret_cast<thread_data*>(
+    //                hpx::threads::get_thread_data(thread_id) );
     //hpx::wait_all(data->task_handles);
-    data->wait_on_children();
     //hpx::wait_all(data->child_tasks);
-    globalBarrier->wait();
+    //This doesn't wait on all tasks
+    while(num_tasks > 0){
+        hpx::this_thread::yield();
+    }
+    //globalBarrier->wait();
 }
 
 int hpx_runtime::get_thread_num() {
@@ -167,45 +174,6 @@ void hpx_runtime::task_wait() {
     hpx::wait_all(data->task_handles);
     data->task_handles.clear();
 }
-/*
-void wait_on_tasks(thread_data *data_struct) {
-    hpx::wait_all(data_struct->task_handles);
-    //At this point, all child tasks must be finished, 
-    // so nothing will be appended to child task vectors
-    hpx::wait_all(data_struct->child_tasks);
-}
-
-void thread_data::wait_on_children(){
-    vector<future<void>> wait_futures;
-    for(int i = 0;  i < child_tasks.size(); i++) {
-        wait_futures.push_back(hpx::async(wait_on_children, child_tasks[i]));
-    }
-    wait_all(wait_futures);
-
-}
-
-//children must be stored in such a way that destroying the parent waits on them
-// and then destroys the children
-// do tasks need to have references to their children at all?
-// Or will a counter work?
-void thread_data::add_child( omp_task_func task_func, void *firstprivates, 
-                             void *fp, int blocks_parent) {
-    thread_data *child_task = new thread_data(thread_num);
-    //set up thread state?
-    task_handles.push_back( hpx::async( task_setup, taskfunc, 
-                                        firstprivates, frame_pointer, 
-                                        parent_task, blocks_parent ));
-    if(blocks_parent) {
-        {
-            hpx::lcos::local::spinlock::scoped_lock lk(thread_mutex);
-            child_tasks.push_back(data_struct);
-        }
-    } else {
-        delete data_struct;
-    }
-    child_tasks.push_back();
-}
-*/
 
 void task_setup( omp_task_func task_func, void *firstprivates,
                  void *fp, thread_data *parent_task, int blocks_parent) {
@@ -228,40 +196,17 @@ void task_setup( omp_task_func task_func, void *firstprivates,
         hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
         task_data->is_finished = true;    
     }
-
     while(task_data->blocking_children > 0) {
         hpx::this_thread::yield();
     }
-
-    //will all tasks with blocking children be deleted by children?
-    
-    if(!task_data->has_dependents && !blocks_parent) {
-        delete task_data;
-    }
-    if(task_data->has_dependents && !blocks_parent) {
-        while(task_data->blocking_children > 0){
-            hpx::this_thread::yield();
-        }
-        delete task_data;
-    }
-    if(!task_data->has_dependents && blocks_parent) {
+    if(blocks_parent) {
         {
             hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
             parent_task->blocking_children -= 1;
         }
-        delete task_data;
     }
-
-    if(task_data->has_dependents && blocks_parent) {
-        while(task_data->blocking_children > 0){
-            hpx::this_thread::yield();
-        }
-        {
-            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
-            parent_task->blocking_children -= 1;
-        }
-        delete task_data;
-    }
+    delete task_data;
+    num_tasks--;
 }
 
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
@@ -269,6 +214,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                int blocks_parent) {
     auto *parent_task = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    num_tasks++;
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, firstprivates, 
                                 frame_pointer, parent_task, blocks_parent));
@@ -285,12 +231,12 @@ void ompc_fork_worker( int num_threads, omp_task_func task_func,
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
         tmp_data = new thread_data(i);
-        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, tmp_data, 0));//Not sure if blocks_parent is correct here
+        threads.push_back( hpx::async( task_setup, *task_func, (void*)0, fp, tmp_data, 0));
         thread_data_vector.push_back(tmp_data);
     }
     hpx::wait_all(threads);
-    for(int i = 0; i < num_threads; i++) {
-        thread_data_vector[i]->wait_on_children();
+    while(num_threads > 0) {
+        hpx::this_thread::yield();
     }
 
     {

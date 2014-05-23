@@ -56,7 +56,7 @@ class thread_data {
         int blocks_parent;
         int blocking_children = 0;
         bool is_finished = false;
-        bool has_dependants = false;
+        bool has_dependents = false;
         vector<shared_future<void>> task_handles;
 };
 
