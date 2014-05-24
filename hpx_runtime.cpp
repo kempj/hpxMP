@@ -158,7 +158,7 @@ void hpx_runtime::barrier_wait(){
     while(num_tasks > 0){
         hpx::this_thread::yield();
     }
-    //globalBarrier->wait();
+    globalBarrier->wait();
 }
 
 int hpx_runtime::get_thread_num() {
