@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 #pragma omp parallel num_threads(nt)
     {
 #pragma omp master
-#pragma omp task untied shared(f)
+#pragma omp task shared(f)
     f = fib1(input);
     }
 
