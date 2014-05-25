@@ -88,9 +88,9 @@ class hpx_runtime {
         int single_mtx_id; 
         int crit_mtx_id;
         int lock_mtx_id;
-        //boost::shared_ptr<local_priority_queue_executor> task_executor;
         
     private:
+        //Need to clarify max num_threads, num_threads and requested, and sort it with the spec
         int num_threads;
         int num_procs;
 };

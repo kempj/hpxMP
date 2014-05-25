@@ -271,7 +271,8 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     bool running = false;
 
     hpx::applier::register_thread_nullary(
-            HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
+            //HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
+            HPX_STD_BIND(&ompc_fork_worker, num_threads, task_func, fp,
                 boost::ref(mtx), boost::ref(cond), boost::ref(running))
             , "ompc_fork_worker");
     // Wait for the thread to run.

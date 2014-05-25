@@ -362,6 +362,7 @@ void omp_init_lock(volatile omp_lock_t *lock) {
     if(!hpx_backend) {
         hpx_backend.reset(new hpx_runtime());
     }
+    //bots UA crashes here. TODO
     hpx_backend->lock(hpx_backend->lock_mtx_id);
     int new_id = hpx_backend->new_mtx();
     hpx_backend->unlock(hpx_backend->lock_mtx_id);
