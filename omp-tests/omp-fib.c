@@ -13,10 +13,6 @@ long fib2(int k);
 
 int num_tasks = 0;
 
-int count;
-
-#pragma omp threadprivate(count)
-
 
 int main(int argc, char* argv[])
 {
@@ -55,16 +51,12 @@ int main(int argc, char* argv[])
 
     gettimeofday(&t1, NULL);
 
-    count = 0;
 
-#pragma omp parallel num_threads(nt) copyin(count)
+#pragma omp parallel num_threads(nt)
     {
 #pragma omp master
 #pragma omp task untied shared(f)
     f = mode ? fib1(input) : fib2(input);
-
-#pragma omp barrier
-    printf("[%d] num-tasks-exec: %d\n", omp_get_thread_num(), count);
     }
 
 
@@ -83,8 +75,6 @@ int main(int argc, char* argv[])
 long fib1(int k)
 {
     long p2,p1;
-
-    count++;
 
     if (k == 2) return 1;
     if (k < 2) return k;
