@@ -35,6 +35,10 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+#pragma omp parallel
+    {
+    }
+
     nt = omp_get_max_threads();
 
     input = atoi(argv[2]);
