@@ -51,14 +51,12 @@ int main(int argc, char* argv[])
 
     gettimeofday(&t1, NULL);
 
-
 #pragma omp parallel num_threads(nt)
     {
 #pragma omp master
 #pragma omp task untied shared(f)
-    f = mode ? fib1(input) : fib2(input);
+    f = fib1(input);
     }
-
 
     gettimeofday(&t2, NULL);
     printf("fib(%d) = %ld\n", input, f);
