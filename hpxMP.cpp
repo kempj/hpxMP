@@ -163,6 +163,7 @@ int __ompc_get_num_threads(){
 }
 
 int __ompc_master(int global_tid){
+    //TODO: if master can be called from tasks, than this doesn't work.
     if(__ompc_get_local_thread_num() == 0) 
         return 1;
     return 0;
@@ -172,8 +173,8 @@ void __ompc_end_master(int global_tid){
 }
 
 int __ompc_single(int tid){
-    hpx_backend->lock(hpx_backend->single_mtx_id);
     int num_threads = __ompc_get_num_threads();
+    hpx_backend->lock(hpx_backend->single_mtx_id);
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;

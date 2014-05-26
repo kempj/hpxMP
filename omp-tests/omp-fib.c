@@ -56,6 +56,7 @@ int main(int argc, char* argv[])
 #pragma omp master
 #pragma omp task shared(f)
     f = fib1(input);
+
     }
 
     gettimeofday(&t2, NULL);
@@ -74,6 +75,7 @@ long fib1(int k)
 {
     long p2,p1;
 
+    printf("fib(%d)\n",k);
     if (k == 2) return 1;
     if (k < 2) return k;
 

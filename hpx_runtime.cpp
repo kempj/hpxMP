@@ -175,8 +175,8 @@ void hpx_runtime::task_wait() {
     data->task_handles.clear();
 }
 
-void task_setup( omp_task_func task_func, void *firstprivates,
-                 void *fp, thread_data *parent_task, int blocks_parent) {
+void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
+                 thread_data *parent_task, int blocks_parent) {
     thread_data *task_data = new thread_data(parent_task);
     task_data->blocks_parent = blocks_parent;
     auto thread_id = hpx::threads::get_self_id();
@@ -216,19 +216,21 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
     num_tasks++;
     parent_task->task_handles.push_back( 
-                    hpx::async( task_setup, taskfunc, firstprivates, 
-                                frame_pointer, parent_task, blocks_parent));
+                    hpx::async( task_setup, taskfunc, frame_pointer, 
+                                firstprivates, parent_task, blocks_parent));
+    cout << "Spawning a new task "  <<  endl;
 }
 
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
-void thread_setup( omp_task_func task_func, void *firstprivates,
-                   void *fp, int tid) {
+void thread_setup( omp_task_func task_func, void *fp, int tid) {
     thread_data *task_data = new thread_data(tid);
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
+    
+    cout << "Spawning thread "  << tid  << endl;
 
-    task_func(firstprivates, fp);
+    task_func((void*)0, fp);
 
     {//An atomic would probably be better here
         hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
@@ -237,6 +239,10 @@ void thread_setup( omp_task_func task_func, void *firstprivates,
     while(task_data->blocking_children > 0) {
         hpx::this_thread::yield();
     }
+    //If this task exits before the child task is created, then the creation of the child
+    // task_data will be using a pointer to a parent task_data that is gone.
+    // Child task_data must be allocated here.
+    
     delete task_data;
 }
 
@@ -246,7 +252,7 @@ void ompc_fork_worker( int num_threads, omp_task_func task_func,
     vector<hpx::lcos::future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async( thread_setup, *task_func, (void*)0, fp, i));
+        threads.push_back( hpx::async( thread_setup, *task_func, fp, i));
     }
     hpx::wait_all(threads);
     while(num_tasks > 0) {
