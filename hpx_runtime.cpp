@@ -11,7 +11,6 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-#include <atomic>
 
 std::atomic<int> num_tasks(0);
 
@@ -176,11 +175,11 @@ void hpx_runtime::task_wait() {
 }
 
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
-                 thread_data *parent_task, int blocks_parent) {
-    thread_data *task_data = new thread_data(parent_task);
-    task_data->blocks_parent = blocks_parent;
+                 thread_data *task_data) {
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
+    int blocks_parent = task_data->blocks_parent;
+    thread_data *parent_task = task_data->parent;
 
     if(blocks_parent) {
         {
@@ -214,49 +213,54 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                int blocks_parent) {
     auto *parent_task = reinterpret_cast<thread_data*>(
             hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+
+    thread_data *child_task= new thread_data(parent_task);
+    child_task->blocks_parent = blocks_parent;
     num_tasks++;
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
-                                firstprivates, parent_task, blocks_parent));
-    cout << "Spawning a new task "  <<  endl;
+                                firstprivates, child_task));
 }
 
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
-void thread_setup( omp_task_func task_func, void *fp, int tid) {
-    thread_data *task_data = new thread_data(tid);
+void thread_setup( omp_task_func task_func, void *fp, thread_data *task_data) {
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
-    
-    cout << "Spawning thread "  << tid  << endl;
 
     task_func((void*)0, fp);
 
+    /*
+    //None of this is needed because the descriptor is going to be maintained by
+    // the main fork loop, and deleted there.
+    //
     {//An atomic would probably be better here
         hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
-        task_data->is_finished = true;    
+        task_data->is_finished = true; 
     }
     while(task_data->blocking_children > 0) {
         hpx::this_thread::yield();
     }
-    //If this task exits before the child task is created, then the creation of the child
-    // task_data will be using a pointer to a parent task_data that is gone.
-    // Child task_data must be allocated here.
-    
-    delete task_data;
+    */
 }
 
 void ompc_fork_worker( int num_threads, omp_task_func task_func,
                        frame_pointer_t fp, boost::mutex& mtx, 
                        boost::condition& cond, bool& running) {
     vector<hpx::lcos::future<void>> threads;
-    threads.reserve(num_threads);
+    vector<thread_data*> descriptors;
+    num_tasks = 0;
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async( thread_setup, *task_func, fp, i));
+        auto tmp = new thread_data(i);
+        descriptors.push_back(tmp);
+        threads.push_back( hpx::async( thread_setup, *task_func, fp, tmp));
     }
     hpx::wait_all(threads);
     while(num_tasks > 0) {
         hpx::this_thread::yield();
+    }
+    for(int i = 0; i < num_threads; i++){
+        delete descriptors[i];
     }
 
     {

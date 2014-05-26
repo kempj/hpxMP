@@ -77,14 +77,19 @@ long fib1(int k)
 
     printf("fib(%d)\n",k);
     if (k == 2) return 1;
-    if (k < 2) return k;
+    if (k < 2){
+        printf("k = %d, returning\n", k);
+        return k;
+    }
 
-#pragma omp task untied shared(p2) //if(k > 10)
+
+#pragma omp task shared(p2) //if(k > 10)
     p2 = fib1(k-2);
 
-#pragma omp task untied shared(p1) //if(k > 10)
+#pragma omp task shared(p1) //if(k > 10)
     p1 = fib1(k-1);
 
+    printf("p1 = %d, p2 = %d\n", p1, p2);
 #pragma omp atomic
     num_tasks += 2;
 

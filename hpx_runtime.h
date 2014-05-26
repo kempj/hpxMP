@@ -18,6 +18,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
+#include <atomic>
 
 #include <hpx/util/high_resolution_timer.hpp>
 #include <map>
@@ -76,6 +77,7 @@ class hpx_runtime {
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates,// int may_delay,
                          int is_tied, int blocks_parent);
+        void task_exit();
         void task_wait();
         double get_time();
         void delete_hpx_objects();
