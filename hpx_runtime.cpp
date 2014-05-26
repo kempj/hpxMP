@@ -180,6 +180,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
     int blocks_parent = task_data->blocks_parent;
     thread_data *parent_task = task_data->parent;
+
     task_func(firstprivates, fp);
     {//An atomic would probably be better here
         hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
@@ -228,10 +229,15 @@ void thread_setup( omp_task_func task_func, void *fp, int tid) {
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
 
     task_func((void*)0, fp);
+    
+    //TODO:not sure why this makes fib work.
+    // Are the counters being done properly?
+    hpx::wait_all(task_data->task_handles);
 
     while(num_tasks > 0) {
         hpx::this_thread::yield();
     }
+    //This seems a bit redundant.
     while(task_data->blocking_children > 0) {
         hpx::this_thread::yield();
     }
