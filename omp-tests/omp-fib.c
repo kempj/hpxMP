@@ -48,30 +48,23 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-//    printf("initial input = %d\n", input);
 
     gettimeofday(&t1, NULL);
 
 #pragma omp parallel num_threads(nt)
     {
-//    printf("par input = %d\n", input);
 #pragma omp master
     {
-//        printf("master input = %d\n", input);
 #pragma omp task shared(f)
         {
-//            printf("task input = %d\n", input);
             f = fib1(input);
         }
     }
-//    printf("end input = %d\n", input);
 
     }
 
-//    printf("after input = %d\n", input);
 
     gettimeofday(&t2, NULL);
-    printf("fib(%d) = %ld\n", input, f);
 
     s = t2.tv_sec - t1.tv_sec;
     u = t2.tv_usec - t1.tv_usec;
@@ -86,10 +79,8 @@ long fib1(int k)
 {
     long p2,p1;
 
-    printf("fib(%d)\n",k);
     if (k == 2) return 1;
     if (k < 2){
-        printf("k = %d, returning\n", k);
         return k;
     }
 
@@ -97,16 +88,13 @@ long fib1(int k)
 #pragma omp task shared(p2) //if(k > 10)
     {
         p2 = fib1(k-2);
-        printf("p2 = %d\n", p2);
     }
 
 #pragma omp task shared(p1) //if(k > 10)
     {
         p1 = fib1(k-1);
-        printf("p1 = %d\n",p1);
     }
 
-    printf("p1 = %d, p2 = %d\n", p1, p2);
 #pragma omp atomic
     num_tasks += 2;
 
