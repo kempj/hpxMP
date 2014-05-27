@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
 
 
     gettimeofday(&t2, NULL);
+    printf("fib(%d) = %d",input, f);
 
     s = t2.tv_sec - t1.tv_sec;
     u = t2.tv_usec - t1.tv_usec;
