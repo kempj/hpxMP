@@ -378,7 +378,8 @@ void omp_init_lock(volatile omp_lock_t *lock) {
     *new_id = hpx_backend->new_mtx();
     hpx_backend->unlock(lock_mtx_id);
 
-    *lock = reinterpret_cast<omp_lock_t>(new_id);
+    //*lock = reinterpret_cast<omp_lock_t>(new_id);
+    (*lock) = (omp_lock_t)(new_id);
 }
 
 void omp_init_nest_lock(volatile omp_nest_lock_t *lock) {
