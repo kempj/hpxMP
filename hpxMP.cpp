@@ -19,6 +19,10 @@ bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
 
+int single_mtx_id = -1; 
+int crit_mtx_id = -1;
+int lock_mtx_id = -1;
+
 omp_micro fork_func = 0;
 
 //This function allows a thread to be handled the same way a task is.
@@ -36,6 +40,9 @@ void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
     assert(nthreads >= 0);
     if(!hpx_backend) {
         hpx_backend.reset(new hpx_runtime());
+        single_mtx_id = hpx_backend->new_mtx();
+        crit_mtx_id = hpx_backend->new_mtx();
+        lock_mtx_id = hpx_backend->new_mtx();
     }
     fork_func = micro_task;
     assert(!started);//Nested parallelism is disabled
@@ -174,14 +181,14 @@ void __ompc_end_master(int global_tid){
 
 int __ompc_single(int tid){
     int num_threads = __ompc_get_num_threads();
-    hpx_backend->lock(hpx_backend->single_mtx_id);
+    hpx_backend->lock(single_mtx_id);
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
     } else {
         single_counter++;
     }
-    hpx_backend->unlock(hpx_backend->single_mtx_id);
+    hpx_backend->unlock(single_mtx_id);
     if(current_single_thread == tid) {
         return 1;
     }
@@ -189,11 +196,11 @@ int __ompc_single(int tid){
 }
 
 void __ompc_end_single(int tid){
-    hpx_backend->lock(hpx_backend->single_mtx_id);
+    hpx_backend->lock(single_mtx_id);
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    hpx_backend->unlock(hpx_backend->single_mtx_id);
+    hpx_backend->unlock(single_mtx_id);
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -247,14 +254,14 @@ void __ompc_end_serialized_parallel(int global_tid) {
 
 void __ompc_critical(int gtid, int **lck) {
     if(*lck == NULL || **lck < 0) {
-        hpx_backend->lock(hpx_backend->crit_mtx_id);
+        hpx_backend->lock(crit_mtx_id);
         if(*lck == NULL || **lck < 0){
             *lck = new int;
-            hpx_backend->lock(hpx_backend->lock_mtx_id);
+            hpx_backend->lock(lock_mtx_id);
             **lck = hpx_backend->new_mtx();
-            hpx_backend->unlock(hpx_backend->lock_mtx_id);
+            hpx_backend->unlock(lock_mtx_id);
         }
-        hpx_backend->unlock(hpx_backend->crit_mtx_id);
+        hpx_backend->unlock(crit_mtx_id);
     }
     hpx_backend->lock(**lck);
 }
@@ -365,9 +372,9 @@ void omp_init_lock(volatile omp_lock_t *lock) {
         hpx_backend.reset(new hpx_runtime());
     }
     //bots UA crashes here. TODO
-    hpx_backend->lock(hpx_backend->lock_mtx_id);
+    hpx_backend->lock(lock_mtx_id);
     int new_id = hpx_backend->new_mtx();
-    hpx_backend->unlock(hpx_backend->lock_mtx_id);
+    hpx_backend->unlock(lock_mtx_id);
 
     *lock = reinterpret_cast<omp_lock_t>(new_id);
 }

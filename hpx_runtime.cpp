@@ -99,9 +99,6 @@ hpx_runtime::hpx_runtime() {
     }
 
     //Must be called while hpx is running
-    single_mtx_id = new_mtx();
-    crit_mtx_id = new_mtx();
-    lock_mtx_id = new_mtx();
     atexit(fini_runtime);
 
     delete[] argv;
@@ -140,6 +137,7 @@ void hpx_runtime::unlock(int lock_id) {
 }
 
 int hpx_runtime::new_mtx(){
+    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
     lock_list.emplace_back(new mutex_type());
     return lock_list.size() - 1;
 }

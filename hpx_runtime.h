@@ -83,17 +83,14 @@ class hpx_runtime {
         void delete_hpx_objects();
         int threads_requested;
         void env_init();
-        mutex_type runtime_mtx;
         vector<mtx_ptr> lock_list;
         shared_ptr<high_resolution_timer> walltime;
         shared_ptr<barrier> globalBarrier;
-        int single_mtx_id; 
-        int crit_mtx_id;
-        int lock_mtx_id;
         
     private:
         //Need to clarify max num_threads, num_threads and requested, and sort it with the spec
         int num_threads;
         int num_procs;
+        mutex_type runtime_mtx;
 };
 
