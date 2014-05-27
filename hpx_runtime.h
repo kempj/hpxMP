@@ -86,6 +86,7 @@ class hpx_runtime {
         vector<mtx_ptr> lock_list;
         shared_ptr<high_resolution_timer> walltime;
         shared_ptr<barrier> globalBarrier;
+        mutex_type print_mtx;
         
     private:
         //Need to clarify max num_threads, num_threads and requested, and sort it with the spec

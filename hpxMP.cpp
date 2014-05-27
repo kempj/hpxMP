@@ -243,6 +243,7 @@ void __ompc_task_wait(){
 }
 
 void __ompc_task_exit(){
+    hpx_backend->task_exit();
 }
 
 void __ompc_serialized_parallel(int global_tid) {

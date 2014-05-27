@@ -172,6 +172,18 @@ void hpx_runtime::task_wait() {
     data->task_handles.clear();
 }
 
+//This needs to be here to make sure to wait for dependant children finish
+// before destroying the stack of the task. If this work is done in task_create
+// the stack does not get preserved.
+void hpx_runtime::task_exit() {
+    thread_data *task_data = reinterpret_cast<thread_data*>(
+                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+
+    while(task_data->blocking_children > 0) {
+        hpx::this_thread::yield();
+    }
+}
+
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
                  thread_data *task_data) {
     auto thread_id = hpx::threads::get_self_id();
@@ -183,9 +195,6 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     {//An atomic would probably be better here
         hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
         task_data->is_finished = true;    
-    }
-    while(task_data->blocking_children > 0) {
-        hpx::this_thread::yield();
     }
     if(blocks_parent) {
         {
@@ -206,7 +215,6 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     thread_data *child_task= new thread_data(parent_task);
     child_task->blocks_parent = blocks_parent;
     num_tasks++;
-
     if(blocks_parent) {
         {
             hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
@@ -230,13 +238,9 @@ void thread_setup( omp_task_func task_func, void *fp, int tid) {
     
     //TODO:not sure why this makes fib work.
     // Are the counters being done properly?
-    hpx::wait_all(task_data->task_handles);
-
+    //hpx::wait_all(task_data->task_handles);
+    
     while(num_tasks > 0) {
-        hpx::this_thread::yield();
-    }
-    //This seems a bit redundant.
-    while(task_data->blocking_children > 0) {
         hpx::this_thread::yield();
     }
     delete task_data;

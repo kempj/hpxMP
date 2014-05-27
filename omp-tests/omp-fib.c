@@ -54,18 +54,20 @@ int main(int argc, char* argv[])
 #pragma omp parallel num_threads(nt)
     {
 #pragma omp master
-    {
-#pragma omp task shared(f)
         {
-            f = fib1(input);
+#pragma omp task shared(f)
+            {
+                f = fib1(input);
+//                printf("1fib(%d) = %d\n",input, f);
+            }
+//            printf("2fib(%d) = %d\n",input, f);
         }
-    }
-
+//        printf("3fib(%d) = %d\n",input, f);
     }
 
 
     gettimeofday(&t2, NULL);
-    printf("fib(%d) = %d",input, f);
+    printf("fib(%d) = %d\n",input, f);
 
     s = t2.tv_sec - t1.tv_sec;
     u = t2.tv_usec - t1.tv_usec;
