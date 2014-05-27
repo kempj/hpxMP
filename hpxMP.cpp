@@ -215,13 +215,6 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
                          void *firstprivates, int may_delay,
                          int is_tied, int blocks_parent) {
     
-    int *temp = reinterpret_cast<int*>(firstprivates);
-
-    cout << "firstprivates = " << temp;
-    if (temp > 0) {
-        cout << ", * = " << dec << *temp;
-    }
-    cout << endl;
     // blocks_parent keeps parent tasks from exiting when they have shared 
     // variables in nested tasks. Since the current hpxMP implementation
     // calls a taskwait at the end of each task, the blocks_parent variable
