@@ -236,10 +236,6 @@ void thread_setup( omp_task_func task_func, void *fp, int tid) {
 
     task_func((void*)0, fp);
     
-    //TODO:not sure why this makes fib work.
-    // Are the counters being done properly?
-    //hpx::wait_all(task_data->task_handles);
-    
     while(num_tasks > 0) {
         hpx::this_thread::yield();
     }
