@@ -276,7 +276,7 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     // Wait for the thread to run.
     {
         boost::mutex::scoped_lock lk(mtx);
-        if (!running)
+        while (!running)
             cond.wait(lk);
     }
 }
