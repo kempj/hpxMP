@@ -11,7 +11,6 @@
 long fib1(int k);
 long fib2(int k);
 
-int input;
 int num_tasks = 0;
 
 
@@ -20,6 +19,7 @@ int main(int argc, char* argv[])
     struct timeval t1;
     struct timeval t2;
 
+    int input;
     long s,u;
     long f;
     double m;
