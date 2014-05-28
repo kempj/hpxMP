@@ -26,9 +26,8 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 
 void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
-
     //boost::mutex mtx;
-    boost::condition cond;
+    //boost::condition cond;
 
     hpx::get_runtime().stop();
 }
@@ -121,33 +120,11 @@ void hpx_runtime::set_num_threads(int nthreads) {
         num_threads = nthreads;
     }
 }
-/*
-bool hpx_runtime::trylock(mutex_type *mtx){
-    return mtx->try_lock();
-}
-
-void hpx_runtime::lock(mutex_type) {
-    lock_list[lock_id]->lock();
-}
-
-void hpx_runtime::unlock(int lock_id) {
-    lock_list[lock_id]->unlock();
-}
-
-mutex_type* hpx_runtime::new_mtx(){
-    return new mutex_type();
-}*/
 
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
 // This could potentially be taken advantage of, but currently is not.
 void hpx_runtime::barrier_wait(){
-    //auto thread_id = hpx::threads::get_self_id();
-    //auto *data = reinterpret_cast<thread_data*>(
-    //                hpx::threads::get_thread_data(thread_id) );
-    //hpx::wait_all(data->task_handles);
-    //hpx::wait_all(data->child_tasks);
-    //This doesn't wait on all tasks
     while(num_tasks > 0){
         hpx::this_thread::yield();
     }

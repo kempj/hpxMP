@@ -139,18 +139,18 @@ extern "C" int omp_in_parallel();
 extern "C" void omp_set_dynamic(int dynamic_threads);
 
 
-extern "C" void omp_init_lock(volatile omp_lock_t *lock);
-extern "C" void omp_init_nest_lock(volatile omp_nest_lock_t *lock);
+extern "C" void omp_init_lock(omp_lock_t *lock);
+extern "C" void omp_init_nest_lock(omp_nest_lock_t *lock);
 
-extern "C" void omp_destroy_lock(volatile omp_lock_t *lock);
-extern "C" void omp_destroy_nest_lock(volatile omp_nest_lock_t *lock);
+extern "C" void omp_destroy_lock(omp_lock_t *lock);
+extern "C" void omp_destroy_nest_lock(omp_nest_lock_t *lock);
 
-extern "C" void omp_set_lock(volatile omp_lock_t *lock);
-extern "C" void omp_set_nest_lock(volatile omp_nest_lock_t *lock);
+extern "C" void omp_set_lock(omp_lock_t *lock);
+extern "C" void omp_set_nest_lock(omp_nest_lock_t *lock);
 
-extern "C" void omp_unset_lock(volatile omp_lock_t *lock);
-extern "C" void omp_unset_nest_lock(volatile omp_nest_lock_t *lock);
+extern "C" void omp_unset_lock(omp_lock_t *lock);
+extern "C" void omp_unset_nest_lock(omp_nest_lock_t *lock);
 
-extern "C" int omp_test_lock(volatile omp_lock_t *lock);
-extern "C" int omp_test_nest_lock(volatile omp_nest_lock_t *lock);
+extern "C" int omp_test_lock(omp_lock_t *lock);
+extern "C" int omp_test_nest_lock(omp_nest_lock_t *lock);
 

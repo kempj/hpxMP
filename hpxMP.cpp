@@ -257,9 +257,7 @@ void __ompc_end_serialized_parallel(int global_tid) {
 }
 
 void __ompc_critical(int gtid, omp_lock_t **lck) {
-//    cout << "entering crit, lck = " << lck << ", *lck = " << *lck <<  endl;
     omp_lock_t* tmp_mtx = new omp_lock_t;
-//    void* new_lock = malloc(sizeof(void*));
     if(*lck == NULL ) {
         crit_mtx->lock();
         if(*lck == NULL ){
@@ -269,18 +267,11 @@ void __ompc_critical(int gtid, omp_lock_t **lck) {
     } 
     if(&(*tmp_mtx) != &(**lck)) {
         delete tmp_mtx;
-//        tmp_mtx = *lck;
     }
-//    tmp_mtx->lock();
     (**lck).lock();
-//    cout << "end of crit, lck = " << lck << ", *lck = " << *lck <<  endl;//0
 }
 
 void __ompc_end_critical(int gtid, omp_lock_t **lck) {
-    print_mtx->lock();
-    print_mtx->unlock();
-//    omp_lock_t *mtx = *lck;
-//    mtx->unlock();
     (**lck).unlock();
 }
 
@@ -381,58 +372,52 @@ void omp_set_nested(int nested){
 //int omp_in_final(void);
 
 //OpenMP 3.1 spec, section 3.3.1
-void omp_init_lock(volatile omp_lock_t *lock) {
+void omp_init_lock(omp_lock_t *lock) {
     if(!hpx_backend) {
         start_backend();
     }
-    mutex_type *new_mtx = new mutex_type;
-
-    lock = (omp_lock_t*)(new_mtx);
+    lock = new omp_lock_t;
 }
 
-void omp_init_nest_lock(volatile omp_nest_lock_t *lock) {
+void omp_init_nest_lock(omp_nest_lock_t *lock) {
     //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.2
-void omp_destroy_lock(volatile omp_lock_t *lock) {
-    mutex_type *mtx = (mutex_type*)lock;
-    delete mtx;
+void omp_destroy_lock(omp_lock_t *lock) {
+    delete lock;
 }
 
-void omp_destroy_nest_lock(volatile omp_nest_lock_t *lock) {
+void omp_destroy_nest_lock(omp_nest_lock_t *lock) {
     //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.3
-void omp_set_lock(volatile omp_lock_t *lock) {
-    mutex_type *mtx = (mutex_type*)lock;
-    mtx->lock();
+void omp_set_lock(omp_lock_t *lock) {
+    lock->lock();
 }
 
-void omp_set_nest_lock(volatile omp_nest_lock_t *lock) {
+void omp_set_nest_lock(omp_nest_lock_t *lock) {
     //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.4
-void omp_unset_lock(volatile omp_lock_t *lock) {
-    mutex_type *mtx = (mutex_type*)lock;
-    mtx->unlock();
+void omp_unset_lock(omp_lock_t *lock) {
+    lock->unlock();
 }
 
-void omp_unset_nest_lock(volatile omp_nest_lock_t *lock) {
+void omp_unset_nest_lock(omp_nest_lock_t *lock) {
     //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.5
-int omp_test_lock(volatile omp_lock_t *lock) {
-    mutex_type *mtx = (mutex_type*)lock;
-    if(mtx->try_lock())
+int omp_test_lock(omp_lock_t *lock) {
+    if(lock->try_lock())
         return 1;
     return 0;
 }
 
-int omp_test_nest_lock(volatile omp_nest_lock_t *lock) {
+int omp_test_nest_lock(omp_nest_lock_t *lock) {
     //unimplmented
     return 1;
 }
