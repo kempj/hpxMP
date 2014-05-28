@@ -272,7 +272,7 @@ void __ompc_critical(int gtid, volatile omp_lock_t **lck) {
     tmp_mtx->lock();
 }
 
-void __ompc_end_critical(omp_int32 gtid, omp_int32 **lck) {
+void __ompc_end_critical(int gtid, omp_int32 **lck) {
     mutex_type *mtx = (mutex_type*)*lck;
     mtx->unlock();
 }
