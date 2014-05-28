@@ -15,6 +15,9 @@ typedef void (*omp_micro)(int , frame_pointer_t);
 
 typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
+typedef void *omp_lock_t;
+typedef void *omp_nest_lock_t;
+
 
 typedef enum {
     OMP_SCHED_UNKNOWN             = 0,
@@ -32,8 +35,8 @@ typedef enum {
 } omp_sched_t;
 
 extern "C" int __ompc_init_rtl(int num_threads);
-extern "C" void __ompc_critical(int gtid, int **lck);
-extern "C" void __ompc_end_critical(int gtid, int **lck);
+extern "C" void __ompc_critical(int gtid, omp_lock_t **lck);
+extern "C" void __ompc_end_critical(int gtid, omp_lock_t **lck);
 
 extern "C" void __ompc_fork(int num_threads, omp_micro micro_task,
                       frame_pointer_t fp);
@@ -133,8 +136,6 @@ extern "C" void omp_set_nested();
 extern "C" int omp_in_parallel();
 extern "C" void omp_set_dynamic(int dynamic_threads);
 
-typedef void *omp_lock_t;
-typedef void *omp_nest_lock_t;
 
 extern "C" void omp_init_lock(volatile omp_lock_t *lock);
 extern "C" void omp_init_nest_lock(volatile omp_nest_lock_t *lock);
