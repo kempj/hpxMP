@@ -264,8 +264,8 @@ void __ompc_critical(int gtid, volatile omp_lock_t **lck) {
             *lck = (omp_lock_t*)tmp_mtx;
         }
         crit_mtx->unlock();
-    }
-    if(tmp_mtx != (mutex_type*)*lck) {
+    } else {
+    //if(tmp_mtx != (mutex_type*)*lck) {
         delete tmp_mtx;
         tmp_mtx = (mutex_type*)lck;
     }
@@ -273,6 +273,7 @@ void __ompc_critical(int gtid, volatile omp_lock_t **lck) {
 }
 
 void __ompc_end_critical(int gtid, volatile omp_lock_t **lck) {
+    assert(*lck != NULL);
     mutex_type *mtx = (mutex_type*)*lck;
     mtx->unlock();
 }
