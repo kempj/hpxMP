@@ -129,6 +129,7 @@ bool hpx_runtime::trylock(int lock_id){
 
 void hpx_runtime::lock(int lock_id) {
     assert(lock_id < lock_list.size());
+    assert(lock_id > 0);
     lock_list[lock_id]->lock();
 }
 
