@@ -36,13 +36,17 @@ int __ompc_init_rtl(int num_threads) {
     return 0;
 }
 
+void start_backend(){
+    hpx_backend.reset(new hpx_runtime());
+    single_mtx_id = hpx_backend->new_mtx();
+    crit_mtx_id = hpx_backend->new_mtx();
+    lock_mtx_id = hpx_backend->new_mtx();
+}
+
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
     assert(nthreads >= 0);
     if(!hpx_backend) {
-        hpx_backend.reset(new hpx_runtime());
-        single_mtx_id = hpx_backend->new_mtx();
-        crit_mtx_id = hpx_backend->new_mtx();
-        lock_mtx_id = hpx_backend->new_mtx();
+        start_backend();
     }
     fork_func = micro_task;
     assert(!started);//Nested parallelism is disabled
@@ -310,7 +314,7 @@ int omp_get_num_threads() {
 //OpenMP 3.1 spec, section 3.2.3
 int omp_get_max_threads() {
     if(!hpx_backend) {
-        hpx_backend.reset(new hpx_runtime());
+        start_backend();
     }                      
     return hpx_backend->get_num_threads();
 }
@@ -323,7 +327,7 @@ int omp_get_thread_num() {
 //OpenMP 3.1 spec, section 3.2.5
 int omp_get_num_procs() {
     if(!hpx_backend) {
-        hpx_backend.reset(new hpx_runtime());
+        start_backend();
     }
     return hpx_backend->get_num_procs();
 }
@@ -370,7 +374,7 @@ void omp_set_nested(int nested){
 //OpenMP 3.1 spec, section 3.3.1
 void omp_init_lock(volatile omp_lock_t *lock) {
     if(!hpx_backend) {
-        hpx_backend.reset(new hpx_runtime());
+        start_backend();
     }
     //bots UA crashes here. TODO
     int *new_id = new int;
