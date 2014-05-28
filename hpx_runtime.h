@@ -56,7 +56,7 @@ class thread_data {
         thread_data *parent;
         mutex_type thread_mutex;
         int blocks_parent;
-        int blocking_children = 0;
+        atomic<int> blocking_children {0};
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
         vector<shared_future<void>> task_handles;

@@ -12,7 +12,7 @@
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 
-atomic<int> num_tasks(0);
+atomic<int> num_tasks{0};
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
@@ -161,15 +161,15 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     thread_data *parent_task = task_data->parent;
 
     task_func(firstprivates, fp);
-    {//An atomic would probably be better here
-        hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
+//    {//An atomic would probably be better here
+//        hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
         task_data->is_finished = true;    
-    }
+//    }
     if(blocks_parent) {
-        {
-            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
-            parent_task->blocking_children -= 1;
-        }
+//        {
+//            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
+            parent_task->blocking_children--;
+//        }
     }
     delete task_data;
     num_tasks--;
@@ -185,11 +185,11 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     child_task->blocks_parent = blocks_parent;
     num_tasks++;
     if(blocks_parent) {
-        {
-            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
+//        {
+//            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
             parent_task->blocking_children += 1;
             parent_task->has_dependents = true;
-        }
+//        }
     }
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
