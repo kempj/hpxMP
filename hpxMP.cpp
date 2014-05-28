@@ -148,11 +148,11 @@ omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
     return 0;
 }
 
-void __ompc_reduction(omp_int32 gtid, volatile omp_lock_t **lck){
+void __ompc_reduction(int gtid, volatile omp_lock_t **lck){
     __ompc_critical(gtid, lck);
 }
 
-void __ompc_end_reduction(omp_int32 gtid, volatile omp_lock_t **lck){
+void __ompc_end_reduction(int gtid, volatile omp_lock_t **lck){
     __ompc_end_critical(gtid, lck);
 }
 
