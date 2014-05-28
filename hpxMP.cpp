@@ -378,18 +378,19 @@ void omp_init_lock(volatile omp_lock_t *lock) {
     if(!hpx_backend) {
         start_backend();
     }
-    mutex_type *new_id = new mutex_type();
+    mutex_type *new_mtx = new mutex_type;
 
-    (*lock) = (omp_lock_t)(new_id);
+    lock = (omp_lock_t*)(new_mtx);
 }
 
 void omp_init_nest_lock(volatile omp_nest_lock_t *lock) {
     //unimplmented
 }
 
-
 //OpenMP 3.1 spec, section 3.3.2
 void omp_destroy_lock(volatile omp_lock_t *lock) {
+    mutex_type *mtx = (mutex_type*)lock;
+    delete mtx;
 }
 
 void omp_destroy_nest_lock(volatile omp_nest_lock_t *lock) {
