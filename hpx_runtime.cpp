@@ -124,16 +124,19 @@ void hpx_runtime::set_num_threads(int nthreads) {
 
 bool hpx_runtime::trylock(int lock_id){
     assert(lock_id < lock_list.size());
+    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
     return lock_list[lock_id]->try_lock();
 }
 
 void hpx_runtime::lock(int lock_id) {
+    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
     assert(lock_id < lock_list.size());
     assert(lock_id > 0);
     lock_list[lock_id]->lock();
 }
 
 void hpx_runtime::unlock(int lock_id) {
+    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
     lock_list[lock_id]->unlock();
 }
 
