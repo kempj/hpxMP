@@ -255,7 +255,8 @@ void __ompc_serialized_parallel(int global_tid) {
 void __ompc_end_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
-
+//Note: volatile was removed from all the omp_lock_t calls
+// but if it is needed, const_cast can get rid of the volatile.
 void __ompc_critical(int gtid, omp_lock_t **lck) {
     omp_lock_t* tmp_mtx = new omp_lock_t;
     if(*lck == NULL ) {
