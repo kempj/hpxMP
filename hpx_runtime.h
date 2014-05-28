@@ -70,9 +70,9 @@ class hpx_runtime {
         int get_num_procs();
         void set_num_threads(int nthreads);
         void barrier_wait();
-        void lock(int lock_id);
-        bool trylock(int lock_id);
-        void unlock(int lock_id);
+//        void lock(int lock_id);
+//        bool trylock(int lock_id);
+//        void unlock(int lock_id);
         int new_mtx();
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates,// int may_delay,
@@ -83,7 +83,7 @@ class hpx_runtime {
         void delete_hpx_objects();
         int threads_requested;
         void env_init();
-        vector<mtx_ptr> lock_list;
+        //vector<mtx_ptr> lock_list;
         shared_ptr<high_resolution_timer> walltime;
         shared_ptr<barrier> globalBarrier;
         mutex_type print_mtx;

@@ -121,30 +121,22 @@ void hpx_runtime::set_num_threads(int nthreads) {
         num_threads = nthreads;
     }
 }
-
-bool hpx_runtime::trylock(int lock_id){
-    assert(lock_id < lock_list.size());
-    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
-    return lock_list[lock_id]->try_lock();
+/*
+bool hpx_runtime::trylock(mutex_type *mtx){
+    return mtx->try_lock();
 }
 
-void hpx_runtime::lock(int lock_id) {
-    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
-    assert(lock_id < lock_list.size());
-    assert(lock_id > 0);
+void hpx_runtime::lock(mutex_type) {
     lock_list[lock_id]->lock();
 }
 
 void hpx_runtime::unlock(int lock_id) {
-    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
     lock_list[lock_id]->unlock();
 }
 
-int hpx_runtime::new_mtx(){
-    hpx::lcos::local::spinlock::scoped_lock lk(runtime_mtx);
-    lock_list.emplace_back(new mutex_type());
-    return lock_list.size() - 1;
-}
+mutex_type* hpx_runtime::new_mtx(){
+    return new mutex_type();
+}*/
 
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.

@@ -19,9 +19,8 @@ bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
 
-int single_mtx_id = -1; 
-int crit_mtx_id = -1;
-int lock_mtx_id = -1;
+boost::shared_ptr<mutex_type> single_mtx; 
+boost::shared_ptr<mutex_type> crit_mtx ;
 
 omp_micro fork_func = 0;
 
@@ -38,9 +37,9 @@ int __ompc_init_rtl(int num_threads) {
 
 void start_backend(){
     hpx_backend.reset(new hpx_runtime());
-    single_mtx_id = hpx_backend->new_mtx();
-    crit_mtx_id = hpx_backend->new_mtx();
-    lock_mtx_id = hpx_backend->new_mtx();
+    single_mtx.reset(new mutex_type);
+    crit_mtx.reset(new mutex_type);
+//    lock_mtx_id
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
@@ -185,14 +184,14 @@ void __ompc_end_master(int global_tid){
 
 int __ompc_single(int tid){
     int num_threads = __ompc_get_num_threads();
-    hpx_backend->lock(single_mtx_id);
+    single_mtx->lock();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
     } else {
         single_counter++;
     }
-    hpx_backend->unlock(single_mtx_id);
+    single_mtx->unlock();
     if(current_single_thread == tid) {
         return 1;
     }
@@ -200,11 +199,11 @@ int __ompc_single(int tid){
 }
 
 void __ompc_end_single(int tid){
-    hpx_backend->lock(single_mtx_id);
+    single_mtx->lock();
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    hpx_backend->unlock(single_mtx_id);
+    single_mtx->unlock();
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -257,22 +256,25 @@ void __ompc_end_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
 
-void __ompc_critical(int gtid, int **lck) {
-    if(*lck == NULL || **lck < 0) {
-        hpx_backend->lock(crit_mtx_id);
-        if(*lck == NULL || **lck < 0){
-            *lck = new int;
-            hpx_backend->lock(lock_mtx_id);
-            **lck = hpx_backend->new_mtx();
-            hpx_backend->unlock(lock_mtx_id);
+void __ompc_critical(int gtid, volatile omp_lock_t **lck) {
+    mutex_type *tmp_mtx = new mutex_type;
+    if(*lck == NULL ) {
+        crit_mtx->lock();
+        if(*lck == NULL ){
+            *lck = (omp_lock_t*)tmp_mtx;
         }
-        hpx_backend->unlock(crit_mtx_id);
+        crit_mtx->unlock();
     }
-    hpx_backend->lock(**lck);
+    if(tmp_mtx != (mutex_type*)*lck) {
+        delete tmp_mtx;
+        tmp_mtx = (mutex_type*)lck;
+    }
+    tmp_mtx->lock();
 }
 
 void __ompc_end_critical(omp_int32 gtid, omp_int32 **lck) {
-    hpx_backend->unlock(**lck);
+    mutex_type *mtx = (mutex_type*)*lck;
+    mtx->unlock();
 }
 
 omp_int32 __ompc_get_thdprv( void *** thdprv_p, omp_int64 size, 
@@ -376,13 +378,8 @@ void omp_init_lock(volatile omp_lock_t *lock) {
     if(!hpx_backend) {
         start_backend();
     }
-    //bots UA crashes here. TODO
-    int *new_id = new int;
-    hpx_backend->lock(lock_mtx_id);
-    *new_id = hpx_backend->new_mtx();
-    hpx_backend->unlock(lock_mtx_id);
+    mutex_type *new_id = new mutex_type();
 
-    //*lock = reinterpret_cast<omp_lock_t>(new_id);
     (*lock) = (omp_lock_t)(new_id);
 }
 
@@ -401,8 +398,8 @@ void omp_destroy_nest_lock(volatile omp_nest_lock_t *lock) {
 
 //OpenMP 3.1 spec, section 3.3.3
 void omp_set_lock(volatile omp_lock_t *lock) {
-    int lock_id = *((int*)lock);
-    hpx_backend->lock(lock_id);
+    mutex_type *mtx = (mutex_type*)lock;
+    mtx->lock();
 }
 
 void omp_set_nest_lock(volatile omp_nest_lock_t *lock) {
@@ -411,8 +408,8 @@ void omp_set_nest_lock(volatile omp_nest_lock_t *lock) {
 
 //OpenMP 3.1 spec, section 3.3.4
 void omp_unset_lock(volatile omp_lock_t *lock) {
-    int lock_id = *((int*)lock);
-    hpx_backend->unlock(lock_id);
+    mutex_type *mtx = (mutex_type*)lock;
+    mtx->unlock();
 }
 
 void omp_unset_nest_lock(volatile omp_nest_lock_t *lock) {
@@ -421,7 +418,8 @@ void omp_unset_nest_lock(volatile omp_nest_lock_t *lock) {
 
 //OpenMP 3.1 spec, section 3.3.5
 int omp_test_lock(volatile omp_lock_t *lock) {
-    if(hpx_backend->trylock(*((int*)lock)))
+    mutex_type *mtx = (mutex_type*)lock;
+    if(mtx->try_lock())
         return 1;
     return 0;
 }
