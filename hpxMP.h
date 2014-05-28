@@ -5,6 +5,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <time.h>
+#include "hpx_runtime.h"
 
 typedef int omp_int32;
 typedef long long omp_int64;
@@ -15,7 +16,8 @@ typedef void (*omp_micro)(int , frame_pointer_t);
 
 typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
-typedef void *omp_lock_t;
+//typedef void *omp_lock_t;
+typedef mutex_type omp_lock_t;
 typedef void *omp_nest_lock_t;
 
 
@@ -35,8 +37,8 @@ typedef enum {
 } omp_sched_t;
 
 extern "C" int __ompc_init_rtl(int num_threads);
-extern "C" void __ompc_critical(int gtid, volatile omp_lock_t **lck);
-extern "C" void __ompc_end_critical(int gtid, volatile omp_lock_t **lck);
+extern "C" void __ompc_critical(int gtid, omp_lock_t **lck);
+extern "C" void __ompc_end_critical(int gtid, omp_lock_t **lck);
 
 extern "C" void __ompc_fork(int num_threads, omp_micro micro_task,
                       frame_pointer_t fp);
@@ -98,8 +100,8 @@ extern "C" void __ompc_task_exit();
 extern "C" void __ompc_task_firstprivates_alloc(void **firstprivates, int size);
 extern "C" void __ompc_task_firstprivates_free(void *firstprivates);
 
-extern "C" void __ompc_reduction(omp_int32 gtid, volatile omp_lock_t **lck);
-extern "C" void __ompc_end_reduction(omp_int32 gtid, volatile omp_lock_t **lck);
+extern "C" void __ompc_reduction(omp_int32 gtid, omp_lock_t **lck);
+extern "C" void __ompc_end_reduction(omp_int32 gtid, omp_lock_t **lck);
 
 extern "C" omp_int32 __ompc_get_thdprv( void *** thdprv_p, omp_int64 size, 
                                         void *datap, omp_int32 global_tid);

@@ -4,7 +4,6 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "hpx_runtime.h"
 #include "hpxMP.h"
 #include <iostream>
 #include <cstdlib>
@@ -21,6 +20,7 @@ int current_single_thread = -1;
 
 boost::shared_ptr<mutex_type> single_mtx; 
 boost::shared_ptr<mutex_type> crit_mtx ;
+boost::shared_ptr<mutex_type> print_mtx ;
 
 omp_micro fork_func = 0;
 
@@ -39,7 +39,7 @@ void start_backend(){
     hpx_backend.reset(new hpx_runtime());
     single_mtx.reset(new mutex_type);
     crit_mtx.reset(new mutex_type);
-//    lock_mtx_id
+    print_mtx.reset(new mutex_type);
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
@@ -148,11 +148,11 @@ omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
     return 0;
 }
 
-void __ompc_reduction(int gtid, volatile omp_lock_t **lck){
+void __ompc_reduction(int gtid, omp_lock_t **lck){
     __ompc_critical(gtid, lck);
 }
 
-void __ompc_end_reduction(int gtid, volatile omp_lock_t **lck){
+void __ompc_end_reduction(int gtid, omp_lock_t **lck){
     __ompc_end_critical(gtid, lck);
 }
 
@@ -256,26 +256,32 @@ void __ompc_end_serialized_parallel(int global_tid) {
     //It appears this function does nothing
 }
 
-void __ompc_critical(int gtid, volatile omp_lock_t **lck) {
-    mutex_type *tmp_mtx = new mutex_type;
+void __ompc_critical(int gtid, omp_lock_t **lck) {
+//    cout << "entering crit, lck = " << lck << ", *lck = " << *lck <<  endl;
+    omp_lock_t* tmp_mtx = new omp_lock_t;
+//    void* new_lock = malloc(sizeof(void*));
     if(*lck == NULL ) {
         crit_mtx->lock();
         if(*lck == NULL ){
-            *lck = (omp_lock_t*)tmp_mtx;
+            *lck = tmp_mtx;
         }
         crit_mtx->unlock();
-    } else {
-    //if(tmp_mtx != (mutex_type*)*lck) {
+    } 
+    if(&(*tmp_mtx) != &(**lck)) {
         delete tmp_mtx;
-        tmp_mtx = (mutex_type*)lck;
+//        tmp_mtx = *lck;
     }
-    tmp_mtx->lock();
+//    tmp_mtx->lock();
+    (**lck).lock();
+//    cout << "end of crit, lck = " << lck << ", *lck = " << *lck <<  endl;//0
 }
 
-void __ompc_end_critical(int gtid, volatile omp_lock_t **lck) {
-    assert(*lck != NULL);
-    mutex_type *mtx = (mutex_type*)*lck;
-    mtx->unlock();
+void __ompc_end_critical(int gtid, omp_lock_t **lck) {
+    print_mtx->lock();
+    print_mtx->unlock();
+//    omp_lock_t *mtx = *lck;
+//    mtx->unlock();
+    (**lck).unlock();
 }
 
 omp_int32 __ompc_get_thdprv( void *** thdprv_p, omp_int64 size, 

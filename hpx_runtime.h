@@ -73,7 +73,7 @@ class hpx_runtime {
 //        void lock(int lock_id);
 //        bool trylock(int lock_id);
 //        void unlock(int lock_id);
-        int new_mtx();
+//        int new_mtx();
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates,// int may_delay,
                          int is_tied, int blocks_parent);
