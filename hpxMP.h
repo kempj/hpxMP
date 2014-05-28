@@ -98,8 +98,8 @@ extern "C" void __ompc_task_exit();
 extern "C" void __ompc_task_firstprivates_alloc(void **firstprivates, int size);
 extern "C" void __ompc_task_firstprivates_free(void *firstprivates);
 
-extern "C" void __ompc_reduction(omp_int32 gtid, omp_int32 **lck);
-extern "C" void __ompc_end_reduction(omp_int32 gtid, omp_int32 **lck);
+extern "C" void __ompc_reduction(omp_int32 gtid, omp_lock_t **lck);
+extern "C" void __ompc_end_reduction(omp_int32 gtid, omp_lock_t **lck);
 
 extern "C" omp_int32 __ompc_get_thdprv( void *** thdprv_p, omp_int64 size, 
                                         void *datap, omp_int32 global_tid);
