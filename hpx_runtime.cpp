@@ -12,7 +12,7 @@
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 
-std::atomic<int> num_tasks(0);
+atomic<int> num_tasks(0);
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
@@ -26,9 +26,6 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 
 void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
-    //boost::mutex mtx;
-    //boost::condition cond;
-
     hpx::get_runtime().stop();
 }
 
@@ -123,7 +120,6 @@ void hpx_runtime::set_num_threads(int nthreads) {
 
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
-// This could potentially be taken advantage of, but currently is not.
 void hpx_runtime::barrier_wait(){
     while(num_tasks > 0){
         hpx::this_thread::yield();

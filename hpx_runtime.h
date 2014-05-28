@@ -35,6 +35,7 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 typedef hpx::lcos::local::spinlock mutex_type;
 typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
+using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
 using hpx::lcos::local::barrier;
@@ -56,8 +57,8 @@ class thread_data {
         mutex_type thread_mutex;
         int blocks_parent;
         int blocking_children = 0;
-        bool is_finished = false;
-        bool has_dependents = false;
+        atomic<bool> is_finished {false};
+        atomic<bool> has_dependents {false};
         vector<shared_future<void>> task_handles;
 };
 

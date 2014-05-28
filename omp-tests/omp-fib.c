@@ -74,6 +74,7 @@ int main(int argc, char* argv[])
     m = (s*1000 + u/1000.0)  + 0.5;
     printf("# tasks: %d\n", num_tasks);
     printf("time = %.2lfms\n", m );
+    return 0;
 
 }
 
