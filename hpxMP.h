@@ -35,8 +35,8 @@ typedef enum {
 } omp_sched_t;
 
 extern "C" int __ompc_init_rtl(int num_threads);
-extern "C" void __ompc_critical(int gtid, omp_lock_t **lck);
-extern "C" void __ompc_end_critical(int gtid, omp_lock_t **lck);
+extern "C" void __ompc_critical(int gtid, volatile omp_lock_t **lck);
+extern "C" void __ompc_end_critical(int gtid, volatile omp_lock_t **lck);
 
 extern "C" void __ompc_fork(int num_threads, omp_micro micro_task,
                       frame_pointer_t fp);
