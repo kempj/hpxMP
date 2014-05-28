@@ -18,9 +18,9 @@ bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
 
-boost::shared_ptr<mutex_type> single_mtx; 
-boost::shared_ptr<mutex_type> crit_mtx ;
-boost::shared_ptr<mutex_type> print_mtx ;
+mtx_ptr single_mtx; 
+mtx_ptr crit_mtx ;
+mtx_ptr print_mtx ;
 
 omp_micro fork_func = 0;
 
@@ -36,10 +36,12 @@ int __ompc_init_rtl(int num_threads) {
 }
 
 void start_backend(){
-    hpx_backend.reset(new hpx_runtime());
-    single_mtx.reset(new mutex_type);
-    crit_mtx.reset(new mutex_type);
-    print_mtx.reset(new mutex_type);
+    if( !hpx::get_runtime_ptr() ) {
+        hpx_backend.reset(new hpx_runtime());
+        single_mtx.reset(new mutex_type);
+        crit_mtx.reset(new mutex_type);
+        print_mtx.reset(new mutex_type);
+    }
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {

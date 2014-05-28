@@ -54,7 +54,7 @@ class thread_data {
                                           parent(p){};
         int thread_num;
         thread_data *parent;
-        mutex_type thread_mutex;
+//        mutex_type thread_mutex;
         int blocks_parent;
         atomic<int> blocking_children {0};
         atomic<bool> is_finished {false};
