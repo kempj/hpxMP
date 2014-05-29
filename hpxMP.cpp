@@ -284,7 +284,8 @@ void __ompc_critical(int gtid, omp_lock_t **lck) {
 }
 
 void __ompc_end_critical(int gtid, omp_lock_t **lck) {
-    (**lck).unlock();
+    if(started)
+        (**lck).unlock();
 }
 
 omp_int32 __ompc_get_thdprv( void *** thdprv_p, omp_int64 size, 
