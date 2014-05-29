@@ -20,7 +20,6 @@ int current_single_thread = -1;
 
 mtx_ptr single_mtx; 
 mtx_ptr crit_mtx ;
-mtx_ptr print_mtx ;
 
 omp_micro fork_func = 0;
 
@@ -38,10 +37,9 @@ int __ompc_init_rtl(int num_threads) {
 void start_backend(){
     if( !hpx::get_runtime_ptr() ) {
         hpx_backend.reset(new hpx_runtime());
-        single_mtx.reset(new mutex_type);
-        crit_mtx.reset(new mutex_type);
-        print_mtx.reset(new mutex_type);
     }
+    single_mtx.reset(new mutex_type);
+    crit_mtx.reset(new mutex_type);
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
@@ -163,15 +161,18 @@ void __ompc_barrier() {
 }
 
 void __ompc_ebarrier() {
+    if(started)
+        hpx_backend->barrier_wait();
     //This is added because a barrier is supposed to wait for all current 
     // tasks to finish. In the case where tasks were spawned, but taskwait 
     // was not called, this is needed.
     //hpx_backend->task_wait();
-    hpx_backend->barrier_wait();
 }
 
 int __ompc_get_num_threads(){
-    return hpx_backend->get_num_threads();
+    if(started)
+        return hpx_backend->get_num_threads();
+    return 0;
 }
 
 int __ompc_master(int global_tid){
@@ -185,6 +186,8 @@ void __ompc_end_master(int global_tid){
 }
 
 int __ompc_single(int tid){
+    if(!started)
+        return 1;
     int num_threads = __ompc_get_num_threads();
     single_mtx->lock();
     if(current_single_thread == -1 && single_counter == 0) {
@@ -201,6 +204,8 @@ int __ompc_single(int tid){
 }
 
 void __ompc_end_single(int tid){
+    if(!started)
+        return;
     single_mtx->lock();
     if(single_counter == 0) {
         current_single_thread = -1;
@@ -235,7 +240,7 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
     // TODO: Optimization, store is_tied in the thread/task, and whenever 
     // waiting on it, check it, or possibly have a separate vector to store
     // untied tasks
-    if(may_delay == 0) {
+    if(may_delay == 0 || !started) {
        task_func(firstprivates, frame_pointer);
     } else {
         hpx_backend->create_task( task_func, frame_pointer, firstprivates,
@@ -244,11 +249,13 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
 }
 
 void __ompc_task_wait(){
-    hpx_backend->task_wait();
+    if(started)
+        hpx_backend->task_wait();
 }
 
 void __ompc_task_exit(){
-    hpx_backend->task_exit();
+    if(started)
+        hpx_backend->task_exit();
 }
 
 void __ompc_serialized_parallel(int global_tid) {
@@ -260,6 +267,8 @@ void __ompc_end_serialized_parallel(int global_tid) {
 //Note: volatile was removed from all the omp_lock_t calls
 // but if it is needed, const_cast can get rid of the volatile.
 void __ompc_critical(int gtid, omp_lock_t **lck) {
+    if(!started)
+        return;
     omp_lock_t* tmp_mtx = new omp_lock_t;
     if(*lck == NULL ) {
         crit_mtx->lock();
