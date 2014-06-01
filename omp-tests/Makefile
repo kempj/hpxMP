@@ -7,6 +7,9 @@ for: omp-for.c
 par-for: omp-par-for.c
 	$(CC) -g omp-par-for.c -fopenmp -o omp-par-for
 
+dyn-for: omp-for-dynamic.c
+	$(CC) -g omp-for-dynamic.c -fopenmp -o dyn-for
+
 parallel: omp-par.c
 	$(CC) -g omp-par.c -fopenmp -o omp-par
 

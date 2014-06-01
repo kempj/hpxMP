@@ -117,7 +117,6 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int32 lower, omp_int32 upper,
                               omp_int32 stride, omp_int32 chunk){
-    cout << "Not implemented: __ompc_scheduler_init_4" << endl;
     if(loop_scheduler.schedule_lock.try_lock()) {
         loop_scheduler.lower = lower;
         loop_scheduler.upper = upper;
@@ -145,13 +144,14 @@ void __ompc_scheduler_init_8( omp_int32 global_tid,
 omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *plower, omp_int32 *pupper,
                                   omp_int32 *pstride){
-    cout << "Not implemented: __ompc_schedule_next_4 " << global_tid <<  endl;
 
     //Simple, serial fix:
-    if(global_tid == 0) {
+    if(global_tid == 0 && loop_scheduler.loop_count == 0) {
         *plower = loop_scheduler.lower;
         *pupper = loop_scheduler.upper;
         *pstride = loop_scheduler.stride;
+        loop_scheduler.loop_count = 1;
+        return 1;
     }
 
     //switch (loop_scheduler.schedule) {
