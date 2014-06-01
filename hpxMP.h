@@ -41,9 +41,10 @@ struct loop_data {
     int upper;
     int stride;
     int chunk;
-    int schedule_count;
-    int loop_count;
+    boost::atomic<int> schedule_count;
+    int loop_count;//unused inside the loop
     int ordered_count;
+    int num_threads;
     omp_sched_t schedule;
     omp_lock_t schedule_lock;
 };

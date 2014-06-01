@@ -117,6 +117,7 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int32 lower, omp_int32 upper,
                               omp_int32 stride, omp_int32 chunk){
+    int NT = __ompc_get_num_threads();
     if(loop_scheduler.schedule_lock.try_lock()) {
         loop_scheduler.lower = lower;
         loop_scheduler.upper = upper;
@@ -125,6 +126,7 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
         loop_scheduler.schedule = schedtype;
         loop_scheduler.schedule_count = 0;
         loop_scheduler.ordered_count = 0;
+        loop_scheduler.num_threads = NT;
         loop_scheduler.schedule_lock.unlock();
         //It doesn't seem loop_count is used for the scheduling, 
         //rather to make sure every thread is working on the same loop.
@@ -142,28 +144,90 @@ void __ompc_scheduler_init_8( omp_int32 global_tid,
 }
 
 omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
-                                  omp_int32 *plower, omp_int32 *pupper,
-                                  omp_int32 *pstride){
+                                  omp_int32 *p_lower, omp_int32 *p_upper,
+                                  omp_int32 *p_stride){
 
-    //Simple, serial fix:
+    //int global_upper, global_lower, incr, trip_count;
+    //int adjustment, block_size, stride, my_lower, my_upper;
+    //int team_size = __ompc_get_num_threads();
+
+    //I'm not even sure the compiler will use this function for static,
+    // and static even for loops. I probably just calls static_init
+    switch (loop_scheduler.schedule) {
+        //STATIC_EVEN uses default chunking.
+        case OMP_SCHED_STATIC_EVEN:
+            if(global_tid == 0) {
+                cout << "SCHED_STATIC_EVEN" << endl;
+            }
+        //STATIC_EVEN can have user specified chunking.
+        case OMP_SCHED_STATIC:
+            if(global_tid == 0) {
+                cout << "SCHED_STATIC" << endl;
+            }
+            if(loop_scheduler.schedule_count > loop_scheduler.num_threads) {
+                return 0;
+            }            
+            *p_lower= loop_scheduler.lower;
+            *p_upper= loop_scheduler.upper;
+
+            __ompc_static_init_4( global_tid, loop_scheduler.schedule,
+                                  p_lower, p_upper, p_stride, 
+                                  loop_scheduler.stride, loop_scheduler.chunk);
+            loop_scheduler.schedule_count++;
+            return 1;
+
+        case OMP_SCHED_GUIDED:
+            if(global_tid == 0) {
+                cout << "SCHED_GUIDED" << endl;
+            }
+            break;
+
+        case OMP_SCHED_DYNAMIC:
+            //TODO: use the loop count, otherwise the loops can get out of sync
+            // (The test for dynamic loops does this)
+            loop_scheduler.schedule_lock.lock();
+            if((loop_scheduler.upper - loop_scheduler.lower) * loop_scheduler.stride < 0 ) {
+            cout << global_tid << ": " << loop_scheduler.lower << " - " << loop_scheduler.upper 
+                 << ", " << loop_scheduler.stride << " returning 0" << endl;
+                loop_scheduler.schedule_lock.unlock();
+                return 0;
+            }
+            *p_lower = loop_scheduler.lower;
+            *p_stride = loop_scheduler.stride;
+            *p_upper = *p_lower + (loop_scheduler.chunk -1) * (*p_stride);
+            loop_scheduler.lower = *p_upper + *p_stride;
+            cout << global_tid << ": " << *p_lower << " - " << *p_upper << ", " << *p_stride << endl;
+            loop_scheduler.schedule_lock.unlock();
+            return 1;
+
+        case OMP_SCHED_ORDERED_STATIC_EVEN:
+            if(global_tid == 0)
+                cout << "SCHED_ORDERED_STATIC_EVEN" << endl;
+            break;
+        case OMP_SCHED_ORDERED_STATIC:
+            if(global_tid == 0)
+                cout << "SCHED_ORDERED_STATIC" << endl;
+            break;
+        case OMP_SCHED_ORDERED_DYNAMIC:
+            if(global_tid == 0)
+                cout << "SCHED_ORDERED_DYNAMIC" << endl;
+            break;
+        case OMP_SCHED_ORDERED_GUIDED:
+            if(global_tid == 0)
+                cout << "SCHED_ORDERED_GUIDED" << endl;
+            break;
+        default:
+            if(global_tid == 0)
+                cout << "default" << endl;
+    }
+    /*
     if(global_tid == 0 && loop_scheduler.loop_count == 0) {
-        *plower = loop_scheduler.lower;
-        *pupper = loop_scheduler.upper;
-        *pstride = loop_scheduler.stride;
+        *p_lower = loop_scheduler.lower;
+        *p_upper = loop_scheduler.upper;
+        *p_stride = loop_scheduler.stride;
         loop_scheduler.loop_count = 1;
         return 1;
-    }
-
-    //switch (loop_scheduler.schedule) {
-    //    case OMP_SCHED_STATIC_EVEN:
-    //    case OMP_SCHED_STATIC:
-    //    case OMP_SCHED_GUIDED:
-    //    case OMP_SCHED_DYNAMIC:
-    //    case OMP_SCHED_ORDERED_STATIC_EVEN:
-    //    case OMP_SCHED_ORDERED_STATIC:
-    //    case OMP_SCHED_ORDERED_DYNAMIC:
-    //    case OMP_SCHED_ORDERED_GUIDED:
-    //}
+    }*/
     return 0;
 }
 
