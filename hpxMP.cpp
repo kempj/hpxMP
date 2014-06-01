@@ -145,9 +145,7 @@ void __ompc_scheduler_init_8( omp_int32 global_tid,
 omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *plower, omp_int32 *pupper,
                                   omp_int32 *pstride){
-    cout << "Not implemented: __ompc_schedule_next_4" << endl;
-    //When is this called with these arguments?:
-    //if (__omp_exe_mode & OMP_EXE_MODE_SEQUENTIAL) 
+    cout << "Not implemented: __ompc_schedule_next_4 " << global_tid <<  endl;
 
     //Simple, serial fix:
     if(global_tid == 0) {
@@ -156,7 +154,7 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
         *pstride = loop_scheduler.stride;
     }
 
-    //switch (schedule_type) {
+    //switch (loop_scheduler.schedule) {
     //    case OMP_SCHED_STATIC_EVEN:
     //    case OMP_SCHED_STATIC:
     //    case OMP_SCHED_GUIDED:
@@ -165,6 +163,7 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
     //    case OMP_SCHED_ORDERED_STATIC:
     //    case OMP_SCHED_ORDERED_DYNAMIC:
     //    case OMP_SCHED_ORDERED_GUIDED:
+    //}
     return 0;
 }
 
