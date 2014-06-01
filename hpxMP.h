@@ -36,6 +36,18 @@ typedef enum {
     OMP_SCHED_ORDERED_RUNTIME     = 35
 } omp_sched_t;
 
+struct loop_data {
+    int lower;
+    int upper;
+    int stride;
+    int chunk;
+    int schedule_count;
+    int loop_count;
+    int ordered_count;
+    omp_sched_t schedule;
+    omp_lock_t schedule_lock;
+};
+
 extern "C" int __ompc_init_rtl(int num_threads);
 extern "C" void __ompc_critical(int gtid, omp_lock_t **lck);
 extern "C" void __ompc_end_critical(int gtid, omp_lock_t **lck);

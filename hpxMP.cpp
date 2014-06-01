@@ -14,6 +14,8 @@
 using namespace std;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 
+loop_data loop_scheduler;
+
 bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
@@ -116,6 +118,21 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
                               omp_int32 lower, omp_int32 upper,
                               omp_int32 stride, omp_int32 chunk){
     cout << "Not implemented: __ompc_scheduler_init_4" << endl;
+    if(loop_scheduler.schedule_lock.try_lock()) {
+        loop_scheduler.lower = lower;
+        loop_scheduler.upper = upper;
+        loop_scheduler.stride = stride;
+        loop_scheduler.chunk = chunk;
+        loop_scheduler.schedule = schedtype;
+        loop_scheduler.schedule_count = 0;
+        loop_scheduler.ordered_count = 0;
+        loop_scheduler.schedule_lock.unlock();
+        //It doesn't seem loop_count is used for the scheduling, 
+        //rather to make sure every thread is working on the same loop.
+        //This could be useful in other constructs as well
+    } 
+
+
 }
 
 void __ompc_scheduler_init_8( omp_int32 global_tid,
@@ -129,6 +146,16 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *plower, omp_int32 *pupper,
                                   omp_int32 *pstride){
     cout << "Not implemented: __ompc_schedule_next_4" << endl;
+    //When is this called with these arguments?:
+    //if (__omp_exe_mode & OMP_EXE_MODE_SEQUENTIAL) 
+
+    //Simple, serial fix:
+    if(global_tid == 0) {
+        *plower = loop_scheduler.lower;
+        *pupper = loop_scheduler.upper;
+        *pstride = loop_scheduler.stride;
+    }
+
     //switch (schedule_type) {
     //    case OMP_SCHED_STATIC_EVEN:
     //    case OMP_SCHED_STATIC:
