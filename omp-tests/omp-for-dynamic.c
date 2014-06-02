@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 int main() {
     int i,j;
@@ -26,7 +27,7 @@ int main() {
 #pragma omp parallel for schedule(dynamic)
     for(i = 0; i < 16; i++) 
     {
-        printf("Dynamic Hello World %d\n", i);
+        printf("Thread %d: Dynamic Hello World %d\n", omp_get_thread_num(), i);
     }
     
 

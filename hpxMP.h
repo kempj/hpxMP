@@ -42,7 +42,9 @@ struct loop_data {
     int stride;
     int chunk;
     boost::atomic<int> schedule_count;
-    int loop_count;//unused inside the loop
+    boost::atomic<int> loop_count{0}; //unused inside the loop
+    boost::atomic<int> num_workers{0}; 
+    bool is_done = false;
     int ordered_count;
     int num_threads;
     omp_sched_t schedule;
