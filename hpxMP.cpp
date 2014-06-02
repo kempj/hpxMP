@@ -138,7 +138,11 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
         loop_sched.schedule = static_cast<int>(schedtype);
         loop_sched.ordered_count = 0;
         loop_sched.num_threads = NT;
+        loop_sched.local_iter.resize(NT);
+        loop_sched.iter_remaining.resize(NT);
     }
+    loop_sched.iter_remaining[global_tid] = 0;
+    loop_sched.local_iter[global_tid] = 0;
     loop_sched.num_workers++;
     loop_mtx->unlock();
 }
@@ -158,6 +162,8 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
     switch (static_cast<omp_sched_t>(loop_sched.schedule)) {
         case OMP_SCHED_STATIC_EVEN: //STATIC_EVEN uses default chunking.
         case OMP_SCHED_STATIC: //STATIC_EVEN can have user specified chunking.
+        case OMP_SCHED_ORDERED_STATIC_EVEN:
+        case OMP_SCHED_ORDERED_STATIC:
             if(loop_sched.num_workers > loop_sched.num_threads) {
                 while( loop_sched.num_workers < loop_sched.num_threads &&
                         !loop_sched.is_done){
@@ -176,10 +182,14 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   p_lower, p_upper, p_stride, 
                                   loop_sched.stride, loop_sched.chunk);
             loop_sched.num_workers++;
+            loop_sched.local_iter[global_tid] = global_tid;
+            loop_sched.iter_remaining[global_tid] = (*p_upper - *p_lower) / *p_stride + 1;
             return 1;
 
         case OMP_SCHED_GUIDED:
         case OMP_SCHED_DYNAMIC:
+        case OMP_SCHED_ORDERED_DYNAMIC:
+        case OMP_SCHED_ORDERED_GUIDED:
             loop_mtx->lock();
             if((loop_sched.upper - loop_sched.lower) * loop_sched.stride < 0 ) {
                 loop_mtx->unlock();
@@ -193,37 +203,20 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                 loop_mtx->unlock();
                 return 0;
             }
+            loop_sched.schedule_count++;
             *p_lower = loop_sched.lower;
             *p_stride = loop_sched.stride;
             *p_upper = *p_lower + (loop_sched.chunk -1) * (*p_stride);
             loop_sched.lower = *p_upper + *p_stride;
             loop_mtx->unlock();
+            loop_sched.local_iter[global_tid] = loop_sched.schedule_count;
+            loop_sched.iter_remaining[global_tid] = loop_sched.chunk;
             return 1;
 
-        case OMP_SCHED_ORDERED_STATIC_EVEN:
-            /* only difference:
-             *    p_vthread->ordered_count = global_tid;
-             *    p_vthread->rest_iter_count = (my_upper - my_lower) / incr + 1;
-             */
-        case OMP_SCHED_ORDERED_STATIC:
-            /*
-             *       p_vthread->ordered_count = p_vthread->schedule_count * team_size + global_tid;
-             *        p_vthread->rest_iter_count = chunk;
-             */
-        case OMP_SCHED_ORDERED_DYNAMIC:
-        case OMP_SCHED_ORDERED_GUIDED:
         default:
             if(global_tid == 0)
                 cout << "default" << endl;
     }
-    /*
-    if(global_tid == 0 && loop_sched.loop_count == 0) {
-        *p_lower = loop_sched.lower;
-        *p_upper = loop_sched.upper;
-        *p_stride = loop_sched.stride;
-        loop_sched.loop_count = 1;
-        return 1;
-    }*/
     return 0;
 }
 
@@ -235,15 +228,20 @@ omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
 }
 
 void __ompc_ordered(omp_int32 global_tid){
-    //block until it is this thread's turn.
-    int current_thread_ordered_count = 0;
-    while(loop_sched.ordered_count != current_thread_ordered_count){
+    cout << "Thread " << global_tid << "entered ordered\n";
+    while(loop_sched.ordered_count != loop_sched.local_iter[global_tid]){
         hpx::this_thread::yield();
     }
+    cout << "Thread " << global_tid << "exited ordered\n";
 }
 
 void __ompc_end_ordered(omp_int32 global_tid){
-    loop_sched.ordered_count++;
+    cout << "Thread " << global_tid << "entered end_ordered\n";
+    loop_sched.iter_remaining[global_tid]--;
+    if(loop_sched.iter_remaining[global_tid] <= 0) {
+        loop_sched.ordered_count++;
+    }
+    cout << "Thread " << global_tid << "exited end_ordered\n";
 }
 
 void __ompc_reduction(int gtid, omp_lock_t **lck){
