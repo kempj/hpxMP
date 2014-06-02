@@ -36,21 +36,6 @@ typedef enum {
     OMP_SCHED_ORDERED_RUNTIME     = 35
 } omp_sched_t;
 
-struct loop_data {
-    int lower;
-    int upper;
-    int stride;
-    int chunk;
-    boost::atomic<int> schedule_count;
-    boost::atomic<int> loop_count{0}; //unused inside the loop
-    boost::atomic<int> num_workers{0}; 
-    bool is_done = false;
-    int ordered_count;
-    int num_threads;
-    omp_sched_t schedule;
-    omp_lock_t schedule_lock;
-};
-
 extern "C" int __ompc_init_rtl(int num_threads);
 extern "C" void __ompc_critical(int gtid, omp_lock_t **lck);
 extern "C" void __ompc_end_critical(int gtid, omp_lock_t **lck);
@@ -93,6 +78,9 @@ extern "C" omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
 extern "C" omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
                                              omp_int64 *plower, omp_int64 *pupper,
                                              omp_int64 *pstride);
+
+extern "C" void __ompc_ordered(omp_int32 global_tid);
+extern "C" void __ompc_end_ordered(omp_int32 global_tid);
 
 extern "C" void __ompc_ebarrier();
 extern "C" void __ompc_barrier();

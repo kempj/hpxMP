@@ -5,6 +5,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include "hpxMP.h"
+#include "loop_data.h"
 #include <iostream>
 #include <cstdlib>
 #include <vector>
@@ -22,6 +23,7 @@ int current_single_thread = -1;
 
 mtx_ptr single_mtx; 
 mtx_ptr crit_mtx ;
+mtx_ptr loop_mtx;
 
 omp_micro fork_func = 0;
 
@@ -42,6 +44,7 @@ void start_backend(){
     }
     single_mtx.reset(new mutex_type);
     crit_mtx.reset(new mutex_type);
+    loop_mtx.reset(new mutex_type);
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
@@ -126,19 +129,18 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
         hpx::this_thread::yield();
     }
     int NT = __ompc_get_num_threads();
-    loop_sched.schedule_lock.lock();
+    loop_mtx->lock();
     if(loop_sched.num_workers == 0) {
         loop_sched.lower = lower;
         loop_sched.upper = upper;
         loop_sched.stride = stride;
         loop_sched.chunk = chunk;
-        loop_sched.schedule = schedtype;
-        loop_sched.schedule_count = 0;
+        loop_sched.schedule = static_cast<int>(schedtype);
         loop_sched.ordered_count = 0;
         loop_sched.num_threads = NT;
     }
     loop_sched.num_workers++;
-    loop_sched.schedule_lock.unlock();
+    loop_mtx->unlock();
 }
 
 void __ompc_scheduler_init_8( omp_int32 global_tid,
@@ -151,63 +153,63 @@ void __ompc_scheduler_init_8( omp_int32 global_tid,
 omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *p_lower, omp_int32 *p_upper,
                                   omp_int32 *p_stride){
-
-    //int global_upper, global_lower, incr, trip_count;
-    //int adjustment, block_size, stride, my_lower, my_upper;
-    //int team_size = __ompc_get_num_threads();
-
     //I'm not even sure the compiler will use this function for static,
-    // and static even for loops. I probably just calls static_init
-    switch (loop_sched.schedule) {
-        //STATIC_EVEN uses default chunking.
-        case OMP_SCHED_STATIC_EVEN:
-        //STATIC_EVEN can have user specified chunking.
-        case OMP_SCHED_STATIC:
-            if(loop_sched.schedule_count > loop_sched.num_threads) {
-                while( loop_sched.num_workers < (loop_sched.num_threads) &&
+    // and static even for loops. It probably just calls static_init
+    switch (static_cast<omp_sched_t>(loop_sched.schedule)) {
+        case OMP_SCHED_STATIC_EVEN: //STATIC_EVEN uses default chunking.
+        case OMP_SCHED_STATIC: //STATIC_EVEN can have user specified chunking.
+            if(loop_sched.num_workers > loop_sched.num_threads) {
+                while( loop_sched.num_workers < loop_sched.num_threads &&
                         !loop_sched.is_done){
                     hpx::this_thread::yield();
                 }
-                loop_sched.schedule_lock.lock();
+                loop_mtx->lock();
                 loop_sched.is_done = true;
                 loop_sched.num_workers--;
-                loop_sched.schedule_lock.unlock();
+                loop_mtx->unlock();
                 return 0;
             }            
             *p_lower= loop_sched.lower;
             *p_upper= loop_sched.upper;
 
-            __ompc_static_init_4( global_tid, loop_sched.schedule,
+            __ompc_static_init_4( global_tid, static_cast<omp_sched_t>(loop_sched.schedule),
                                   p_lower, p_upper, p_stride, 
                                   loop_sched.stride, loop_sched.chunk);
-            loop_sched.schedule_count++;
+            loop_sched.num_workers++;
             return 1;
 
         case OMP_SCHED_GUIDED:
         case OMP_SCHED_DYNAMIC:
-            loop_sched.schedule_lock.lock();
+            loop_mtx->lock();
             if((loop_sched.upper - loop_sched.lower) * loop_sched.stride < 0 ) {
-                loop_sched.schedule_lock.unlock();
-                //Every thread needs to enter
-                while( loop_sched.num_workers < (loop_sched.num_threads) &&
+                loop_mtx->unlock();
+                while( loop_sched.num_workers < loop_sched.num_threads &&
                        !loop_sched.is_done){
                     hpx::this_thread::yield();
                 }
-                loop_sched.schedule_lock.lock();
+                loop_mtx->lock();
                 loop_sched.is_done = true;
                 loop_sched.num_workers--;
-                loop_sched.schedule_lock.unlock();
+                loop_mtx->unlock();
                 return 0;
             }
             *p_lower = loop_sched.lower;
             *p_stride = loop_sched.stride;
             *p_upper = *p_lower + (loop_sched.chunk -1) * (*p_stride);
             loop_sched.lower = *p_upper + *p_stride;
-            loop_sched.schedule_lock.unlock();
+            loop_mtx->unlock();
             return 1;
 
         case OMP_SCHED_ORDERED_STATIC_EVEN:
+            /* only difference:
+             *    p_vthread->ordered_count = global_tid;
+             *    p_vthread->rest_iter_count = (my_upper - my_lower) / incr + 1;
+             */
         case OMP_SCHED_ORDERED_STATIC:
+            /*
+             *       p_vthread->ordered_count = p_vthread->schedule_count * team_size + global_tid;
+             *        p_vthread->rest_iter_count = chunk;
+             */
         case OMP_SCHED_ORDERED_DYNAMIC:
         case OMP_SCHED_ORDERED_GUIDED:
         default:
@@ -230,6 +232,18 @@ omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
                                   omp_int64 *pstride){
     cout << "Not implemented: __ompc_schedule_next_8" << endl;
     return 0;
+}
+
+void __ompc_ordered(omp_int32 global_tid){
+    //block until it is this thread's turn.
+    int current_thread_ordered_count = 0;
+    while(loop_sched.ordered_count != current_thread_ordered_count){
+        hpx::this_thread::yield();
+    }
+}
+
+void __ompc_end_ordered(omp_int32 global_tid){
+    loop_sched.ordered_count++;
 }
 
 void __ompc_reduction(int gtid, omp_lock_t **lck){
