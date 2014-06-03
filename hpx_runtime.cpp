@@ -163,15 +163,9 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     thread_data *parent_task = task_data->parent;
 
     task_func(firstprivates, fp);
-//    {//An atomic would probably be better here
-//        hpx::lcos::local::spinlock::scoped_lock lk(task_data->thread_mutex);
-        task_data->is_finished = true;    
-//    }
+    task_data->is_finished = true;    
     if(blocks_parent) {
-//        {
-//            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
-            parent_task->blocking_children--;
-//        }
+        parent_task->blocking_children--;
     }
     delete task_data;
     num_tasks--;
@@ -187,11 +181,8 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     child_task->blocks_parent = blocks_parent;
     num_tasks++;
     if(blocks_parent) {
-//        {
-//            hpx::lcos::local::spinlock::scoped_lock lk(parent_task->thread_mutex);
-            parent_task->blocking_children += 1;
-            parent_task->has_dependents = true;
-//        }
+        parent_task->blocking_children += 1;
+        parent_task->has_dependents = true;
     }
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
@@ -201,17 +192,11 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
 void thread_setup( omp_task_func task_func, void *fp, int tid) {
-    //print_mtx->lock();
-    //cout << "Thread " << tid << "starting\n";
-    //print_mtx->unlock();
     thread_data *task_data = new thread_data(tid);
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
 
     task_func((void*)0, fp);
-    //print_mtx->lock();
-    //cout << "Thread " << tid << "Finished\n";
-    //print_mtx->unlock();
     
     while(num_tasks > 0) {
         hpx::this_thread::yield();
