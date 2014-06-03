@@ -24,6 +24,7 @@ int current_single_thread = -1;
 mtx_ptr single_mtx; 
 mtx_ptr crit_mtx ;
 mtx_ptr loop_mtx;
+mtx_ptr print_mtx;
 
 omp_micro fork_func = 0;
 
@@ -45,6 +46,7 @@ void start_backend(){
     single_mtx.reset(new mutex_type);
     crit_mtx.reset(new mutex_type);
     loop_mtx.reset(new mutex_type);
+    print_mtx.reset(new mutex_type);
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
@@ -124,6 +126,10 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
     //how do I tell the difference between not being first, and
     // having the previous loop still being worked on?
     
+    //print_mtx->lock();
+    //cout << "Thread " << global_tid << " entering scheduler_init \n";
+    //print_mtx->unlock();
+    
     // waiting for last loop to finish.
     while(loop_sched.is_done && loop_sched.num_workers > 0 ) {
         hpx::this_thread::yield();
@@ -131,19 +137,23 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
     int NT = __ompc_get_num_threads();
     loop_mtx->lock();
     if(loop_sched.num_workers == 0) {
+        loop_sched.is_done = false;
         loop_sched.lower = lower;
         loop_sched.upper = upper;
         loop_sched.stride = stride;
         loop_sched.chunk = chunk;
         loop_sched.schedule = static_cast<int>(schedtype);
         loop_sched.ordered_count = 0;
+        loop_sched.schedule_count = 0;
         loop_sched.num_threads = NT;
         loop_sched.local_iter.resize(NT);
         loop_sched.iter_remaining.resize(NT);
+        loop_sched.num_workers++;
+    } else {
+        loop_sched.num_workers++;
     }
     loop_sched.iter_remaining[global_tid] = 0;
     loop_sched.local_iter[global_tid] = 0;
-    loop_sched.num_workers++;
     loop_mtx->unlock();
 }
 
@@ -157,14 +167,18 @@ void __ompc_scheduler_init_8( omp_int32 global_tid,
 omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *p_lower, omp_int32 *p_upper,
                                   omp_int32 *p_stride){
-    //I'm not even sure the compiler will use this function for static,
-    // and static even for loops. It probably just calls static_init
+    //print_mtx->lock();
+    //cout << "Thread " << global_tid << " entering schedule_next \n";
+    //print_mtx->unlock();
     switch (static_cast<omp_sched_t>(loop_sched.schedule)) {
         case OMP_SCHED_STATIC_EVEN: //STATIC_EVEN uses default chunking.
         case OMP_SCHED_STATIC: //STATIC_EVEN can have user specified chunking.
         case OMP_SCHED_ORDERED_STATIC_EVEN:
         case OMP_SCHED_ORDERED_STATIC:
             if(loop_sched.num_workers > loop_sched.num_threads) {
+                //print_mtx->lock();
+                //cout << "Thread " << global_tid << " waiting to exit\n";
+                //print_mtx->unlock();
                 while( loop_sched.num_workers < loop_sched.num_threads &&
                         !loop_sched.is_done){
                     hpx::this_thread::yield();
@@ -173,6 +187,9 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                 loop_sched.is_done = true;
                 loop_sched.num_workers--;
                 loop_mtx->unlock();
+                //print_mtx->lock();
+                //cout << "Thread " << global_tid << " exiting schedule next\n";
+                //print_mtx->unlock();
                 return 0;
             }            
             *p_lower= loop_sched.lower;
@@ -190,8 +207,12 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
         case OMP_SCHED_DYNAMIC:
         case OMP_SCHED_ORDERED_DYNAMIC:
         case OMP_SCHED_ORDERED_GUIDED:
-            loop_mtx->lock();
+        case OMP_SCHED_RUNTIME:
+        case OMP_SCHED_ORDERED_RUNTIME:
             if((loop_sched.upper - loop_sched.lower) * loop_sched.stride < 0 ) {
+                //print_mtx->lock();
+                //cout << "Thread " << global_tid << " waiting to exit\n";
+                //print_mtx->unlock();
                 loop_mtx->unlock();
                 while( loop_sched.num_workers < loop_sched.num_threads &&
                        !loop_sched.is_done){
@@ -201,9 +222,11 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                 loop_sched.is_done = true;
                 loop_sched.num_workers--;
                 loop_mtx->unlock();
+                //print_mtx->lock();
+                //cout << "Thread " << global_tid << " exiting schedule next\n";
+                //print_mtx->unlock();
                 return 0;
             }
-            loop_sched.schedule_count++;
             *p_lower = loop_sched.lower;
             *p_stride = loop_sched.stride;
             *p_upper = *p_lower + (loop_sched.chunk -1) * (*p_stride);
@@ -211,6 +234,7 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
             loop_mtx->unlock();
             loop_sched.local_iter[global_tid] = loop_sched.schedule_count;
             loop_sched.iter_remaining[global_tid] = loop_sched.chunk;
+            loop_sched.schedule_count++;
             return 1;
 
         default:
@@ -228,20 +252,28 @@ omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
 }
 
 void __ompc_ordered(omp_int32 global_tid){
-    cout << "Thread " << global_tid << "entered ordered\n";
+    //print_mtx->lock();
+    //cout << "Thread " << global_tid << " entered ordered\n";
+    //print_mtx->unlock();
     while(loop_sched.ordered_count != loop_sched.local_iter[global_tid]){
         hpx::this_thread::yield();
     }
-    cout << "Thread " << global_tid << "exited ordered\n";
+    //print_mtx->lock();
+    //cout << "Thread " << global_tid << " exited ordered\n";
+    //print_mtx->unlock();
 }
 
 void __ompc_end_ordered(omp_int32 global_tid){
-    cout << "Thread " << global_tid << "entered end_ordered\n";
+    //print_mtx->lock();
+    //cout << "Thread " << global_tid << " entered end_ordered\n";
+    //print_mtx->unlock();
     loop_sched.iter_remaining[global_tid]--;
     if(loop_sched.iter_remaining[global_tid] <= 0) {
         loop_sched.ordered_count++;
     }
-    cout << "Thread " << global_tid << "exited end_ordered\n";
+    //print_mtx->lock();
+    //cout << "Thread " << global_tid << " exited end_ordered\n";
+    //print_mtx->unlock();
 }
 
 void __ompc_reduction(int gtid, omp_lock_t **lck){
