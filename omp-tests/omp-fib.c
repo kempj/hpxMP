@@ -89,12 +89,12 @@ long fib1(int k)
     }
 
 
-#pragma omp task shared(p2) //if(k > 10)
+#pragma omp task untied shared(p2) //if(k > 10)
     {
         p2 = fib1(k-2);
     }
 
-#pragma omp task shared(p1) //if(k > 10)
+#pragma omp task untied shared(p1) //if(k > 10)
     {
         p1 = fib1(k-1);
     }
