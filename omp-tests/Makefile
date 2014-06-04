@@ -22,6 +22,9 @@ task: omp-task.c
 fib: omp-fib.c
 	$(CC) -g omp-fib.c -fopenmp -o omp-fib
 
+fib-opt: omp-fib.c
+	$(CC) omp-fib.c -O3 -fopenmp -o omp-fib-O3
+
 barrier: omp-barrier.c
 	$(CC) -g omp-barrier.c -fopenmp -o omp-barrier
 
