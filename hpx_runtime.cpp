@@ -13,7 +13,7 @@ extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 extern boost::shared_ptr<mutex_type> print_mtx;
 
-atomic<double> task_creation_time{0};
+//atomic<double> task_creation_time{0};
 
 atomic<int> num_tasks{0};
 
@@ -185,13 +185,13 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
         parent_task->blocking_children += 1;
         parent_task->has_dependents = true;
     }
-    double time1 = walltime->now();
+//    double time1 = walltime->now();
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
                                 firstprivates, child_task));
-    double time2 = walltime->now() - time1;
-    double old = task_creation_time.load();
-    while (!task_creation_time.compare_exchange_weak(old, old + time2));
+//    double time2 = walltime->now() - time1;
+//    double old = task_creation_time.load();
+//    while (!task_creation_time.compare_exchange_weak(old, old + time2));
 }
 
 //Thread tasks currently have no parent. In the future it might work out well
@@ -234,8 +234,8 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     boost::mutex mtx;
     boost::condition cond;
     bool running = false;
-    double time1 = walltime->now();
-    task_creation_time = 0;
+//    double time1 = walltime->now();
+//    task_creation_time = 0;
 
     hpx::applier::register_thread_nullary(
             //HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
@@ -247,7 +247,7 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
         while (!running)
             cond.wait(lk);
     }
-    cout << "total time = " << walltime->now() - time1 << endl;
-    cout << "total task_creation_time = " << task_creation_time << endl;
+//    cout << "total time = " << walltime->now() - time1 << endl;
+//    cout << "total task_creation_time = " << task_creation_time << endl;
 }
 
