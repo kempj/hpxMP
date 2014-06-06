@@ -74,12 +74,12 @@ MPCC = ~/openUH/bin/uhcc -fopenmp
 FC90 = ~/openUH/bin/uhf90
 CC = ~/openUH/bin/uhcc
 
-OPTS90 = -O3
+OPTS90 = -g -O3
 #OPTS90 = -O3 -no-vec
 #OPTS90 = -O3 -r8
 #OPTS90 = -O3 -CB -r8 -warn all -std90
 
-CCOPTS = -O3 -std=c99
+CCOPTS =  -g -O3 -std=c99
 #CCOPTS = -O3 -no-vec -Wall -std=c99
 LEGACY = -nofor_main
 #LOPTS = -lgomp
