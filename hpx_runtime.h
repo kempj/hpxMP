@@ -10,6 +10,8 @@
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/util/static.hpp>
 #include <hpx/include/lcos.hpp>
+#include <hpx/lcos/local/condition_variable.hpp>
+
 
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -51,7 +53,7 @@ class thread_data {
         int thread_num;
         //hpx threads track parents. can I benefit from using that?
         thread_data *parent;
-//        mutex_type thread_mutex;
+        mutex_type thread_mutex;
         int blocks_parent;
         atomic<int> blocking_children {0};
         atomic<bool> is_finished {false};

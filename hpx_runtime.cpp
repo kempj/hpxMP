@@ -17,6 +17,8 @@ extern boost::shared_ptr<mutex_type> print_mtx;
 
 atomic<int> num_tasks{0};
 
+hpx::lcos::local::condition_variable thread_cond;
+
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
     // Let the main thread know that we're done.
@@ -187,13 +189,9 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
         parent_task->blocking_children += 1;
         parent_task->has_dependents = true;
     }
-//    double time1 = walltime->now();
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
                                 firstprivates, child_task));
-//    double time2 = walltime->now() - time1;
-//    double old = task_creation_time.load();
-//    while (!task_creation_time.compare_exchange_weak(old, old + time2));
 }
 
 //Thread tasks currently have no parent. In the future it might work out well
@@ -205,9 +203,16 @@ void thread_setup( omp_task_func task_func, void *fp, int tid) {
 
     task_func((void*)0, fp);
     
-    while(num_tasks > 0) {
-        hpx::this_thread::yield();
+    {
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
+        while(num_tasks > 0)
+        {
+            thread_cond.wait(lock);
+        }
     }
+    //while(num_tasks > 0) {
+    //    hpx::this_thread::yield();
+    //}
     delete task_data;
 }
 
@@ -236,8 +241,6 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     boost::mutex mtx;
     boost::condition cond;
     bool running = false;
-//    double time1 = walltime->now();
-//    task_creation_time = 0;
 
     hpx::applier::register_thread_nullary(
             //HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
@@ -249,7 +252,5 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
         while (!running)
             cond.wait(lk);
     }
-//    cout << "total time = " << walltime->now() - time1 << endl;
-//    cout << "total task_creation_time = " << task_creation_time << endl;
 }
 
