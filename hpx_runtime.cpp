@@ -174,6 +174,9 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     }
     delete task_data;
     num_tasks--;
+//    if(num_tasks == 0) {
+//        thread_cond.notify_all();
+//    }
 }
 
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
@@ -203,16 +206,16 @@ void thread_setup( omp_task_func task_func, void *fp, int tid) {
 
     task_func((void*)0, fp);
     
-    {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
-        while(num_tasks > 0)
-        {
-            thread_cond.wait(lock);
-        }
+//    {
+//        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
+//        while(num_tasks > 0)
+//        {
+//            thread_cond.wait(lock);
+//        }
+//    }
+    while(num_tasks > 0) {
+        hpx::this_thread::yield();
     }
-    //while(num_tasks > 0) {
-    //    hpx::this_thread::yield();
-    //}
     delete task_data;
 }
 
