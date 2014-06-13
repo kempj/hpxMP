@@ -17,7 +17,7 @@ extern boost::shared_ptr<mutex_type> print_mtx;
 
 atomic<int> num_tasks{0};
 
-hpx::lcos::local::condition_variable thread_cond;
+boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
@@ -175,7 +175,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     delete task_data;
     num_tasks--;
     if(num_tasks == 0) {
-        thread_cond.notify_all();
+        thread_cond->notify_all();
     }
 }
 
@@ -199,7 +199,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
-void thread_setup( omp_task_func task_func, void *fp, int tid) {
+void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx ) {
     thread_data *task_data = new thread_data(tid);
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
@@ -207,10 +207,10 @@ void thread_setup( omp_task_func task_func, void *fp, int tid) {
     task_func((void*)0, fp);
     
     {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(mtx);
         while(num_tasks > 0)
         {
-            thread_cond.wait(lock);
+            thread_cond->wait(lock);
         }
     }
     //while(num_tasks > 0) {
@@ -224,8 +224,12 @@ void ompc_fork_worker( int num_threads, omp_task_func task_func,
                        boost::condition& cond, bool& running) {
     vector<hpx::lcos::future<void>> threads;
     num_tasks = 0;
+
+    mutex_type thread_mtx;
+    thread_cond.reset(new hpx::lcos::local::condition_variable);
+
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async( thread_setup, *task_func, fp, i));
+        threads.push_back( hpx::async( thread_setup, *task_func, fp, i, boost::ref(thread_mtx)));
     }
     hpx::wait_all(threads);
     {
