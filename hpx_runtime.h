@@ -49,6 +49,7 @@ class thread_data {
         thread_data(thread_data *p): thread_num(p->thread_num),
                                           parent(p){};
         int thread_num;
+        //hpx threads track parents. can I benefit from using that?
         thread_data *parent;
 //        mutex_type thread_mutex;
         int blocks_parent;

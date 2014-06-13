@@ -124,6 +124,8 @@ void hpx_runtime::set_num_threads(int nthreads) {
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
 void hpx_runtime::barrier_wait(){
+    //if I increment threads at creation, and decrement them here, 
+    // can I remove the barrier completely?
     while(num_tasks > 0){
         hpx::this_thread::yield();
     }

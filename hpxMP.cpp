@@ -126,11 +126,6 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
     //how do I tell the difference between not being first, and
     // having the previous loop still being worked on?
     
-//    print_mtx->lock();
-//    cout << "Thread " << global_tid << " entering scheduler_init \n";
-//    cout << lower << ", " << upper << ", " << stride << endl;
-//    print_mtx->unlock();
-    
     // waiting for last loop to finish.
     while(loop_sched.is_done && loop_sched.num_workers > 0 ) {
         hpx::this_thread::yield();
@@ -156,9 +151,6 @@ void __ompc_scheduler_init_4( omp_int32 global_tid,
     loop_sched.iter_remaining[global_tid] = 0;
     loop_sched.local_iter[global_tid] = 0;
     loop_mtx->unlock();
-//    print_mtx->lock();
-//    cout << "Thread " << global_tid << " exiting scheduler_init \n";
-//    print_mtx->unlock();
 }
 
 void __ompc_scheduler_init_8( omp_int32 global_tid,
@@ -171,9 +163,6 @@ void __ompc_scheduler_init_8( omp_int32 global_tid,
 omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                                   omp_int32 *p_lower, omp_int32 *p_upper,
                                   omp_int32 *p_stride){
-//    print_mtx->lock();
-//    cout << "(Static) Thread " << global_tid << " entering schedule_next \n";
-//    print_mtx->unlock();
     switch (static_cast<omp_sched_t>(loop_sched.schedule)) {
         case OMP_SCHED_STATIC_EVEN: //STATIC_EVEN uses default chunking.
         case OMP_SCHED_STATIC: //STATIC_EVEN can have user specified chunking.
@@ -187,21 +176,13 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                 *p_lower= loop_sched.lower;
                 *p_upper= loop_sched.upper;
 
-//                __ompc_static_init_4( global_tid, static_cast<omp_sched_t>(loop_sched.schedule),
                 __ompc_static_init_4( loop_sched.schedule_count, static_cast<omp_sched_t>(loop_sched.schedule),
                                       p_lower, p_upper, p_stride, 
                                       loop_sched.stride, loop_sched.chunk);
                 loop_sched.iter_remaining[global_tid] = (*p_upper - *p_lower) / *p_stride + 1;
-//                print_mtx->lock();
-//                cout << "(Static) Thread " << global_tid << " exiting schedule_next to do more work\n";
-//                print_mtx->unlock();
                 return 1;
             } 
             loop_mtx->unlock();
-            //if(loop_sched.schedule_count == loop_sched.num_threads || loop_sched.is_done) {
-//            print_mtx->lock();
-//            cout << "(Static) Thread " << global_tid << " waiting to exit\n";
-//            print_mtx->unlock();
             //Wait for every thread to at least start the loop before exiting
             while( loop_sched.num_workers < loop_sched.num_threads &&
                         !loop_sched.is_done){
@@ -211,9 +192,6 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
             loop_sched.is_done = true;
             loop_sched.num_workers--;
             loop_mtx->unlock();
-//            print_mtx->lock();
-//            cout << "(Static) Thread " << global_tid << " exiting schedule next\n";
-//            print_mtx->unlock();
             return 0;
 
         case OMP_SCHED_GUIDED:
@@ -223,9 +201,6 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
         case OMP_SCHED_RUNTIME:
         case OMP_SCHED_ORDERED_RUNTIME:
             if((loop_sched.upper - loop_sched.lower) * loop_sched.stride < 0 ) {
-//                print_mtx->lock();
-//                cout << "(Dynamic) Thread " << global_tid << " waiting to exit\n";
-//                print_mtx->unlock();
                 loop_mtx->unlock();
                 while( loop_sched.num_workers < loop_sched.num_threads &&
                        !loop_sched.is_done){
@@ -235,9 +210,6 @@ omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
                 loop_sched.is_done = true;
                 loop_sched.num_workers--;
                 loop_mtx->unlock();
-//                print_mtx->lock();
- //               cout << "(Dynamic) Thread " << global_tid << " exiting schedule next\n";
-//                print_mtx->unlock();
                 return 0;
             }
             *p_lower = loop_sched.lower;
@@ -265,31 +237,16 @@ omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
 }
 
 void __ompc_ordered(omp_int32 global_tid){
-//    print_mtx->lock();
-//    cout << "Thread " << global_tid << " entered ordered\n"
-//         << "\t ordered_count = " << loop_sched.ordered_count 
-//         << ", local_iter = " << loop_sched.local_iter[global_tid]
-//         << endl;
-//    print_mtx->unlock();
     while(loop_sched.ordered_count != loop_sched.local_iter[global_tid]){
         hpx::this_thread::yield();
     }
-//    print_mtx->lock();
-//    cout << "Thread " << global_tid << " exited ordered\n";
-//    print_mtx->unlock();
 }
 
 void __ompc_end_ordered(omp_int32 global_tid){
-//    print_mtx->lock();
-//    cout << "Thread " << global_tid << " entered end_ordered\n";
-//    print_mtx->unlock();
     loop_sched.iter_remaining[global_tid]--;
     if(loop_sched.iter_remaining[global_tid] <= 0) {
         loop_sched.ordered_count++;
     }
-    //print_mtx->lock();
-    //cout << "Thread " << global_tid << " exited end_ordered\n";
-    //print_mtx->unlock();
 }
 
 void __ompc_reduction(int gtid, omp_lock_t **lck){
@@ -307,10 +264,6 @@ void __ompc_barrier() {
 void __ompc_ebarrier() {
     if(started)
         hpx_backend->barrier_wait();
-    //This is added because a barrier is supposed to wait for all current 
-    // tasks to finish. In the case where tasks were spawned, but taskwait 
-    // was not called, this is needed.
-    //hpx_backend->task_wait();
 }
 
 int __ompc_get_num_threads(){
@@ -377,13 +330,7 @@ void __ompc_task_create( omp_task_func task_func, void *frame_pointer,
                          int is_tied, int blocks_parent) {
     
     // blocks_parent keeps parent tasks from exiting when they have shared 
-    // variables in nested tasks. Since the current hpxMP implementation
-    // calls a taskwait at the end of each task, the blocks_parent variable
-    // is not used.
-
-    // TODO: Optimization, store is_tied in the thread/task, and whenever 
-    // waiting on it, check it, or possibly have a separate vector to store
-    // untied tasks
+    // variables in nested tasks.
     if(may_delay == 0 || !started) {
        task_func(firstprivates, frame_pointer);
     } else {
