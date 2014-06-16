@@ -42,7 +42,7 @@
 #include "strassen.h"
 #include <omp.h>
 int bots_app_cutoff_value = 32;
-int bots_cutoff_value = 64;
+int bots_cutoff_value = 3;
 
 void print_matrix(int n, REAL *A, int an)
 {
