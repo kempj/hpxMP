@@ -154,17 +154,13 @@ void hpx_runtime::task_wait() {
 void hpx_runtime::task_exit() {
     thread_data *task_data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-
-    //lock on thread specific mutex
-    //will need thread specific condition
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
-        while(task_data->blocking_children > 0)
+        while(task_data->blocking_children > 0) {
             task_data->thread_cond.wait(lock);
+        }
     }
-//    while(task_data->blocking_children > 0) {
-//        hpx::this_thread::yield();
-//    }
+//    while(task_data->blocking_children > 0) { hpx::this_thread::yield(); }
 }
 
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
@@ -223,9 +219,7 @@ void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx )
             thread_cond->wait(lock);
         }
     }
-    //while(num_tasks > 0) {
-    //    hpx::this_thread::yield();
-    //}
+    //while(num_tasks > 0) { hpx::this_thread::yield(); }
     delete task_data;
 }
 
@@ -260,8 +254,8 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     bool running = false;
 
     hpx::applier::register_thread_nullary(
-            //HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
-            HPX_STD_BIND(&ompc_fork_worker, num_threads, task_func, fp,
+            HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
+            //HPX_STD_BIND(&ompc_fork_worker, num_threads, task_func, fp,
                 boost::ref(mtx), boost::ref(cond), boost::ref(running))
             , "ompc_fork_worker");
     {   // Wait for the thread to run.
