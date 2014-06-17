@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     {
 #pragma omp master
         {
-#pragma omp task shared(f)
+#pragma omp task untied shared(f)
             {
                 f = fib1(input);
 //                printf("1fib(%d) = %d\n",input, f);
