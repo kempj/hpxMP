@@ -17,3 +17,6 @@ exec: exec_test.cpp
 
 exec-ptr: exec_ptr_test.cpp
 	g++ -g exec_ptr_test.cpp -o test-exec-ptr `pkg-config --cflags --libs hpx_application`
+
+fib: fibonacci.cpp
+	g++ -g fibonacci.cpp -o hpx-fib `pkg-config --cflags --libs hpx_application`
