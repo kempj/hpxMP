@@ -178,7 +178,9 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     task_data->is_finished = true;    
     if(blocks_parent) {
         parent_task->blocking_children--;
-        parent_task->thread_cond.notify_one();
+        if(parent_task->blocking_children == 0) {
+            parent_task->thread_cond.notify_one();
+        }
     }
     delete task_data;
     num_tasks--;
