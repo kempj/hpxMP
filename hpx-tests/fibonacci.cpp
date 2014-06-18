@@ -32,7 +32,7 @@ boost::uint64_t fibonacci(boost::uint64_t n) {
 int hpx_main(boost::program_options::variables_map& vm)
 {
     boost::uint64_t n = vm["n-value"].as<boost::uint64_t>();
-    threshold = vm["threshold"].as<boost::uint64_t>();
+    threshold = vm["threshold"].as<unsigned int>();  
     {
         hpx::util::high_resolution_timer t;
         boost::uint64_t r = fibonacci(n);
