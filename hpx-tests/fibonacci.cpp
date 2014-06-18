@@ -15,10 +15,14 @@
 #include <boost/cstdint.hpp>
 #include <boost/format.hpp>
 
+boost::uint64_t threshold = 2;
+
 
 boost::uint64_t fibonacci(boost::uint64_t n) {
     if (n < 2)
         return n;
+    if (n < threshold)
+        return fibonacci(n-1) + fibonacci(n-2);
     hpx::future<boost::uint64_t> n1 = hpx::async(fibonacci, n - 1);
     hpx::future<boost::uint64_t> n2 = hpx::async(fibonacci, n - 2);
 
@@ -42,10 +46,13 @@ int main(int argc, char* argv[])
     boost::program_options::options_description
        desc_commandline("Usage: " HPX_APPLICATION_STRING " [options]");
 
+    using boost::program_options::value;
     desc_commandline.add_options()
         ( "n-value",
-          boost::program_options::value<boost::uint64_t>()->default_value(10),
-          "n value for the Fibonacci function");
+          value<boost::uint64_t>()->default_value(10),
+          "n value for the Fibonacci function")
+        ( "threshold", value<unsigned int>()->default_value(2),
+          "threshold for switching to serial code");
 
     return hpx::init(desc_commandline, argc, argv);
 }
