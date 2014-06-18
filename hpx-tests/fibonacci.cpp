@@ -19,6 +19,7 @@ boost::uint64_t threshold = 2;
 
 
 boost::uint64_t fibonacci(boost::uint64_t n) {
+    std::cout << "fib(" << n << ")" << std::endl;
     if (n < 2)
         return n;
     if (n < threshold)
