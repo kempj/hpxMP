@@ -12,6 +12,7 @@ long fib1(int k);
 long fib2(int k);
 
 int num_tasks = 0;
+int cutoff = 26;
 
 
 int main(int argc, char* argv[])
@@ -23,35 +24,30 @@ int main(int argc, char* argv[])
     long s,u;
     long f;
     double m;
-    int nt;
     int mode = 0;
 
     if (argc != 4 && argc != 3) {
-        fprintf(stderr, "Usage: ./fib task|seq <input> <nt>\n");
+        fprintf(stderr, "Usage: ./fib task|seq <input> <cutoff>\n");
         return 1;
     }
 
-    nt = omp_get_max_threads();
-
     input = atoi(argv[2]);
     if(argc == 4)
-      nt = atoi(argv[3]);
+      cutoff= atoi(argv[3]);
 
     if (!strncmp(argv[1], "task", 4))
         mode = 1;
     else if (!strncmp(argv[1], "seq", 3)) {
         mode = 0;
-        nt = 1;
     }
     else {
-        fprintf(stderr, "Usage: ./fib task|seq <input> <nt>\n");
+        fprintf(stderr, "Usage: ./fib task|seq <input> <cutoff>\n");
         return 1;
     }
 
-
     gettimeofday(&t1, NULL);
 
-#pragma omp parallel num_threads(nt)
+#pragma omp parallel
     {
 #pragma omp master
         {
@@ -72,7 +68,7 @@ int main(int argc, char* argv[])
     s = t2.tv_sec - t1.tv_sec;
     u = t2.tv_usec - t1.tv_usec;
     m = (s*1000 + u/1000.0)  + 0.5;
-    printf("# tasks: %d\n", num_tasks);
+//    printf("# tasks: %d\n", num_tasks);
     printf("time = %.2lfms\n", m );
     return 0;
 
@@ -89,19 +85,19 @@ long fib1(int k)
     }
 
 
-#pragma omp task untied shared(p2) if(k > 10)
+#pragma omp task untied shared(p2) if(k > cutoff)
     {
         p2 = fib1(k-2);
     }
 
-#pragma omp task untied shared(p1) if(k > 10)
+#pragma omp task untied shared(p1) if(k > cutoff)
     {
         p1 = fib1(k-1);
     }
-
+/*
 #pragma omp atomic
     num_tasks += 2;
-
+*/
 #pragma omp taskwait
     return (p2+p1);
 }
