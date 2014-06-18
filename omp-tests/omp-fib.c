@@ -11,7 +11,7 @@
 long fib1(int k);
 long fib2(int k);
 
-int num_tasks = 0;
+//int num_tasks = 0;
 int cutoff = 26;
 
 
@@ -24,26 +24,15 @@ int main(int argc, char* argv[])
     long s,u;
     long f;
     double m;
-    int mode = 0;
 
-    if (argc != 4 && argc != 3) {
-        fprintf(stderr, "Usage: ./fib task|seq <input> <cutoff>\n");
+    if (argc != 2 && argc != 3) {
+        fprintf(stderr, "Usage: ./fib <input> <cutoff>\n");
         return 1;
     }
 
-    input = atoi(argv[2]);
-    if(argc == 4)
-      cutoff= atoi(argv[3]);
-
-    if (!strncmp(argv[1], "task", 4))
-        mode = 1;
-    else if (!strncmp(argv[1], "seq", 3)) {
-        mode = 0;
-    }
-    else {
-        fprintf(stderr, "Usage: ./fib task|seq <input> <cutoff>\n");
-        return 1;
-    }
+    input = atoi(argv[1]);
+    if(argc == 3)
+      cutoff= atoi(argv[2]);
 
     gettimeofday(&t1, NULL);
 
@@ -68,7 +57,7 @@ int main(int argc, char* argv[])
     s = t2.tv_sec - t1.tv_sec;
     u = t2.tv_usec - t1.tv_usec;
     m = (s*1000 + u/1000.0)  + 0.5;
-//    printf("# tasks: %d\n", num_tasks);
+    printf("cutoff = %d\n", cutoff);
     printf("time = %.2lfms\n", m );
     return 0;
 
