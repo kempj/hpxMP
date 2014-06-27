@@ -2,19 +2,20 @@
 #include <stdio.h>
 #include "hpxMP.h"
 
-long fib1(int k);
-
-static void fib1_1(int taskargs, void *fake_fp);
-static void fib1_2(int taskargs, void *fake_fp);
-
-int cutoff = 26;
-
-static void parallel_region_func(int gtid_a,void *fake_fp);
-static void task_func(int taskargs, void *fake_fp);
 
 struct task_args_fib {
     int k;
 };
+
+long fib1(int k);
+
+static void fib1_1(task_args_fib *taskargs, void *fake_fp);
+static void fib1_2(task_args_fib *taskargs, void *fake_fp);
+
+int cutoff = 26;
+
+static void parallel_region_func(int gtid_a,void *fake_fp);
+static void task_func(void *unused_taskargs, void *fake_fp);
 
 struct long_int_struct {
     long result;
@@ -67,12 +68,9 @@ static void parallel_region_func(int gtid_a, void *fake_fp)
     return;
 } 
 
-
-static void task_func(int taskargs, void *fake_fp)
+static void task_func(void  *unused_taskargs, void *fake_fp)
 {
     long_int_struct *fp = (long_int_struct *)fake_fp;
-    //_temp___slink_sym3 = fake_fp;
-    //* (*((long **) _temp___slink_sym3 + -4LL) + -8LL) = fib1(*(*((int **) _temp___slink_sym3 + -4LL) + -7LL));
     fp->result = fib1(fp->input);
     __ompc_task_exit();
     return;
@@ -81,18 +79,15 @@ static void task_func(int taskargs, void *fake_fp)
 long fib1(int k)
 {
     long p2, p1, i;
-    int xpragma6;
-    int xpragma7;
     struct task_args_fib * taskarg1;
     struct task_args_fib * taskarg2;
     int is_deferred1, is_deferred2;
     struct long_int_struct fake_fp1, fake_fp2;
 
-    if (k == 2)i{ return 1; }
-    if (k < 2){ return k; }
+    if (k == 2){ return 1; }
+    if (k < 2) { return k; }
 
-    xpragma6 = k > cutoff;
-    is_deferred1 = __ompc_task_will_defer(xpragma6);
+    is_deferred1 = __ompc_task_will_defer(k > cutoff);
     if(is_deferred1) {
         __ompc_task_firstprivates_alloc(&taskarg1, 4);
         (taskarg1) -> k = k;
@@ -100,88 +95,69 @@ long fib1(int k)
         taskarg1 = (struct task_args_fib *)(0ULL);
     }
 
-    __ompc_task_create(&fib1_1,(void*) &fake_fp1, taskarg1, xpragma6, 0, 0);
+    __ompc_task_create(&fib1_1,(void*) &fake_fp1, taskarg1, is_deferred1, 0, 0);
 
-    xpragma7 = k > cutoff;
-
-    is_deferred2 = __ompc_task_will_defer(xpragma7);
-    if((is_deferred2))
-    {
+    is_deferred2 = __ompc_task_will_defer(k > cutoff);
+    if(is_deferred2) {
         __ompc_task_firstprivates_alloc(&taskarg2, 4);
         (taskarg2) -> k = k;
     } else {
-
-       taskarg2 = (struct task_args_fib *)(0ULL);
+        taskarg2 = (struct task_args_fib *)(0ULL);
     }
-       __ompc_task_create(&fib1_2, (void*)&fake_fp2, taskarg2, xpragma7, 0, 0);
-       __ompc_task_wait();
-       return p2 + p1;
+    __ompc_task_create(&fib1_2, (void*)&fake_fp2, taskarg2, is_deferred2, 0, 0);
+    __ompc_task_wait();
+    p1 = fake_fp1.result;
+    p2 = fake_fp2.result;
+    return p2 + p1;
 } 
 
-
-static void fib1_1(int taskargs, void *fake_fp)
+static void fib1_1(struct task_args_fib *taskargs, void *fake_fp)
 {
+    long_int_struct *fp = (long_int_struct *)fake_fp;
+    //struct task_args_fib tmp_k;
+    int local_k;
 
-    struct task_argsfib1_1 _tmp0;
-    _UINT64 _temp___slink_sym8;
-    int __mplocal_k;
-
-    /*Begin_of_nested_PU(s)*/
-
-    _temp___slink_sym8 = _w2c_reg6;
-    taskargs = (struct task_argsfib1_1 *)(_w2c_reg5);
-    fake_fp = _w2c_reg6;
-    _temp___slink_sym8 = fake_fp;
-    if(!(taskargs))
-        goto _1539;
-    _tmp0 = (struct task_argsfib1_1)(taskargs) -> k;
-    __mplocal_k = *(int *) & _tmp0;
-    goto _1283;
-_1539 :;
-       __mplocal_k = *((int *) _temp___slink_sym8 + -4LL);
-_1283 :;
-       _w2c_reg5 = __mplocal_k + -2;
-       _w2c___comma = fib1(__mplocal_k + -2);
-       * ((long *) _temp___slink_sym8 + -8LL) = _w2c___comma;
-       _w2c_reg1 = 0;
-       __ompc_task_exit();
-       if(!(taskargs))
-           goto _1795;
-       _w2c_reg5 = (_UINT64)(taskargs);
-       _w2c_reg1 = 0;
-       __ompc_task_firstprivates_free(taskargs);
-_1795 :;
-       return;
-} /* fib1_1 */
+    if(taskargs)
+    {
+        local_k = (taskargs)->k;
+//        local_k = *(int *) & tmp_k;
+//    } else {
+//        local_k = *((int *) _temp___slink_sym8 + -4LL);
+//    }
+    fp->result = fib1(local_k + -2);
+    __ompc_task_exit();
+    if(taskargs) {
+        __ompc_task_firstprivates_free(taskargs);
+    }
+    return;
+}
 
 
-static void fib1_2(taskargs, fake_fp)
-    struct task_argsfib1_2 * taskargs;
-    _UINT64 fake_fp;
+static void fib1_2(task_args_fib *taskargs, void *fake_fp)
 {
 
     register _UINT64 _w2c_reg6;
     register _UINT64 _w2c_reg5;
-    struct task_argsfib1_2 _tmp0;
+    struct task_args_fib _tmp0;
     register long _w2c___comma;
     register int _w2c_reg1;
     _UINT64 _temp___slink_sym9;
-    int __mplocal_k;
+    int local_k;
 
     _temp___slink_sym9 = _w2c_reg6;
-    taskargs = (struct task_argsfib1_2 *)(_w2c_reg5);
+    taskargs = (struct task_args_fib *)(_w2c_reg5);
     fake_fp = _w2c_reg6;
     _temp___slink_sym9 = fake_fp;
     if(!(taskargs))
         goto _1539;
-    _tmp0 = (struct task_argsfib1_2)(taskargs) -> k;
-    __mplocal_k = *(int *) & _tmp0;
+    _tmp0 = (struct task_args_fib)(taskargs) -> k;
+    local_k = *(int *) & _tmp0;
     goto _1283;
 _1539 :;
-       __mplocal_k = *((int *) _temp___slink_sym9 + -4LL);
+       local_k = *((int *) _temp___slink_sym9 + -4LL);
 _1283 :;
-       _w2c_reg5 = __mplocal_k + -1;
-       _w2c___comma = fib1(__mplocal_k + -1);
+       _w2c_reg5 = local_k + -1;
+       _w2c___comma = fib1(local_k + -1);
        * ((long *) _temp___slink_sym9 + -9LL) = _w2c___comma;
        _w2c_reg1 = 0;
        __ompc_task_exit();
