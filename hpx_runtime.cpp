@@ -206,7 +206,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
 void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx ) {
-    thread_data *task_data = new thread_data(tid);
+    thread_data *task_data = new thread_data(tid);//remove new/delete. Use stack
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(task_data));
 
