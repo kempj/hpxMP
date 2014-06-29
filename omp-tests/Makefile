@@ -50,5 +50,5 @@ ftest: fort
 	LD_PRELOAD=../libopenmp.so.1 ./ftest
 
 hpxMPfib: hpxMP-fib.cpp
-	g++ -g -I.. -L..  hpxMP-fib.cpp `pkg-config --cflags --libs hpx_application` -lopenmp
+	g++-4.8 -g -I.. -L..  hpxMP-fib.cpp -o hpxMPfib `pkg-config --cflags --libs hpx_application` -lopenmp
 
