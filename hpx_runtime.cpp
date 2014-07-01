@@ -142,10 +142,16 @@ int hpx_runtime::get_thread_num() {
 }
 
 void hpx_runtime::task_wait() {
-    auto *data = reinterpret_cast<thread_data*>(
+    auto *task_data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    hpx::wait_all(data->task_handles);
-    data->task_handles.clear();
+    //hpx::wait_all(data->task_handles);
+    {
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
+        while(task_data->running_children > 0) {
+            task_data->thread_cond.wait(lock);
+        }
+    }
+    //data->task_handles.clear();
 }
 
 //This needs to be here to make sure to wait for dependant children finish
@@ -163,16 +169,19 @@ void hpx_runtime::task_exit() {
 //    while(task_data->blocking_children > 0) { hpx::this_thread::yield(); }
 }
 
-//TODO: I don't think the object needs blocks parent if it is local like it is now
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
                  thread_data *parent_task, int blocks_parent) {
     auto thread_id = hpx::threads::get_self_id();
     thread_data task_data(parent_task);
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
-    task_data.blocks_parent = blocks_parent;
+    //task_data.blocks_parent = blocks_parent;
 
     task_func(firstprivates, fp);
     task_data.is_finished = true;    
+    parent_task->running_children--;
+    if(parent_task->running_children == 0) {
+        parent_task->thread_cond.notify_one();
+    }
     if(blocks_parent) {
         parent_task->blocking_children--;
         if(parent_task->blocking_children == 0) {
@@ -195,15 +204,16 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
         parent_task->blocking_children += 1;
         parent_task->has_dependents = true;
     }
-    parent_task->task_handles.push_back( 
-                    hpx::async( task_setup, taskfunc, frame_pointer, 
-                                firstprivates, parent_task, blocks_parent));
+    parent_task->running_children += 1;
+    //parent_task->task_handles.push_back( hpx::async( 
+    hpx::apply( task_setup, taskfunc, frame_pointer, 
+                firstprivates, parent_task, blocks_parent);//);
 }
 
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
 void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx ) {
-    thread_data task_data(tid);//remove new/delete. Use stack
+    thread_data task_data(tid);
     auto thread_id = hpx::threads::get_self_id();
     hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
