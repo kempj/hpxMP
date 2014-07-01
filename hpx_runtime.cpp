@@ -142,16 +142,10 @@ int hpx_runtime::get_thread_num() {
 }
 
 void hpx_runtime::task_wait() {
-    auto *task_data = reinterpret_cast<thread_data*>(
+    auto *data = reinterpret_cast<thread_data*>(
                 hpx::threads::get_thread_data(hpx::threads::get_self_id()));
-    //hpx::wait_all(data->task_handles);
-    {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
-        while(task_data->running_children > 0) {
-            task_data->thread_cond.wait(lock);
-        }
-    }
-    //data->task_handles.clear();
+    hpx::wait_all(data->task_handles);
+    data->task_handles.clear();
 }
 
 //This needs to be here to make sure to wait for dependant children finish
@@ -178,10 +172,6 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
 
     task_func(firstprivates, fp);
     task_data.is_finished = true;    
-    parent_task->running_children--;
-    if(parent_task->running_children == 0) {
-        parent_task->thread_cond.notify_one();
-    }
     if(blocks_parent) {
         parent_task->blocking_children--;
         if(parent_task->blocking_children == 0) {
@@ -204,10 +194,9 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
         parent_task->blocking_children += 1;
         parent_task->has_dependents = true;
     }
-    parent_task->running_children += 1;
-    //parent_task->task_handles.push_back( hpx::async( 
-    hpx::apply( task_setup, taskfunc, frame_pointer, 
-                firstprivates, parent_task, blocks_parent);//);
+    parent_task->task_handles.push_back( 
+                    hpx::async( task_setup, taskfunc, frame_pointer, 
+                                firstprivates, parent_task, blocks_parent));
 }
 
 //Thread tasks currently have no parent. In the future it might work out well

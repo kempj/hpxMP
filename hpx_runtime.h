@@ -57,7 +57,6 @@ class thread_data {
         hpx::lcos::local::condition_variable thread_cond;
         //int blocks_parent;
         atomic<int> blocking_children {0};
-        atomic<int> running_children {0};
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
         vector<shared_future<void>> task_handles;
