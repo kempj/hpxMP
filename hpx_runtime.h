@@ -44,22 +44,23 @@ using std::endl;
 using std::vector;
 using std::map;
 using hpx::util::high_resolution_timer;
+using hpx::threads::set_thread_data;
+using hpx::threads::get_thread_data;
+using hpx::threads::get_self_id;
 
-class thread_data {
+class omp_data {
     public:
-        thread_data(int tid):thread_num(tid){};
-        thread_data(thread_data *p): thread_num(p->thread_num),
+        omp_data(int tid):thread_num(tid){};
+        omp_data(omp_data *p): thread_num(p->thread_num),
                                           parent(p){};
         int thread_num;
-        //hpx threads track parents. can I benefit from using that?
-        thread_data *parent;
+        omp_data *parent;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
-        //int blocks_parent;
         atomic<int> blocking_children {0};
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
-        vector<shared_future<void>> task_handles;
+        vector<future<void>> task_handles;
 };
 
 class hpx_runtime {
@@ -80,14 +81,13 @@ class hpx_runtime {
         void delete_hpx_objects();
         int threads_requested;
         void env_init();
-        shared_ptr<high_resolution_timer> walltime;
-        shared_ptr<barrier> globalBarrier;
-        mutex_type print_mtx;
         
     private:
         //Need to clarify max num_threads, num_threads and requested, and sort it with the spec
         int num_threads;
         int num_procs;
         mutex_type runtime_mtx;
+        shared_ptr<high_resolution_timer> walltime;
+        shared_ptr<barrier> globalBarrier;
 };
 

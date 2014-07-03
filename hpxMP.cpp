@@ -403,6 +403,7 @@ int __ompc_get_local_thread_num() {
     return 0;
 }
 //OpenMP 3.1 spec, section 3.2.1
+#pragma weak omp_set_num_threads_ = omp_set_num_threads
 void omp_set_num_threads(int nthreads){
     hpx_backend->set_num_threads(nthreads);
 }
@@ -411,6 +412,7 @@ void omp_set_num_threads(int nthreads){
 //can be called from outside a parallel region
 //TODO:add pragma weak here
 
+#pragma weak omp_get_num_threads_ = omp_get_num_threads
 int omp_get_num_threads() {
     if(hpx_backend && started)
         return hpx_backend->get_num_threads();
@@ -418,6 +420,7 @@ int omp_get_num_threads() {
 }
 
 //OpenMP 3.1 spec, section 3.2.3
+#pragma weak omp_get_max_threads_ = omp_get_max_threads
 int omp_get_max_threads() {
     if(!hpx_backend) {
         start_backend();
@@ -426,11 +429,13 @@ int omp_get_max_threads() {
 }
 
 //OpenMP 3.1 spec, section 3.2.4
+#pragma weak omp_get_thread_num_ = omp_get_thread_num
 int omp_get_thread_num() {
     return __ompc_get_local_thread_num();
 }
 
 //OpenMP 3.1 spec, section 3.2.5
+#pragma weak omp_get_num_procs_ = omp_get_num_procs
 int omp_get_num_procs() {
     if(!hpx_backend) {
         start_backend();

@@ -103,16 +103,19 @@ long fib1(int k)
 static void fib1_1(void *taskargs, void *fake_fp)
 {
     long_int_struct *fp = (long_int_struct *)fake_fp;
-    int local_k, next_k;
-    long local_r;
+    int local_k;
+//    long local_r;
 
     assert(taskargs);
 
-    local_k = ((task_args_fib*)taskargs)->k;
-    next_k = (local_k - 2);
+//    local_k = ((task_args_fib*)taskargs)->k;
+//    next_k = (local_k - 2);
 
-    local_r = fib1(next_k);
-    fp->result = local_r;
+//    local_r = fib1(next_k);
+//    fp->result = local_r;
+
+    local_k = ((task_args_fib*)taskargs)->k;
+    fp->result = fib1(local_k - 2);
     __ompc_task_exit();
     __ompc_task_firstprivates_free(taskargs);
     return;

@@ -11,18 +11,12 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-extern boost::shared_ptr<mutex_type> print_mtx;
-
-//atomic<double> task_creation_time{0};
-
 atomic<int> num_tasks{0};
-
 boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
-    // Let the main thread know that we're done.
-    {
+    {   // Let the main thread know that we're done.
         boost::mutex::scoped_lock lk(mtx);
         running = true;
         cond.notify_all();
@@ -98,7 +92,6 @@ hpx_runtime::hpx_runtime() {
         if (!running)
             cond.wait(lk);
     }
-
     //Must be called while hpx is running
     atexit(fini_runtime);
 
@@ -135,42 +128,40 @@ void hpx_runtime::barrier_wait(){
 }
 
 int hpx_runtime::get_thread_num() {
-    auto thread_id = hpx::threads::get_self_id();
-    auto *data = reinterpret_cast<thread_data*>(
-                    hpx::threads::get_thread_data(thread_id) );
+    auto thread_id = get_self_id();
+    auto *data = reinterpret_cast<omp_data*>( get_thread_data(thread_id) );
     return data->thread_num;
 }
 
 void hpx_runtime::task_wait() {
-    auto *data = reinterpret_cast<thread_data*>(
-                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    auto *data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
     hpx::wait_all(data->task_handles);
     data->task_handles.clear();
 }
 
 //This needs to be here to make sure to wait for dependant children finish
 // before destroying the stack of the task. If this work is done in task_create
-// the stack does not get preserved.
+// the stack of the user's task does not get preserved.
 void hpx_runtime::task_exit() {
-    thread_data *task_data = reinterpret_cast<thread_data*>(
-                hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
         while(task_data->blocking_children > 0) {
             task_data->thread_cond.wait(lock);
         }
     }
-//    while(task_data->blocking_children > 0) { hpx::this_thread::yield(); }
 }
 
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
-                 thread_data *parent_task, int blocks_parent) {
-    auto thread_id = hpx::threads::get_self_id();
-    thread_data task_data(parent_task);
-    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
-    //task_data.blocks_parent = blocks_parent;
+                 omp_data *parent_task, int blocks_parent) {
+    auto thread_id = get_self_id();
+    omp_data task_data(parent_task);//Is this valid? 
+    //Can this go out of scope when the function ends, with child tasks still depending on it?
+    //It looks fine. Nothing aside from blocking children access their parent at all
+    set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
     task_func(firstprivates, fp);
+
     task_data.is_finished = true;    
     if(blocks_parent) {
         parent_task->blocking_children--;
@@ -187,8 +178,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int is_tied, 
                                int blocks_parent) {
-    auto *parent_task = reinterpret_cast<thread_data*>(
-            hpx::threads::get_thread_data(hpx::threads::get_self_id()));
+    auto *parent_task = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
     num_tasks++;
     if(blocks_parent) {
         parent_task->blocking_children += 1;
@@ -202,20 +192,18 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
 void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx ) {
-    thread_data task_data(tid);
-    auto thread_id = hpx::threads::get_self_id();
-    hpx::threads::set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
+    omp_data task_data(tid);
+    auto thread_id = get_self_id();
+    set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
     task_func((void*)0, fp);
     
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(mtx);
-        while(num_tasks > 0)
-        {
+        while(num_tasks > 0) {
             thread_cond->wait(lock);
         }
     }
-    //while(num_tasks > 0) { hpx::this_thread::yield(); }
 }
 
 void ompc_fork_worker( int num_threads, omp_task_func task_func,
@@ -250,7 +238,6 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
 
     hpx::applier::register_thread_nullary(
             HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
-            //HPX_STD_BIND(&ompc_fork_worker, num_threads, task_func, fp,
                 boost::ref(mtx), boost::ref(cond), boost::ref(running))
             , "ompc_fork_worker");
     {   // Wait for the thread to run.
