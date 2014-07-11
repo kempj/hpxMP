@@ -32,7 +32,7 @@ int main(int argc, char* argv[])
 
     input = atoi(argv[1]);
     if(argc == 3)
-      cutoff= atoi(argv[2]);
+        cutoff= atoi(argv[2]);
 
     gettimeofday(&t1, NULL);
 
@@ -43,13 +43,9 @@ int main(int argc, char* argv[])
 #pragma omp task untied shared(f)
             {
                 f = fib1(input);
-//                printf("1fib(%d) = %d\n",input, f);
             }
-//            printf("2fib(%d) = %d\n",input, f);
         }
-//        printf("3fib(%d) = %d\n",input, f);
     }
-
 
     gettimeofday(&t2, NULL);
     printf("fib(%d) = %d\n",input, f);
@@ -72,20 +68,22 @@ long fib1(int k)
     if (k < 2){
         return k;
     }
+    if(k > cutoff) {
+        return fib1(k-1) + fib1(k-2);
+    }
 
-
-#pragma omp task untied shared(p2) if(k > cutoff)
+#pragma omp task untied shared(p2)
     {
         p2 = fib1(k-2);
     }
 
-#pragma omp task untied shared(p1) if(k > cutoff)
+#pragma omp task untied shared(p1)
     {
         p1 = fib1(k-1);
     }
-/*
+    /*
 #pragma omp atomic
-    num_tasks += 2;
+num_tasks += 2;
 */
 #pragma omp taskwait
     return (p2+p1);
