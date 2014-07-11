@@ -15,7 +15,7 @@ atomic<int> num_tasks{0};
 boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
-    cout << "HPX OpenMP runtime has started" << endl;
+    //cout << "HPX OpenMP runtime has started" << endl;
     {   // Let the main thread know that we're done.
         boost::mutex::scoped_lock lk(mtx);
         running = true;
@@ -24,7 +24,7 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 }
 
 void fini_runtime() {
-    cout << "Stopping HPX OpenMP runtime" << endl;
+    //cout << "Stopping HPX OpenMP runtime" << endl;
     hpx::get_runtime().stop();
 }
 
@@ -81,7 +81,7 @@ hpx_runtime::hpx_runtime() {
     boost::condition cond;
     bool running = false;
 
-    cout << "Starting HPX OpenMP runtime" << endl; 
+    //cout << "Starting HPX OpenMP runtime" << endl; 
 
     hpx::start(f, desc_cmdline, argc, argv, cfg,
             HPX_STD_BIND(&wait_for_startup, 

@@ -410,8 +410,6 @@ void omp_set_num_threads(int nthreads){
 
 //OpenMP 3.1 spec, section 3.2.2
 //can be called from outside a parallel region
-//TODO:add pragma weak here
-
 #pragma weak omp_get_num_threads_ = omp_get_num_threads
 int omp_get_num_threads() {
     if(hpx_backend && started)
