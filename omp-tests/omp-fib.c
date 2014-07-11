@@ -68,7 +68,7 @@ long fib1(int k)
     if (k < 2){
         return k;
     }
-    if(k > cutoff) {
+    if(k < cutoff) {
         return fib1(k-1) + fib1(k-2);
     }
 
