@@ -13,6 +13,8 @@ void worker_timed(int delay_ms)
             break;
     }
 }
+//TODO: get loadbalancing using with threadlocal
+//use an initial parallel region so initial setup is not counted
 int main( int argc, char** argv)
 {
     int i = 0;

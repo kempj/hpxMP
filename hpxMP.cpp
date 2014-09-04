@@ -113,19 +113,14 @@ void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
     *p_upper = my_upper;
 }
 
-//These functions essentially store the paramaters of an array,
+//These functions store the paramaters of an array:
 // the chunk size, stride, and schedule type.
 // to be used later when calculating the bounds and stride
 // in __ompc_schedule_next_4/8
-// storing them in the thread pointer struct will probably work
 void __ompc_scheduler_init_4( omp_int32 global_tid,
                               omp_sched_t schedtype,
                               omp_int32 lower, omp_int32 upper,
                               omp_int32 stride, omp_int32 chunk){
-    //Check to see if last loop is 'done'
-    //how do I tell the difference between not being first, and
-    // having the previous loop still being worked on?
-    
     // waiting for last loop to finish.
     while(loop_sched.is_done && loop_sched.num_workers > 0 ) {
         hpx::this_thread::yield();
@@ -273,7 +268,7 @@ int __ompc_get_num_threads(){
 }
 
 int __ompc_master(int global_tid){
-    //TODO: if master can be called from tasks, than this doesn't work.
+    //TODO: if master can be called from tasks, then this doesn't work.
     if(__ompc_get_local_thread_num() == 0) 
         return 1;
     return 0;
@@ -313,7 +308,6 @@ void __ompc_end_single(int tid){
 int __ompc_task_will_defer(int may_delay){
     //in the OpenUH runtime, this also checks if a task limit has been reached
     //leaving that to hpx to decide
-    //Not sure if this is correct
     return may_delay;
 }
 
@@ -350,13 +344,11 @@ void __ompc_task_exit(){
 }
 
 void __ompc_serialized_parallel(int global_tid) {
-    //It appears this function does nothing
 }
 void __ompc_end_serialized_parallel(int global_tid) {
-    //It appears this function does nothing
 }
 //Note: volatile was removed from all the omp_lock_t calls
-// but if it is needed, const_cast can get rid of the volatile.
+// and const_cast can get rid of the volatile if needed
 void __ompc_critical(int gtid, omp_lock_t **lck) {
     if(!started)
         return;
@@ -489,7 +481,6 @@ void omp_init_lock(omp_lock_t *lock) {
 }
 
 void omp_init_nest_lock(omp_nest_lock_t *lock) {
-    //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.2
@@ -498,7 +489,6 @@ void omp_destroy_lock(omp_lock_t *lock) {
 }
 
 void omp_destroy_nest_lock(omp_nest_lock_t *lock) {
-    //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.3
@@ -507,7 +497,6 @@ void omp_set_lock(omp_lock_t *lock) {
 }
 
 void omp_set_nest_lock(omp_nest_lock_t *lock) {
-    //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.4
@@ -516,7 +505,6 @@ void omp_unset_lock(omp_lock_t *lock) {
 }
 
 void omp_unset_nest_lock(omp_nest_lock_t *lock) {
-    //unimplmented
 }
 
 //OpenMP 3.1 spec, section 3.3.5
@@ -527,7 +515,6 @@ int omp_test_lock(omp_lock_t *lock) {
 }
 
 int omp_test_nest_lock(omp_nest_lock_t *lock) {
-    //unimplmented
     return 1;
 }
 

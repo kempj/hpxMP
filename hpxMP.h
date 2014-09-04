@@ -16,7 +16,6 @@ typedef void (*omp_micro)(int , frame_pointer_t);
 
 typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
-//typedef void *omp_lock_t;
 typedef mutex_type omp_lock_t;
 typedef void *omp_nest_lock_t;
 

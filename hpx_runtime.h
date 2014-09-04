@@ -89,5 +89,6 @@ class hpx_runtime {
         mutex_type runtime_mtx;
         shared_ptr<high_resolution_timer> walltime;
         shared_ptr<barrier> globalBarrier;
+        bool external_hpx;
 };
 
