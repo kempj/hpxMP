@@ -221,9 +221,9 @@ void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx )
     }
 }
 
-void ompc_fork_worker( int num_threads, omp_task_func task_func,
-                       frame_pointer_t fp, boost::mutex& mtx, 
-                       boost::condition& cond, bool& running) {
+void fork_worker( int num_threads, 
+                  omp_task_func task_func, 
+                  frame_pointer_t fp) {
     vector<hpx::lcos::future<void>> threads;
     num_tasks = 0;
 
@@ -234,7 +234,14 @@ void ompc_fork_worker( int num_threads, omp_task_func task_func,
         threads.push_back( hpx::async( thread_setup, *task_func, fp, i, boost::ref(thread_mtx)));
     }
     hpx::wait_all(threads);
-    //if hpxMP started hpx:
+}
+
+void fork_and_sync( int num_threads, omp_task_func task_func,
+                        frame_pointer_t fp, boost::mutex& mtx, 
+                        boost::condition& cond, bool& running) {
+
+    fork_worker( num_threads, task_func, fp);
+
     {
         boost::mutex::scoped_lock lk(mtx);
         running = true;
@@ -248,21 +255,22 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     else
         threads_requested = num_threads;
 
-    //if(external_hpx){}else{
-    //hpxMP started hpx:
-    boost::mutex mtx;
-    boost::condition cond;
-    bool running = false;
-
-    hpx::applier::register_thread_nullary(
-            HPX_STD_BIND(&ompc_fork_worker, threads_requested, task_func, fp,
-                boost::ref(mtx), boost::ref(cond), boost::ref(running))
-            , "ompc_fork_worker");
-    {   // Wait for the thread to run.
-        boost::mutex::scoped_lock lk(mtx);
-        while (!running)
-            cond.wait(lk);
+    if(external_hpx){
+        fork_worker(threads_requested, task_func, fp);
+    } else {
+        boost::mutex mtx;
+        boost::condition cond;
+        bool running = false;
+    
+        hpx::applier::register_thread_nullary(
+                HPX_STD_BIND(&fork_and_sync, threads_requested, task_func, fp,
+                    boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                , "ompc_fork_worker");
+        {   // Wait for the thread to run.
+            boost::mutex::scoped_lock lk(mtx);
+            while (!running)
+                cond.wait(lk);
+        }
     }
-    //else do forkjoin
 }
 
