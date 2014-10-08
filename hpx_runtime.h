@@ -55,6 +55,7 @@ class omp_data {
                                           parent(p){};
         int thread_num;
         omp_data *parent;
+        //TODO: If I keep track of 'depth' can I implement a useful cutoff?
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
         atomic<int> blocking_children {0};

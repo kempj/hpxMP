@@ -24,13 +24,22 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 }
 
 void fini_runtime() {
-    //cout << "Stopping HPX OpenMP runtime" << endl;
+    cout << "Stopping HPX OpenMP runtime" << endl;
     hpx::get_runtime().stop();
 }
 
 hpx_runtime::hpx_runtime() {
     num_procs = hpx::threads::hardware_concurrency();
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
+
+    //This will break if the users shuts down hpx and an OpenMP call is made
+    //TODO: move this code to an init function, and add checks at each entrance
+    // to the hpxMP runtime.
+    external_hpx = !(hpx::get_runtime_ptr() == NULL);
+    if(external_hpx) {
+        num_procs = hpx::get_os_thread_count();
+    }
+
     if(omp_num_threads != NULL){
         num_threads = atoi(omp_num_threads);
     } else { 
@@ -39,6 +48,9 @@ hpx_runtime::hpx_runtime() {
 
     walltime.reset(new high_resolution_timer);
     globalBarrier.reset(new barrier(num_threads));
+
+    if(external_hpx)
+        return;
         
     std::vector<std::string> cfg;
     int argc;
@@ -121,6 +133,7 @@ void hpx_runtime::set_num_threads(int nthreads) {
 void hpx_runtime::barrier_wait(){
     //if I increment threads at creation, and decrement them here, 
     // can I remove the barrier completely?
+    // No, if no tasks are created, then nothing will happen
     while(num_tasks > 0){
         hpx::this_thread::yield();
     }
@@ -155,9 +168,11 @@ void hpx_runtime::task_exit() {
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
                  omp_data *parent_task, int blocks_parent) {
     auto thread_id = get_self_id();
-    omp_data task_data(parent_task);//Is this valid? 
+    omp_data task_data(parent_task);
     //Can this go out of scope when the function ends, with child tasks still depending on it?
     //It looks fine. Nothing aside from blocking children access their parent at all
+    //I don't think this is correct. The thread id gets accessed above, if the parent has been
+    // deallocated, this could segfault or return bad info. FIXME
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
     task_func(firstprivates, fp);
@@ -219,6 +234,7 @@ void ompc_fork_worker( int num_threads, omp_task_func task_func,
         threads.push_back( hpx::async( thread_setup, *task_func, fp, i, boost::ref(thread_mtx)));
     }
     hpx::wait_all(threads);
+    //if hpxMP started hpx:
     {
         boost::mutex::scoped_lock lk(mtx);
         running = true;
@@ -232,6 +248,8 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
     else
         threads_requested = num_threads;
 
+    //if(external_hpx){}else{
+    //hpxMP started hpx:
     boost::mutex mtx;
     boost::condition cond;
     bool running = false;
@@ -245,5 +263,6 @@ void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp
         while (!running)
             cond.wait(lk);
     }
+    //else do forkjoin
 }
 
