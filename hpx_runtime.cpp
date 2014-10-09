@@ -249,6 +249,8 @@ void fork_and_sync( int num_threads, omp_task_func task_func,
     }
 }
  
+//TODO: there is no reason to convert the microtask to a task_func any more.
+// It just gets passed to a thread init function.
 void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp) { 
     if(Nthreads > 0)
         threads_requested = Nthreads;
