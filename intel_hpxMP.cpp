@@ -1,5 +1,4 @@
 #include "intel_hpxMP.h"
-#include "hpx_runtime.h"
 #include <boost/shared_ptr.hpp>
 
 boost::shared_ptr<hpx_runtime> hpx_backend;
@@ -34,10 +33,10 @@ void omp_thread_func(void *firstprivates, void *fp) {
                 break;
         case 3: fork_func(&tid, &tid, args->argv[0], args->argv[1], args->argv[2]);
                 break;
-        case 4: fork_func(&tid, &tid, args->argv[0], args->argv[1], args->argv[2]
+        case 4: fork_func(&tid, &tid, args->argv[0], args->argv[1], args->argv[2],
                           args->argv[3]);
                 break;
-        case 5: fork_func(&tid, &tid, args->argv[0], args->argv[1], args->argv[2]
+        case 5: fork_func(&tid, &tid, args->argv[0], args->argv[1], args->argv[2],
                           args->argv[3], args->argv[4]);
                 break;
     }
@@ -71,3 +70,8 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     
     delete[] argv;
 }
+
+int __kmpc_global_thread_num(ident_t *loc){
+    return 0;
+}
+

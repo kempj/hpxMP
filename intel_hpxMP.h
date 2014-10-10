@@ -1,3 +1,4 @@
+#include "hpx_runtime.h"
 #include <cstdarg>
 
 typedef int kmp_int32;
@@ -17,7 +18,8 @@ typedef struct ident {
     char const *psource;    /**< String describing the source location.*/
 } ident_t;
 
-extern void   __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );
+extern "C" void   __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );
+extern "C" int __kmpc_global_thread_num(ident_t *loc);
 /*
 extern int __kmp_fork_call( ident_t *loc, int gtid, int exec_master,
                             kmp_int32 argc, microtask_t microtask, 

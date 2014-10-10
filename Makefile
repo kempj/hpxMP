@@ -2,6 +2,13 @@ CC=g++-4.8
 all: libopenmp.so.1
 	
 
+libiomp5.so: intel_rt.o hpx_runtime.o
+	$(CC) -g -shared -Wl,-x -Wl,-soname=libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o hpx_runtime.o -L. `pkg-config --cflags --libs hpx_application`
+
+intel_rt.o: intel_hpxMP.cpp intel_hpxMP.h
+	$(CC) -g -fPIC -c intel_hpxMP.cpp -o intel_rt.o `pkg-config --cflags --libs hpx_application`
+
+
 debug: hpxMPd.o hpx_runtimed.o
 	$(CC) -g -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMPd.o hpx_runtimed.o `pkg-config --cflags --libs hpx_application_debug`
 
