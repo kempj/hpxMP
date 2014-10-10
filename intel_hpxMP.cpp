@@ -71,6 +71,15 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     delete[] argv;
 }
 
+void 
+__kmpc_push_num_threads( ident_t *loc, 
+                         kmp_int32 global_tid, 
+                         kmp_int32 num_threads ){
+}
+int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
+    return 0;
+}
+
 int __kmpc_global_thread_num(ident_t *loc){
     return 0;
 }
