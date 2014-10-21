@@ -20,6 +20,7 @@ void start_backend(){
     }
 }
 
+//extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int npr, int argc, void *argv[]);
 void omp_thread_func(void *firstprivates, void *fp) {
     int tid = hpx_backend->get_thread_num();//not sure if correct
     task_args *args = (task_args*)fp;
@@ -71,11 +72,22 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     delete[] argv;
 }
 
+void
+__kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
+                          kmp_int32 *plower, kmp_int32 *pupper,
+                          kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk ){
+}
+
+void
+__kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid ){
+}
+
 void 
 __kmpc_push_num_threads( ident_t *loc, 
                          kmp_int32 global_tid, 
                          kmp_int32 num_threads ){
 }
+
 int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
     return 0;
 }

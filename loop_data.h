@@ -1,4 +1,3 @@
-//#include "hpx_runtime.h"
 #include <atomic>
 #include <vector>
 

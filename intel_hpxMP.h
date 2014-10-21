@@ -23,15 +23,4 @@ extern "C" int  __kmpc_global_thread_num(ident_t *loc);
 extern "C" void __kmpc_push_num_threads ( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_threads );
 extern "C" int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid);
 
-
-/*
-extern int __kmp_fork_call( ident_t *loc, int gtid, int exec_master,
-                            kmp_int32 argc, microtask_t microtask, 
-                            launch_t invoker,
-#if (KMP_ARCH_ARM || KMP_ARCH_X86_64) && KMP_OS_LINUX
-                            va_list *ap
-#else
-                            va_list ap
-#endif
-        );
-        */
+extern "C" void __kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid );

@@ -19,26 +19,7 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 typedef mutex_type omp_lock_t;
 typedef void *omp_nest_lock_t;
 
-
-typedef enum {
-    OMP_SCHED_UNKNOWN             = 0,
-    OMP_SCHED_STATIC              = 1,  //user specified chunking
-    OMP_SCHED_STATIC_EVEN         = 2,  //default chunking
-    OMP_SCHED_DYNAMIC             = 3,  //dynamic
-    OMP_SCHED_GUIDED              = 4,
-    OMP_SCHED_RUNTIME             = 5,
-
-//    OMP_SCHED_ORDERED_STATIC      = 31,
-//    OMP_SCHED_ORDERED_STATIC_EVEN = 32,
-//    OMP_SCHED_ORDERED_DYNAMIC     = 33, //static ordered, non-default chunking
-//    OMP_SCHED_ORDERED_GUIDED  = 34,     //static ordered, default chunking
-//    OMP_SCHED_ORDERED_RUNTIME     = 35  //dynamic ordered
-    OMP_SCHED_ORDERED_RUNTIME     = 31,//guess
-    OMP_SCHED_ORDERED_GUIDED      = 32,//guess
-    OMP_SCHED_ORDERED_STATIC      = 33,
-    OMP_SCHED_ORDERED_STATIC_EVEN = 34,
-    OMP_SCHED_ORDERED_DYNAMIC     = 35
-} omp_sched_t;
+int enum omp_sched_t : int;
 
 extern "C" int __ompc_init_rtl(int num_threads);
 extern "C" void __ompc_critical(int gtid, omp_lock_t **lck);
@@ -55,33 +36,6 @@ extern "C" void __ompc_task_exit();
 extern "C" int __ompc_can_fork();
 
 extern "C" int __ompc_get_local_thread_num();
-
-extern "C" void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
-                                      int *plower,
-                                      int *pupper, int *pstride,
-                                      int incr, int chunk);
-extern "C" void __ompc_static_init_8( omp_int32 global_tid, omp_sched_t schedtype,
-                                      omp_int64 *plower, 
-                                      omp_int64 *pupper, omp_int64 *pstride,
-                                      omp_int64 incr, omp_int64 chunk );
-
-extern "C" void __ompc_scheduler_init_4( omp_int32 global_tid,
-                                         omp_sched_t schedtype,
-                                         omp_int32 lower, omp_int32 upper,
-                                         omp_int32 stride, omp_int32 chunk);
-
-extern "C" void __ompc_scheduler_init_8( omp_int32 global_tid,
-                                         omp_sched_t schedtype,
-                                         omp_int64 lower, omp_int64 upper,
-                                         omp_int64 stride, omp_int64 chunk);
-
-extern "C" omp_int32 __ompc_schedule_next_4( omp_int32 global_tid,
-                                             omp_int32 *plower, omp_int32 *pupper,
-                                             omp_int32 *pstride);
-
-extern "C" omp_int32 __ompc_schedule_next_8( omp_int32 global_tid,
-                                             omp_int64 *plower, omp_int64 *pupper,
-                                             omp_int64 *pstride);
 
 extern "C" void __ompc_ordered(omp_int32 global_tid);
 extern "C" void __ompc_end_ordered(omp_int32 global_tid);
