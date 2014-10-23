@@ -19,8 +19,6 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 typedef mutex_type omp_lock_t;
 typedef void *omp_nest_lock_t;
 
-int enum omp_sched_t : int;
-
 extern "C" int __ompc_init_rtl(int num_threads);
 extern "C" void __ompc_critical(int gtid, omp_lock_t **lck);
 extern "C" void __ompc_end_critical(int gtid, omp_lock_t **lck);

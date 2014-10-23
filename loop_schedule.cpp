@@ -1,5 +1,6 @@
 #include <iostream>
-#include "schedule.h"
+#include "loop_schedule.h"
+#include "loop_data.h"
 #include "boost/shared_ptr.hpp"
 
 extern boost::shared_ptr<loop_data> loop_sched;
@@ -92,9 +93,9 @@ int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride) {
                 *p_lower= loop_sched->lower;
                 *p_upper= loop_sched->upper;
 
-                __ompc_static_init_4( loop_sched->schedule_count, static_cast<omp_sched_t>(loop_sched->schedule),
-                                      p_lower, p_upper, p_stride, 
-                                      loop_sched->stride, loop_sched->chunk);
+                omp_static_init<T>( loop_sched->schedule_count, static_cast<omp_sched_t>(loop_sched->schedule),
+                                    p_lower, p_upper, p_stride, 
+                                    loop_sched->stride, loop_sched->chunk);
                 loop_sched->iter_remaining[global_tid] = (*p_upper - *p_lower) / *p_stride + 1;
                 return 1;
             } 

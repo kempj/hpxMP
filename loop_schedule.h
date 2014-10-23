@@ -1,5 +1,4 @@
 #include <cstdint>
-#include "loop_data.h"
 
 typedef enum {
     OMP_SCHED_UNKNOWN             = 0,
