@@ -3,6 +3,11 @@
 
 class loop_data {
     public:
+        loop_data();
+        void yield();
+        void lock();
+        void unlock();
+
         int lower;
         int upper;
         int stride;

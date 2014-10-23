@@ -5,6 +5,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include "hpxMP.h"
+#include "loop_data.h"
 #include <iostream>
 #include <cstdlib>
 #include <vector>
@@ -13,7 +14,7 @@
 
 using namespace std;
 boost::shared_ptr<hpx_runtime> hpx_backend;
-
+boost::shared_ptr<loop_data> loop_sched;
 
 bool started = false;
 int single_counter = 0;
@@ -21,7 +22,6 @@ int current_single_thread = -1;
 
 mtx_ptr single_mtx; 
 mtx_ptr crit_mtx ;
-mtx_ptr loop_mtx;
 mtx_ptr print_mtx;
 
 omp_micro fork_func = 0;
@@ -41,9 +41,10 @@ void start_backend(){
     if( !hpx::get_runtime_ptr() ) {
         hpx_backend.reset(new hpx_runtime());
     }
+    loop_sched.reset(new loop_data);
+
     single_mtx.reset(new mutex_type);
     crit_mtx.reset(new mutex_type);
-    loop_mtx.reset(new mutex_type);
     print_mtx.reset(new mutex_type);
 }
 
@@ -61,19 +62,6 @@ void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
 
 int __ompc_can_fork() {
     return !started;
-}
-
-void __ompc_ordered(omp_int32 global_tid){
-    while(loop_sched.ordered_count != loop_sched.local_iter[global_tid]){
-        hpx::this_thread::yield();
-    }
-}
-
-void __ompc_end_ordered(omp_int32 global_tid){
-    loop_sched.iter_remaining[global_tid]--;
-    if(loop_sched.iter_remaining[global_tid] <= 0) {
-        loop_sched.ordered_count++;
-    }
 }
 
 void __ompc_reduction(int gtid, omp_lock_t **lck){
