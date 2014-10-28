@@ -1,13 +1,21 @@
 #include "intel_hpxMP.h"
+#include "loop_data.h"
+#include "loop_schedule.h"
 #include <boost/shared_ptr.hpp>
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 boost::shared_ptr<hpx_runtime> hpx_backend;
+boost::shared_ptr<loop_data> loop_sched;
 
 //typedef void (*omp_micro)(int , frame_pointer_t);
 //typedef void (*microtask_t)( int *gtid, int *npr, ... );
 //typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
-bool started = false;
-kmpc_micro fork_func = 0;
+
+//bool started = false;
+//kmpc_micro fork_func = 0;
 
 struct task_args {
     int argc;
@@ -17,6 +25,7 @@ struct task_args {
 void start_backend(){
     if( !hpx::get_runtime_ptr() ) {
         hpx_backend.reset(new hpx_runtime());
+        loop_sched.reset(new loop_data());
     }
 }
 
@@ -76,16 +85,25 @@ void
 __kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
                           kmp_int32 *plower, kmp_int32 *pupper,
                           kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk ){
+    cout << "gtid = " << gtid << endl;
+    __ompc_static_init_4(gtid, (omp_sched_t)2, plower, pupper, pstride, incr, chunk);
 }
 
 void
 __kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid ){
+    //Only seems to do internal tracking in intel runtime
 }
 
 void 
 __kmpc_push_num_threads( ident_t *loc, 
                          kmp_int32 global_tid, 
                          kmp_int32 num_threads ){
+}
+
+void
+__kmpc_barrier(ident_t *loc, kmp_int32 global_tid) {
+    cout << "barrier, gtid = " << global_tid << endl;
+    hpx_backend->barrier_wait();
 }
 
 int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){

@@ -24,13 +24,13 @@ mtx_ptr single_mtx;
 mtx_ptr crit_mtx ;
 mtx_ptr print_mtx;
 
-omp_micro fork_func = 0;
+//omp_micro fork_func = 0;
 
 //This function allows a thread to be handled the same way a task is.
-void omp_thread_func(void *firstprivates, void *fp) {
-    int tid = hpx_backend->get_thread_num();
-    fork_func(tid, fp);
-}
+//void omp_thread_func(void *firstprivates, void *fp) {
+//    int tid = hpx_backend->get_thread_num();
+//    fork_func(tid, fp);
+//}
 
 //overwrites global in openmp
 int __ompc_init_rtl(int num_threads) {
@@ -53,10 +53,11 @@ void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
     if(!hpx_backend) {
         start_backend();
     }
-    fork_func = micro_task;
+    //fork_func = micro_task;
     assert(!started);//Nested parallelism is disabled
     started = true;
-    hpx_backend->fork(nthreads, omp_thread_func, fp);
+    hpx_backend->fork(nthreads, micro_task, fp);
+    //hpx_backend->fork(nthreads, omp_thread_func, fp);
     started = false;
 }
 

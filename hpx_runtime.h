@@ -67,7 +67,8 @@ class omp_data {
 class hpx_runtime {
     public:
         hpx_runtime();
-        void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
+        void fork(int num_threads, omp_micro thread_func, frame_pointer_t fp);
+        //void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
         int get_thread_num();
         int get_num_threads();
         int get_num_procs();
@@ -87,7 +88,7 @@ class hpx_runtime {
         //Need to clarify max num_threads, num_threads and requested, and sort it with the spec
         int num_threads;
         int num_procs;
-        mutex_type runtime_mtx;
+        //mutex_type runtime_mtx;//TODO: this seems unused
         shared_ptr<high_resolution_timer> walltime;
         shared_ptr<barrier> globalBarrier;
         bool external_hpx;

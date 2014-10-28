@@ -206,12 +206,12 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
-void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx ) {
+void thread_setup( omp_micro thread_func, void *fp, int tid, mutex_type& mtx ) {
     omp_data task_data(tid);
     auto thread_id = get_self_id();
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
-    task_func((void*)0, fp);
+    thread_func(tid, fp);
     
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(mtx);
@@ -222,7 +222,7 @@ void thread_setup( omp_task_func task_func, void *fp, int tid, mutex_type& mtx )
 }
 
 void fork_worker( int num_threads, 
-                  omp_task_func task_func, 
+                  omp_micro thread_func, 
                   frame_pointer_t fp) {
     vector<hpx::lcos::future<void>> threads;
     num_tasks = 0;
@@ -231,16 +231,16 @@ void fork_worker( int num_threads,
     thread_cond.reset(new hpx::lcos::local::condition_variable);
 
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async( thread_setup, *task_func, fp, i, boost::ref(thread_mtx)));
+        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, boost::ref(thread_mtx)));
     }
     hpx::wait_all(threads);
 }
 
-void fork_and_sync( int num_threads, omp_task_func task_func,
+void fork_and_sync( int num_threads, omp_micro thread_func,
                         frame_pointer_t fp, boost::mutex& mtx, 
                         boost::condition& cond, bool& running) {
 
-    fork_worker( num_threads, task_func, fp);
+    fork_worker( num_threads, thread_func, fp);
 
     {
         boost::mutex::scoped_lock lk(mtx);
@@ -251,21 +251,21 @@ void fork_and_sync( int num_threads, omp_task_func task_func,
  
 //TODO: there is no reason to convert the microtask to a task_func any more.
 // It just gets passed to a thread init function.
-void hpx_runtime::fork(int Nthreads, omp_task_func task_func, frame_pointer_t fp) { 
+void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) { 
     if(Nthreads > 0)
         threads_requested = Nthreads;
     else
         threads_requested = num_threads;
 
     if(external_hpx){
-        fork_worker(threads_requested, task_func, fp);
+        fork_worker(threads_requested, thread_func, fp);
     } else {
         boost::mutex mtx;
         boost::condition cond;
         bool running = false;
     
         hpx::applier::register_thread_nullary(
-                HPX_STD_BIND(&fork_and_sync, threads_requested, task_func, fp,
+                HPX_STD_BIND(&fork_and_sync, threads_requested, thread_func, fp,
                     boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
