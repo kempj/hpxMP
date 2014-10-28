@@ -20,9 +20,6 @@ bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
 
-//mtx_ptr single_mtx; 
-//mtx_ptr crit_mtx ;
-//mtx_ptr print_mtx;
 
 //overwrites global in openmp
 int __ompc_init_rtl(int num_threads) {
@@ -34,10 +31,6 @@ void start_backend(){
         hpx_backend.reset(new hpx_runtime());
     }
     loop_sched.reset(new loop_data);
-
-    //single_mtx.reset(new mutex_type);
-    //crit_mtx.reset(new mutex_type);
-    //print_mtx.reset(new mutex_type);
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {

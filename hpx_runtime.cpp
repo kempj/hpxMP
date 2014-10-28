@@ -230,9 +230,6 @@ void fork_worker( int num_threads,
                   frame_pointer_t fp) {
     vector<hpx::lcos::future<void>> threads;
     parallel_region team(num_threads);
-    //num_tasks = 0;
-    //mutex_type thread_mtx;
-    //thread_cond.reset(new hpx::lcos::local::condition_variable);
 
     for(int i = 0; i < num_threads; i++) {
         threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team));
