@@ -20,17 +20,9 @@ bool started = false;
 int single_counter = 0;
 int current_single_thread = -1;
 
-mtx_ptr single_mtx; 
-mtx_ptr crit_mtx ;
-mtx_ptr print_mtx;
-
-//omp_micro fork_func = 0;
-
-//This function allows a thread to be handled the same way a task is.
-//void omp_thread_func(void *firstprivates, void *fp) {
-//    int tid = hpx_backend->get_thread_num();
-//    fork_func(tid, fp);
-//}
+//mtx_ptr single_mtx; 
+//mtx_ptr crit_mtx ;
+//mtx_ptr print_mtx;
 
 //overwrites global in openmp
 int __ompc_init_rtl(int num_threads) {
@@ -43,9 +35,9 @@ void start_backend(){
     }
     loop_sched.reset(new loop_data);
 
-    single_mtx.reset(new mutex_type);
-    crit_mtx.reset(new mutex_type);
-    print_mtx.reset(new mutex_type);
+    //single_mtx.reset(new mutex_type);
+    //crit_mtx.reset(new mutex_type);
+    //print_mtx.reset(new mutex_type);
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
@@ -53,11 +45,9 @@ void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {
     if(!hpx_backend) {
         start_backend();
     }
-    //fork_func = micro_task;
     assert(!started);//Nested parallelism is disabled
     started = true;
     hpx_backend->fork(nthreads, micro_task, fp);
-    //hpx_backend->fork(nthreads, omp_thread_func, fp);
     started = false;
 }
 
@@ -99,17 +89,18 @@ void __ompc_end_master(int global_tid){
 }
 
 int __ompc_single(int tid){
+    parallel_region *team = hpx_backend->get_team();
     if(!started)
         return 1;
     int num_threads = __ompc_get_num_threads();
-    single_mtx->lock();
+    team->single_mtx.lock();
     if(current_single_thread == -1 && single_counter == 0) {
         current_single_thread = tid;
         single_counter = 1 - num_threads;
     } else {
         single_counter++;
     }
-    single_mtx->unlock();
+    team->single_mtx.unlock();
     if(current_single_thread == tid) {
         return 1;
     }
@@ -117,13 +108,14 @@ int __ompc_single(int tid){
 }
 
 void __ompc_end_single(int tid){
+    parallel_region *team = hpx_backend->get_team();
     if(!started)
         return;
-    single_mtx->lock();
+    team->single_mtx.lock();
     if(single_counter == 0) {
         current_single_thread = -1;
     }
-    single_mtx->unlock();
+    team->single_mtx.unlock();
 }
 
 int __ompc_task_will_defer(int may_delay){
@@ -170,15 +162,16 @@ void __ompc_end_serialized_parallel(int global_tid) {
 //Note: volatile was removed from all the omp_lock_t calls
 // and const_cast can get rid of the volatile if needed
 void __ompc_critical(int gtid, omp_lock_t **lck) {
+    parallel_region *team = hpx_backend->get_team();
     if(!started)
         return;
     omp_lock_t* tmp_mtx = new omp_lock_t;
     if(*lck == NULL ) {
-        crit_mtx->lock();
+        team->crit_mtx.lock();
         if(*lck == NULL ){
             *lck = tmp_mtx;
         }
-        crit_mtx->unlock();
+        team->crit_mtx.unlock();
     } 
     if(&(*tmp_mtx) != &(**lck)) {
         delete tmp_mtx;

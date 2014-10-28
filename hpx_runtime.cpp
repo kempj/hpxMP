@@ -11,8 +11,8 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-atomic<int> num_tasks{0};
-boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
+//atomic<int> num_tasks{0};
+//boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     //cout << "HPX OpenMP runtime has started" << endl;
@@ -47,7 +47,7 @@ hpx_runtime::hpx_runtime() {
     }
 
     walltime.reset(new high_resolution_timer);
-    globalBarrier.reset(new barrier(num_threads));
+    //globalBarrier.reset(new barrier(num_threads));
 
     if(external_hpx)
         return;
@@ -110,6 +110,11 @@ hpx_runtime::hpx_runtime() {
     delete[] argv;
 }
 
+parallel_region* hpx_runtime::get_team(){
+    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    return task_data->team;
+}
+
 double hpx_runtime::get_time() {
     return walltime->now();
 }
@@ -131,13 +136,11 @@ void hpx_runtime::set_num_threads(int nthreads) {
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
 void hpx_runtime::barrier_wait(){
-    //if I increment threads at creation, and decrement them here, 
-    // can I remove the barrier completely?
-    // No, if no tasks are created, then nothing will happen
-    while(num_tasks > 0){
+    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    while(task_data->team->num_tasks > 0){
         hpx::this_thread::yield();
     }
-    globalBarrier->wait();
+    task_data->team->globalBarrier.wait();
 }
 
 int hpx_runtime::get_thread_num() {
@@ -184,9 +187,9 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
             parent_task->thread_cond.notify_one();
         }
     }
-    num_tasks--;
-    if(num_tasks == 0) {
-        thread_cond->notify_all();
+    task_data.team->num_tasks--;
+    if(task_data.team->num_tasks == 0) {
+        task_data.team->thread_cond.notify_all();
     }
 }
 
@@ -194,7 +197,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int is_tied, 
                                int blocks_parent) {
     auto *parent_task = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
-    num_tasks++;
+    parent_task->team->num_tasks++;
     if(blocks_parent) {
         parent_task->blocking_children += 1;
         parent_task->has_dependents = true;
@@ -206,17 +209,18 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
-void thread_setup( omp_micro thread_func, void *fp, int tid, mutex_type& mtx ) {
-    omp_data task_data(tid);
+//void thread_setup( omp_micro thread_func, void *fp, int tid, mutex_type& mtx ) {
+void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *team ) {
+    omp_data task_data(tid, team);
     auto thread_id = get_self_id();
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
     thread_func(tid, fp);
     
     {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(mtx);
-        while(num_tasks > 0) {
-            thread_cond->wait(lock);
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data.team->thread_mtx);
+        while(task_data.team->num_tasks > 0) {
+            task_data.team->thread_cond.wait(lock);
         }
     }
 }
@@ -225,13 +229,13 @@ void fork_worker( int num_threads,
                   omp_micro thread_func, 
                   frame_pointer_t fp) {
     vector<hpx::lcos::future<void>> threads;
-    num_tasks = 0;
-
-    mutex_type thread_mtx;
-    thread_cond.reset(new hpx::lcos::local::condition_variable);
+    parallel_region team(num_threads);
+    //num_tasks = 0;
+    //mutex_type thread_mtx;
+    //thread_cond.reset(new hpx::lcos::local::condition_variable);
 
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, boost::ref(thread_mtx)));
+        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team));
     }
     hpx::wait_all(threads);
 }

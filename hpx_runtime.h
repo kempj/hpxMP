@@ -48,11 +48,22 @@ using hpx::threads::set_thread_data;
 using hpx::threads::get_thread_data;
 using hpx::threads::get_self_id;
 
+struct parallel_region {
+    parallel_region(int N) : globalBarrier(N), num_threads(N){};
+    int num_threads;
+    atomic<int> num_tasks{0};
+    hpx::lcos::local::condition_variable thread_cond;
+    barrier globalBarrier;
+    mutex_type single_mtx{}; 
+    mutex_type crit_mtx{};
+    mutex_type thread_mtx{};
+
+};
 class omp_data {
     public:
-        omp_data(int tid):thread_num(tid){};
+        omp_data(int tid, parallel_region *T):thread_num(tid), team(T){};
         omp_data(omp_data *p): thread_num(p->thread_num),
-                                          parent(p){};
+                                parent(p), team(p->team) {};
         int thread_num;
         omp_data *parent;
         //TODO: If I keep track of 'depth' can I implement a useful cutoff?
@@ -62,13 +73,14 @@ class omp_data {
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
         vector<future<void>> task_handles;
+        parallel_region *team;
 };
 
 class hpx_runtime {
     public:
         hpx_runtime();
         void fork(int num_threads, omp_micro thread_func, frame_pointer_t fp);
-        //void fork(int num_threads, omp_task_func task_func, frame_pointer_t fp);
+        parallel_region* get_team();
         int get_thread_num();
         int get_num_threads();
         int get_num_procs();
@@ -88,9 +100,8 @@ class hpx_runtime {
         //Need to clarify max num_threads, num_threads and requested, and sort it with the spec
         int num_threads;
         int num_procs;
-        //mutex_type runtime_mtx;//TODO: this seems unused
         shared_ptr<high_resolution_timer> walltime;
-        shared_ptr<barrier> globalBarrier;
+        //shared_ptr<barrier> globalBarrier;
         bool external_hpx;
 };
 
