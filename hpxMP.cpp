@@ -89,9 +89,11 @@ void __ompc_end_master(int global_tid){
 }
 
 int __ompc_single(int tid){
-    parallel_region *team = hpx_backend->get_team();
     if(!started)
         return 1;
+
+    parallel_region *team = hpx_backend->get_team();
+
     int num_threads = __ompc_get_num_threads();
     team->single_mtx.lock();
     if(current_single_thread == -1 && single_counter == 0) {
@@ -162,9 +164,11 @@ void __ompc_end_serialized_parallel(int global_tid) {
 //Note: volatile was removed from all the omp_lock_t calls
 // and const_cast can get rid of the volatile if needed
 void __ompc_critical(int gtid, omp_lock_t **lck) {
-    parallel_region *team = hpx_backend->get_team();
     if(!started)
         return;
+
+    parallel_region *team = hpx_backend->get_team();
+
     omp_lock_t* tmp_mtx = new omp_lock_t;
     if(*lck == NULL ) {
         team->crit_mtx.lock();
