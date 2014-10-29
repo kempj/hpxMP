@@ -1,9 +1,12 @@
 #include <iostream>
 #include "loop_schedule.h"
-#include "loop_data.h"
-#include "boost/shared_ptr.hpp"
+//#include "par_region.h"
+#include "hpx_runtime.h"
+//#include "loop_data.h"
+//#include "boost/shared_ptr.hpp"
 
-extern boost::shared_ptr<loop_data> loop_sched;
+//extern boost::shared_ptr<loop_data> loop_sched;
+extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 using std::cout;
 using std::endl;
@@ -11,12 +14,14 @@ struct ident_t;
 
 
 void __ompc_ordered(int global_tid){
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     while(loop_sched->ordered_count != loop_sched->local_iter[global_tid]){
         loop_sched->yield();
     }
 }
 
 void __ompc_end_ordered(int global_tid){
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     loop_sched->iter_remaining[global_tid]--;
     if(loop_sched->iter_remaining[global_tid] <= 0) {
         loop_sched->ordered_count++;
@@ -25,7 +30,7 @@ void __ompc_end_ordered(int global_tid){
 
 template<typename T>
 void scheduler_init( int global_tid, omp_sched_t schedtype, 
-                     T lower, T upper, T stride, T chunk) {
+                     T lower, T upper, T stride, T chunk, loop_data *loop_sched) {
     // waiting for last loop to finish.
     while(loop_sched->is_done && loop_sched->num_workers > 0 ) {
         loop_sched->yield();
@@ -56,7 +61,7 @@ void scheduler_init( int global_tid, omp_sched_t schedtype,
 template<typename T>
 void omp_static_init( int global_tid, omp_sched_t schedtype, 
                       T *p_lower, T *p_upper,
-                      T * p_stride, T incr, T chunk) {
+                      T * p_stride, T incr, T chunk, loop_data *loop_sched) {
     int block_size, stride, my_lower, my_upper;
     int team_size = loop_sched->num_threads;
     if (schedtype == OMP_SCHED_STATIC_EVEN) {
@@ -78,7 +83,7 @@ void omp_static_init( int global_tid, omp_sched_t schedtype,
 }
 
 template<typename T>
-int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride) {
+int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride, loop_data *loop_sched) {
 
     switch (static_cast<omp_sched_t>(loop_sched->schedule)) {
         case OMP_SCHED_STATIC_EVEN: //STATIC_EVEN uses default chunking.
@@ -95,7 +100,7 @@ int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride) {
 
                 omp_static_init<T>( loop_sched->schedule_count, static_cast<omp_sched_t>(loop_sched->schedule),
                                     p_lower, p_upper, p_stride, 
-                                    loop_sched->stride, loop_sched->chunk);
+                                    loop_sched->stride, loop_sched->chunk, loop_sched);
                 loop_sched->iter_remaining[global_tid] = (*p_upper - *p_lower) / *p_stride + 1;
                 return 1;
             } 
@@ -149,37 +154,45 @@ int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride) {
 int __ompc_schedule_next_8( int global_tid,
                             int64_t *plower, int64_t *pupper, 
                             int64_t *pstride){
-    return omp_next<int64_t>(global_tid, plower, pupper, pstride);
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    return omp_next<int64_t>(global_tid, plower, pupper, pstride, loop_sched);
 }
 
 int __ompc_schedule_next_4( int global_tid,
                             int *plower, int *pupper, int *pstride){
-    return omp_next<int>(global_tid, plower, pupper, pstride);
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    return omp_next<int>(global_tid, plower, pupper, pstride, loop_sched);
 }
 
 void __ompc_scheduler_init_8( int global_tid, omp_sched_t schedtype,
                               int64_t lower, int64_t upper,
                               int64_t stride, int64_t chunk) {
-    scheduler_init<int64_t>(global_tid, schedtype, lower, upper, stride, chunk);
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    scheduler_init<int64_t>( global_tid, schedtype, lower, upper, stride, 
+                             chunk, loop_sched);
 }
 
 void __ompc_scheduler_init_4( int global_tid,
                               omp_sched_t schedtype,
                               int lower, int upper,
                               int stride, int chunk){
-    scheduler_init<int>(global_tid, schedtype, lower, upper, stride, chunk);
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    scheduler_init<int>( global_tid, schedtype, lower, upper, stride, 
+                         chunk, loop_sched);
 }
 
 void __ompc_static_init_8( int global_tid, omp_sched_t schedtype,
                            int64_t *p_lower, int64_t *p_upper, 
                            int64_t *p_stride, int64_t incr, int64_t chunk ) {
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     omp_static_init<int64_t>( global_tid, schedtype, p_lower, p_upper, 
-                              p_stride, incr, chunk);
+                              p_stride, incr, chunk, loop_sched);
 }
 
 void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                            int *p_lower, int *p_upper, 
                            int *p_stride, int incr, int chunk) {
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     omp_static_init<int>( global_tid, schedtype, p_lower, p_upper,
-                          p_stride, incr, chunk);
+                          p_stride, incr, chunk, loop_sched);
 }

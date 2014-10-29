@@ -2,8 +2,8 @@ CC=g++-4.8
 all: libopenmp.so.1
 	
 
-libiomp5.so: intel_rt.o hpx_runtime.o loop_schedule.o loop_data.o
-	$(CC) -g -shared -Wl,-x -Wl,-soname=libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o loop_schedule.o loop_data.o hpx_runtime.o -L. `pkg-config --cflags --libs hpx_application`
+libiomp5.so: intel_rt.o hpx_runtime.o loop_schedule.o 
+	$(CC) -g -shared -Wl,-x -Wl,-soname=libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o loop_schedule.o  hpx_runtime.o -L. `pkg-config --cflags --libs hpx_application`
 
 intel_rt.o: intel_hpxMP.cpp intel_hpxMP.h
 	$(CC) -g -fPIC -c intel_hpxMP.cpp -o intel_rt.o `pkg-config --cflags --libs hpx_application`
@@ -18,8 +18,8 @@ hpx_runtimed.o: hpx_runtime.cpp
 hpxMPd.o: hpxMP.cpp hpxMP.h
 	$(CC) -g -fPIC -c hpxMP.cpp -o hpxMPd.o `pkg-config --cflags --libs hpx_application_debug`
 
-libopenmp.so.1: hpxMP.o hpx_runtime.o loop_schedule.o loop_data.o
-	$(CC) -g -shared -Wl,-x -Wl,-soname=libopenmp.so.1,--version-script=libopenmp.vs -o libopenmp.so.1 hpxMP.o hpx_runtime.o loop_schedule.o loop_data.o -L. `pkg-config --cflags --libs hpx_application`
+libopenmp.so.1: hpxMP.o hpx_runtime.o loop_schedule.o 
+	$(CC) -g -shared -Wl,-x -Wl,-soname=libopenmp.so.1,--version-script=libopenmp.vs -o libopenmp.so.1 hpxMP.o hpx_runtime.o loop_schedule.o  -L. `pkg-config --cflags --libs hpx_application`
 
 hpx_runtime.o: hpx_runtime.cpp hpx_runtime.h 
 	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
@@ -30,8 +30,6 @@ hpxMP.o: hpxMP.cpp hpxMP.h
 loop_schedule.o: loop_schedule.cpp loop_schedule.h
 	$(CC) -g -fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs hpx_application`
 
-loop_data.o: loop_data.cpp loop_data.h
-	$(CC) -g -fPIC -c loop_data.cpp -o loop_data.o `pkg-config --cflags --libs hpx_application`
 
 
 clean:
