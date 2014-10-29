@@ -1,5 +1,5 @@
 #include "intel_hpxMP.h"
-#include "loop_data.h"
+//#include "loop_data.h"
 #include "loop_schedule.h"
 #include <boost/shared_ptr.hpp>
 #include <iostream>
@@ -10,13 +10,14 @@ using std::endl;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 
 //FIXME: this is what is causing the crash. Move to parallel_region
-boost::shared_ptr<loop_data> loop_sched;
+//boost::shared_ptr<loop_data> loop_sched;
 
 //typedef void (*omp_micro)(int , frame_pointer_t);
 //typedef void (*microtask_t)( int *gtid, int *npr, ... );
 //typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
 
 bool started = false;
+bool nested = false;
 
 struct task_args {
     kmpc_micro fork_func;
@@ -27,7 +28,7 @@ struct task_args {
 void start_backend(){
     if( !hpx::get_runtime_ptr() ) {
         hpx_backend.reset(new hpx_runtime());
-        loop_sched.reset(new loop_data());
+        //loop_sched.reset(new loop_data());
     }
 }
 
@@ -78,11 +79,23 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     args.fork_func = microtask;
 
-    started = true;
-    cout << "before fork\n";
-    hpx_backend->fork(0, omp_thread_func, (void*)&args);
+    if(started) {//FIXME only works for one nest
+        if(nested)
+            cout << "nested parallelism went more than 2 deep\n";
+        nested = true;
+        cout << "Nested fork" << endl;
+        hpx_backend->fork(1, omp_thread_func, (void*)&args);
+    } else {
+        started = true;
+        cout << "before fork\n";
+        hpx_backend->fork(0, omp_thread_func, (void*)&args);
+        started = false;
+    }
+    //nested needs to be threadlocal. Otherwise, this gets set and unset for each thread in the team
+    //It also needs to be a counter or something
+    if(nested)
+        nested = false;
     cout << "after fork\n";
-    started = false;
     
     delete[] argv;
 }
