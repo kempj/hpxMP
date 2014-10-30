@@ -16,8 +16,7 @@ boost::shared_ptr<hpx_runtime> hpx_backend;
 //typedef void (*microtask_t)( int *gtid, int *npr, ... );
 //typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
 
-bool started = false;
-bool nested = false;
+bool in_parallel = false;
 
 struct task_args {
     kmpc_micro fork_func;
@@ -37,12 +36,10 @@ void omp_thread_func(int tid, void *fp) {
     //int tid = hpx_backend->get_thread_num();//not sure if correct
     task_args *args = (task_args*)fp;
 
-    cout << "omp_thread_func\n";
-    cout << "argc = " << args->argc << endl;
     switch(args->argc - 1) {
         case 0: args->fork_func(&tid, &tid);
                 break;
-        case 1: args->fork_func(&tid, &tid, args->argv[0]);
+        case 1: args->fork_func(&tid, &tid, &args->argv[0]);
                 break;
         case 2: args->fork_func(&tid, &tid, args->argv[0], args->argv[1]);
                 break;
@@ -79,24 +76,17 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     args.fork_func = microtask;
 
-    if(started) {//FIXME only works for one nest
-        if(nested)
-            cout << "nested parallelism went more than 2 deep\n";
-        nested = true;
+    if( hpx::threads::get_self_ptr() ) {
         cout << "Nested fork" << endl;
         hpx_backend->fork(1, omp_thread_func, (void*)&args);
+        cout << "after nested fork\n";
     } else {
-        started = true;
+        in_parallel = true;
         cout << "before fork\n";
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
-        started = false;
+        cout << "after top level fork\n";
+        in_parallel = false;
     }
-    //nested needs to be threadlocal. Otherwise, this gets set and unset for each thread in the team
-    //It also needs to be a counter or something
-    if(nested)
-        nested = false;
-    cout << "after fork\n";
-    
     delete[] argv;
 }
 

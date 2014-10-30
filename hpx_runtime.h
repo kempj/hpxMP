@@ -82,7 +82,7 @@ struct parallel_region {
     mutex_type crit_mtx{};
     mutex_type thread_mtx{};
     loop_data loop_sched;
-
+    int depth;
 };
 
 class omp_data {
@@ -123,8 +123,8 @@ class hpx_runtime {
         void env_init();
         
     private:
-        //Need to clarify max num_threads, num_threads and requested, and sort it with the spec
-        int num_threads;
+        //int num_threads;
+        int nthreads_var;
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;
         //shared_ptr<barrier> globalBarrier;

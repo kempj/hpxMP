@@ -41,13 +41,12 @@ hpx_runtime::hpx_runtime() {
     }
 
     if(omp_num_threads != NULL){
-        num_threads = atoi(omp_num_threads);
+        nthreads_var = atoi(omp_num_threads);
     } else { 
-        num_threads = num_procs;
+        nthreads_var = num_procs;
     }
 
     walltime.reset(new high_resolution_timer);
-    //globalBarrier.reset(new barrier(num_threads));
 
     if(external_hpx)
         return;
@@ -56,7 +55,7 @@ hpx_runtime::hpx_runtime() {
     int argc;
     char ** argv;
     using namespace boost::assign;
-    cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(num_threads);
+    cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(nthreads_var);
     cfg += "hpx.stacks.use_guard_pages=0";
     cfg += "hpx.run_hpx_main!=0";
 
@@ -120,7 +119,7 @@ double hpx_runtime::get_time() {
 }
 
 int hpx_runtime::get_num_threads() {
-    return num_threads;
+    return nthreads_var;
 }
 
 int hpx_runtime::get_num_procs() {
@@ -129,7 +128,7 @@ int hpx_runtime::get_num_procs() {
 
 void hpx_runtime::set_num_threads(int nthreads) {
     if(nthreads > 0) {
-        num_threads = nthreads;
+        nthreads_var = nthreads;
     }
 }
 
@@ -256,9 +255,9 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) 
     if(Nthreads > 0)
         threads_requested = Nthreads;
     else
-        threads_requested = num_threads;
+        threads_requested = nthreads_var;
 
-    if(external_hpx){
+    if( hpx::threads::get_self_ptr() ){//Should this be replaced with a get_thread_ptr?
         fork_worker(threads_requested, thread_func, fp);
     } else {
         boost::mutex mtx;
