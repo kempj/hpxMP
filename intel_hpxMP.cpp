@@ -35,12 +35,31 @@ void start_backend(){
 void omp_thread_func(int tid, void *fp) {
     //int tid = hpx_backend->get_thread_num();//not sure if correct
     task_args *args = (task_args*)fp;
+    void **argv = args->argv;
+    void **argp = argv;
+    int argc = args->argc - 1;
+    /*
+    cout << "Thread func: " << endl;
+    cout << "argc = " << argc << endl;
+    cout << "argv = " << argv << endl;
+    cout << "*argv = " << *argv << endl;
+    *argv--;
+    cout << "argv = " << argv << endl;
+    cout << "*argv = " << *argv << endl;
+    *argv--;
+    cout << "argv = " << argv << endl;
+    cout << "*argv = " << *argv << endl;
+    cout << "argp[-argc] = " << argp[-argc] << endl;
+    cout << "argp[-argc-1] = " << argp[-argc-1] << endl;
+    */
+    //Are the arguments packed in order, or in reverse order?
 
-    switch(args->argc - 1) {
+    switch(argc) {
         case 0: args->fork_func(&tid, &tid);
                 break;
-        case 1: args->fork_func(&tid, &tid, &args->argv[0]);
+        case 1: args->fork_func(&tid, &tid, argv[-argc-1]);
                 break;
+                /*
         case 2: args->fork_func(&tid, &tid, args->argv[0], args->argv[1]);
                 break;
         case 3: args->fork_func(&tid, &tid, args->argv[0], args->argv[1], args->argv[2]);
@@ -51,6 +70,7 @@ void omp_thread_func(int tid, void *fp) {
         case 5: args->fork_func(&tid, &tid, args->argv[0], args->argv[1], args->argv[2],
                           args->argv[3], args->argv[4]);
                 break;
+                */
     }
 }
 
@@ -63,13 +83,19 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     }
 
     void **argv = new void*[argc];
+    void **argp = argv;
 
     va_list     ap;
     va_start(   ap, microtask );
 
+    //cout << "fork_call:\n";
+    //cout << "argv = " << argv << endl;
+    //cout << "*argv = " << *argv << endl;
     for( int i = argc-1; i >= 0; --i ){
+        //cout << "(" << i << ") *argv = " << *argv << endl;
         *argv++ = va_arg( ap, void * );
     }
+        //cout << *argv << endl;
     va_end( ap );
     args.argc = argc;
     args.argv = argv;
@@ -87,7 +113,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
         cout << "after top level fork\n";
         in_parallel = false;
     }
-    delete[] argv;
+    delete[] argp;
 }
 
 void
