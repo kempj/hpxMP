@@ -38,21 +38,8 @@ void omp_thread_func(int tid, void *fp) {
     void **argv = args->argv;
     void **argp = argv;
     int argc = args->argc - 1;
-    /*
-    cout << "Thread func: " << endl;
-    cout << "argc = " << argc << endl;
-    cout << "argv = " << argv << endl;
-    cout << "*argv = " << *argv << endl;
-    *argv--;
-    cout << "argv = " << argv << endl;
-    cout << "*argv = " << *argv << endl;
-    *argv--;
-    cout << "argv = " << argv << endl;
-    cout << "*argv = " << *argv << endl;
-    cout << "argp[-argc] = " << argp[-argc] << endl;
-    cout << "argp[-argc-1] = " << argp[-argc-1] << endl;
-    */
     //Are the arguments packed in order, or in reverse order?
+    //They are in reverse order, and argv points one past the data.
 
     switch(argc) {
         case 0: args->fork_func(&tid, &tid);
@@ -83,19 +70,13 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     }
 
     void **argv = new void*[argc];
-    void **argp = argv;
 
     va_list     ap;
     va_start(   ap, microtask );
 
-    //cout << "fork_call:\n";
-    //cout << "argv = " << argv << endl;
-    //cout << "*argv = " << *argv << endl;
     for( int i = argc-1; i >= 0; --i ){
-        //cout << "(" << i << ") *argv = " << *argv << endl;
         *argv++ = va_arg( ap, void * );
     }
-        //cout << *argv << endl;
     va_end( ap );
     args.argc = argc;
     args.argv = argv;
@@ -103,17 +84,17 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     args.fork_func = microtask;
 
     if( hpx::threads::get_self_ptr() ) {
-        cout << "Nested fork" << endl;
+        //cout << "Nested fork" << endl;
         hpx_backend->fork(1, omp_thread_func, (void*)&args);
-        cout << "after nested fork\n";
+        //cout << "after nested fork\n";
     } else {
         in_parallel = true;
-        cout << "before fork\n";
+        //cout << "before fork\n";
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
-        cout << "after top level fork\n";
+        //cout << "after top level fork\n";
         in_parallel = false;
     }
-    delete[] argp;
+    delete[] argv;
 }
 
 void

@@ -73,7 +73,7 @@ class loop_data {
 };
 
 struct parallel_region {
-    parallel_region(int N) : globalBarrier(N), num_threads(N), loop_sched(N){};
+    parallel_region(int N) : num_threads(N), globalBarrier(N), loop_sched(N){};
     int num_threads;
     atomic<int> num_tasks{0};
     hpx::lcos::local::condition_variable thread_cond;
