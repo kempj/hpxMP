@@ -42,7 +42,7 @@ int main() {
     {
         printf("Hello world %d\n",i);
     }
-    printf("loop 7: nested par for loops\n");
+    printf("\n\n\nloop 7: nested par for loops\n\n");
 #pragma omp parallel for
     for(i = 0; i < 5; i++) {
 #pragma omp parallel for firstprivate(i)
