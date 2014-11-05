@@ -36,7 +36,6 @@ void omp_thread_func(int tid, void *fp) {
     //int tid = hpx_backend->get_thread_num();//not sure if correct
     task_args *args = (task_args*)fp;
     void **argv = args->argv;
-    void **argp = argv;
     int argc = args->argc - 1;
     //Are the arguments packed in order, or in reverse order?
     //They are in reverse order, and argv points one past the data.
@@ -84,14 +83,10 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     args.fork_func = microtask;
 
     if( hpx::threads::get_self_ptr() ) {
-        //cout << "Nested fork" << endl;
         hpx_backend->fork(1, omp_thread_func, (void*)&args);
-        //cout << "after nested fork\n";
     } else {
         in_parallel = true;
-        //cout << "before fork\n";
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
-        //cout << "after top level fork\n";
         in_parallel = false;
     }
     delete[] argv;
@@ -113,6 +108,7 @@ void
 __kmpc_push_num_threads( ident_t *loc, 
                          kmp_int32 global_tid, 
                          kmp_int32 num_threads ){
+    hpx_backend->set_num_threads(num_threads);
 }
 
 void

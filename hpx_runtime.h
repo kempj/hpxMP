@@ -4,6 +4,8 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <limits>
+
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_start.hpp>
 #include <hpx/runtime/threads/topology.hpp>
@@ -73,8 +75,9 @@ class loop_data {
 };
 
 struct parallel_region {
-    parallel_region(int N) : num_threads(N), globalBarrier(N), loop_sched(N){};
-    int num_threads;
+    parallel_region(int N) : nthreads_var(N), globalBarrier(N), loop_sched(N){};
+    //int num_threads;
+    int nthreads_var;
     atomic<int> num_tasks{0};
     hpx::lcos::local::condition_variable thread_cond;
     barrier globalBarrier;
@@ -83,6 +86,8 @@ struct parallel_region {
     mutex_type thread_mtx{};
     loop_data loop_sched;
     int depth;
+    bool dyn_var{false};//not used
+    int thread_limit_var{std::numeric_limits<int>::max()};//not used 
 };
 
 class omp_data {
@@ -100,6 +105,7 @@ class omp_data {
         atomic<bool> has_dependents {false};
         vector<future<void>> task_handles;
         parallel_region *team;
+        int active_levels;
 };
 
 class hpx_runtime {
@@ -119,15 +125,24 @@ class hpx_runtime {
         void task_wait();
         double get_time();
         void delete_hpx_objects();
-        int threads_requested;
         void env_init();
         
     private:
-        //int num_threads;
-        int nthreads_var;
         int num_procs;
+        int initial_num_threads;
         shared_ptr<high_resolution_timer> walltime;
-        //shared_ptr<barrier> globalBarrier;
         bool external_hpx;
+
+        int max_active_levels{std::numeric_limits<int>::max()};
+        bool cancel_var{false};//not implemented
+        int stacksize_var; //-Ihpx.stacks.small_size=... (use hex numbers)
+        //http://stellar-group.github.io/hpx/docs/html/hpx/manual/init/configuration/config_defaults.html
+        //wait-policy-var OMP_WAIT_POLICY//This is a compile time HPX option
+
+        //Moved to parallel region object, since they are scoped to their data environment,
+        //according to the spec
+        //int nthreads_var;
+        //bool dyn_var{false};//not implemented
+        //int thread_limit_var{std::numeric_limits<int>::max()};
 };
 

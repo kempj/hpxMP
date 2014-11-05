@@ -13,7 +13,6 @@
 
 using namespace std;
 boost::shared_ptr<hpx_runtime> hpx_backend;
-//boost::shared_ptr<loop_data> loop_sched;
 
 bool started = false;
 int single_counter = 0;
@@ -29,7 +28,6 @@ void start_backend(){
     if( !hpx::get_runtime_ptr() ) {
         hpx_backend.reset(new hpx_runtime());
     }
-    //loop_sched.reset(new loop_data);
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {

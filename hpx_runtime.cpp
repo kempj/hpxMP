@@ -28,24 +28,34 @@ void fini_runtime() {
     hpx::get_runtime().stop();
 }
 
+//This will break if the users shuts down hpx and an OpenMP call is made
 hpx_runtime::hpx_runtime() {
     num_procs = hpx::threads::hardware_concurrency();
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
 
-    //This will break if the users shuts down hpx and an OpenMP call is made
-    //TODO: move this code to an init function, and add checks at each entrance
-    // to the hpxMP runtime.
     external_hpx = !(hpx::get_runtime_ptr() == NULL);
     if(external_hpx) {
         num_procs = hpx::get_os_thread_count();
     }
-
     if(omp_num_threads != NULL){
-        nthreads_var = atoi(omp_num_threads);
+        initial_num_threads = atoi(omp_num_threads);
     } else { 
-        nthreads_var = num_procs;
+        initial_num_threads = num_procs;
     }
-
+    //cancel_var
+    //stacksize_var
+    /*
+    char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
+    if(omp_max_levels != NULL) {
+        max_active_levels = atoi(omp_max_levels);
+    }
+    
+    //Not device specific, so it needs to move to parallel region:
+    char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
+    if(omp_thread_limit != NULL) {
+        thread_limit_var = atoi(omp_thread_limit);
+    }
+    */
     walltime.reset(new high_resolution_timer);
 
     if(external_hpx)
@@ -55,7 +65,7 @@ hpx_runtime::hpx_runtime() {
     int argc;
     char ** argv;
     using namespace boost::assign;
-    cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(nthreads_var);
+    cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(initial_num_threads);
     cfg += "hpx.stacks.use_guard_pages=0";
     cfg += "hpx.run_hpx_main!=0";
 
@@ -119,7 +129,13 @@ double hpx_runtime::get_time() {
 }
 
 int hpx_runtime::get_num_threads() {
-    return nthreads_var;
+    int num_threads;
+    if( hpx::threads::get_self_ptr() ){
+        num_threads = get_team()->nthreads_var;
+    } else {
+        num_threads = 1;
+    }
+    return num_threads;
 }
 
 int hpx_runtime::get_num_procs() {
@@ -127,8 +143,12 @@ int hpx_runtime::get_num_procs() {
 }
 
 void hpx_runtime::set_num_threads(int nthreads) {
-    if(nthreads > 0) {
-        nthreads_var = nthreads;
+    if( hpx::threads::get_self_ptr() ){
+        if(nthreads > 0) {
+            get_team()->nthreads_var = nthreads;
+        }
+    } else {//not an hpx thread
+       initial_num_threads = nthreads; 
     }
 }
 
@@ -249,23 +269,30 @@ void fork_and_sync( int num_threads, omp_micro thread_func,
     }
 }
  
-//TODO: there is no reason to convert the microtask to a task_func any more.
-// It just gets passed to a thread init function.
+//For OpenUH, Nthreads is passed to fork.
+//For Intel, the Nthreads isn't passed in, another function sets it.
+//  Also for Intel, fp is not a frame pointer, but a pointer to a struct,
+//      but is still passed around correctly internally.
 void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) { 
-    if(Nthreads > 0)
-        threads_requested = Nthreads;
-    else
-        threads_requested = nthreads_var;
+    //if it's openUH, then this is used to set the num_threads for the 
+    //created parallel region, but not the current one.
+    //if it is Intel, nthreads will always be 0;
 
-    if( hpx::threads::get_self_ptr() ){//Should this be replaced with a get_thread_ptr?
-        fork_worker(threads_requested, thread_func, fp);
+    if( hpx::threads::get_self_ptr() ){//is an hpx_thread, implying nested parallelism
+        if(Nthreads <= 0){
+            Nthreads = get_num_threads();
+        }
+        fork_worker(Nthreads, thread_func, fp);
     } else {
+        if(Nthreads <= 0){
+            Nthreads = initial_num_threads;
+        }
         boost::mutex mtx;
         boost::condition cond;
         bool running = false;
     
         hpx::applier::register_thread_nullary(
-                HPX_STD_BIND(&fork_and_sync, threads_requested, thread_func, fp,
+                HPX_STD_BIND(&fork_and_sync, Nthreads, thread_func, fp,
                     boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
