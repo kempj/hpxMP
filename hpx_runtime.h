@@ -52,6 +52,7 @@ using hpx::threads::get_self_id;
 
 
 class loop_data {
+    //TODO: does this need to be changed to work with teams?
     public:
         loop_data(int NT) : num_threads(NT){}
         void yield(){ hpx::this_thread::yield(); }
@@ -79,7 +80,7 @@ struct parallel_region {
     //int num_threads;
     int nthreads_var;
     atomic<int> num_tasks{0};
-    hpx::lcos::local::condition_variable thread_cond;
+    hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type single_mtx{}; 
     mutex_type crit_mtx{};

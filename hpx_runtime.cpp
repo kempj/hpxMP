@@ -208,7 +208,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     }
     task_data.team->num_tasks--;
     if(task_data.team->num_tasks == 0) {
-        task_data.team->thread_cond.notify_all();
+        task_data.team->cond.notify_all();
     }
 }
 
@@ -239,7 +239,7 @@ void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *te
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data.team->thread_mtx);
         while(task_data.team->num_tasks > 0) {
-            task_data.team->thread_cond.wait(lock);
+            task_data.team->cond.wait(lock);
         }
     }
 }
@@ -283,6 +283,8 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) 
             Nthreads = get_num_threads();
         }
         fork_worker(Nthreads, thread_func, fp);
+        //TODO: according to the spec, the current thread should be thread 0
+        // of the new team, and execute the new work.
     } else {
         if(Nthreads <= 0){
             Nthreads = initial_num_threads;

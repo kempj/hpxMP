@@ -1,5 +1,4 @@
 #include "intel_hpxMP.h"
-//#include "loop_data.h"
 #include "loop_schedule.h"
 #include <boost/shared_ptr.hpp>
 #include <iostream>
@@ -8,9 +7,6 @@ using std::cout;
 using std::endl;
 
 boost::shared_ptr<hpx_runtime> hpx_backend;
-
-//FIXME: this is what is causing the crash. Move to parallel_region
-//boost::shared_ptr<loop_data> loop_sched;
 
 //typedef void (*omp_micro)(int , frame_pointer_t);
 //typedef void (*microtask_t)( int *gtid, int *npr, ... );
@@ -27,7 +23,6 @@ struct task_args {
 void start_backend(){
     if( !hpx::get_runtime_ptr() ) {
         hpx_backend.reset(new hpx_runtime());
-        //loop_sched.reset(new loop_data());
     }
 }
 
@@ -82,6 +77,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     args.fork_func = microtask;
 
+    //TODO:make the number of threads executed consistent with the spec.
     if( hpx::threads::get_self_ptr() ) {
         hpx_backend->fork(1, omp_thread_func, (void*)&args);
     } else {
