@@ -27,7 +27,11 @@ int __ompc_init_rtl(int num_threads) {
 void start_backend(){
     if( !hpx::get_runtime_ptr() ) {
         hpx_backend.reset(new hpx_runtime());
-    }
+    } else {
+        //__ompc_fork was called from an hpx thread without the hpx_backend existing,
+        // most likely the application started hpx, and had omp calls in it.
+        // TODO: set up the runtime without trying to start hpx
+        }
 }
 
 void __ompc_fork(int nthreads, omp_micro micro_task, frame_pointer_t fp) {

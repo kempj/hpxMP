@@ -75,9 +75,31 @@ class loop_data {
         mutex_type loop_mtx{};
 };
 
+    //Does this need to keep track of the parallel region it is nested in,
+    // the omp_data of the parent thread, or both?
 struct parallel_region {
-    parallel_region(int N) : nthreads_var(N), globalBarrier(N), loop_sched(N){};
-    //int num_threads;
+    parallel_region(int N) : nthreads_var(N), globalBarrier(N), 
+                             loop_sched(N), depth(0) {};
+
+    parallel_region(parallel_region *parent, int threads_requested) : 
+                                    parallel_region(threads_requested) {
+        depth = parent->depth + 1; 
+        dyn_var = parent->dyn_var;
+        nest_var = parent->nest_var;
+        max_active_levels = parent->max_active_levels;
+    }
+    int request_threads(int nthreads){
+        if(nthreads <= 0)
+            nthreads = nthreads_var;
+
+        if(nest_var == false || depth > max_active_levels)
+            return 1;
+        //if(nthreads > hpx_backend->thread_limit_var)
+        //    return 1;
+        //TODO: increment ThreadsBusy, and decrement it... somewhere
+        return nthreads;
+    }
+
     int nthreads_var;
     atomic<int> num_tasks{0};
     hpx::lcos::local::condition_variable cond;
@@ -88,7 +110,8 @@ struct parallel_region {
     loop_data loop_sched;
     int depth;
     bool dyn_var{false};//not used
-    int thread_limit_var{std::numeric_limits<int>::max()};//not used 
+    bool nest_var{false};
+    int max_active_levels{std::numeric_limits<int>::max()};
 };
 
 class omp_data {
@@ -127,23 +150,25 @@ class hpx_runtime {
         double get_time();
         void delete_hpx_objects();
         void env_init();
+        bool nesting_enabled();
+        void set_default_nesting(bool nest) {
+            initial_nest_var = nest;
+        }
         
     private:
         int num_procs;
-        int initial_num_threads;
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;
 
-        int max_active_levels{std::numeric_limits<int>::max()};
-        bool cancel_var{false};//not implemented
-        int stacksize_var; //-Ihpx.stacks.small_size=... (use hex numbers)
-        //http://stellar-group.github.io/hpx/docs/html/hpx/manual/init/configuration/config_defaults.html
-        //wait-policy-var OMP_WAIT_POLICY//This is a compile time HPX option
-
-        //Moved to parallel region object, since they are scoped to their data environment,
-        //according to the spec
-        //int nthreads_var;
-        //bool dyn_var{false};//not implemented
+        //atomic<int> threads_running{0};//ThreadsBusy
+        //ICVs:
+        bool initial_nest_var{false};
+        int initial_num_threads;
         //int thread_limit_var{std::numeric_limits<int>::max()};
+        //int initial_max_active_levels{std::numeric_limits<int>::max()};
+        //bool cancel_var{false};//not implemented
+        //int stacksize_var; //-Ihpx.stacks.small_size=... (use hex numbers)
+            //http://stellar-group.github.io/hpx/docs/html/hpx/manual/init/configuration/config_defaults.html
+        //wait-policy-var OMP_WAIT_POLICY//This is a compile time HPX option
 };
 

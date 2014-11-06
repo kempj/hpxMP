@@ -11,6 +11,7 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
+
 //atomic<int> num_tasks{0};
 //boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
@@ -42,6 +43,8 @@ hpx_runtime::hpx_runtime() {
     } else { 
         initial_num_threads = num_procs;
     }
+    //TODO:
+    //OMP_NESTED -> initial_nest_var
     //cancel_var
     //stacksize_var
     /*
@@ -228,8 +231,8 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 
 //Thread tasks currently have no parent. In the future it might work out well
 // to have their parent be some sort of thread team object
-//void thread_setup( omp_micro thread_func, void *fp, int tid, mutex_type& mtx ) {
 void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *team ) {
+
     omp_data task_data(tid, team);
     auto thread_id = get_self_id();
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
@@ -244,14 +247,12 @@ void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *te
     }
 }
 
-void fork_worker( int num_threads, 
-                  omp_micro thread_func, 
-                  frame_pointer_t fp) {
+void fork_worker( omp_micro thread_func, 
+                  frame_pointer_t fp, parallel_region *team) {
     vector<hpx::lcos::future<void>> threads;
-    parallel_region team(num_threads);
 
-    for(int i = 0; i < num_threads; i++) {
-        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team));
+    for(int i = 0; i < team->nthreads_var; i++) {
+        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, team));
     }
     hpx::wait_all(threads);
 }
@@ -260,7 +261,8 @@ void fork_and_sync( int num_threads, omp_micro thread_func,
                         frame_pointer_t fp, boost::mutex& mtx, 
                         boost::condition& cond, bool& running) {
 
-    fork_worker( num_threads, thread_func, fp);
+    parallel_region team(num_threads);
+    fork_worker(thread_func, fp, &team);
 
     {
         boost::mutex::scoped_lock lk(mtx);
@@ -269,23 +271,15 @@ void fork_and_sync( int num_threads, omp_micro thread_func,
     }
 }
  
-//For OpenUH, Nthreads is passed to fork.
-//For Intel, the Nthreads isn't passed in, another function sets it.
+//For Intel, the Nthreads isn't passed in, another function sets Nthreads, so Nthreads should be 0;
 //  Also for Intel, fp is not a frame pointer, but a pointer to a struct,
 //      but is still passed around correctly internally.
 void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) { 
-    //if it's openUH, then this is used to set the num_threads for the 
-    //created parallel region, but not the current one.
-    //if it is Intel, nthreads will always be 0;
-
-    if( hpx::threads::get_self_ptr() ){//is an hpx_thread, implying nested parallelism
-        if(Nthreads <= 0){
-            Nthreads = get_num_threads();
-        }
-        fork_worker(Nthreads, thread_func, fp);
-        //TODO: according to the spec, the current thread should be thread 0
-        // of the new team, and execute the new work.
-    } else {
+    //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
+    if( hpx::threads::get_self_ptr() ){
+        parallel_region team(get_team(), get_team()->request_threads(Nthreads));
+        fork_worker(thread_func, fp, &team);
+    } else {//is main, non-hpx thread.
         if(Nthreads <= 0){
             Nthreads = initial_num_threads;
         }
