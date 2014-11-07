@@ -124,3 +124,20 @@ int __kmpc_global_thread_num(ident_t *loc){
     return 0;
 }
 
+int __kmpc_single(ident_t *loc, int tid){
+    if(!in_parallel)
+        return 1;
+    parallel_region *team = hpx_backend->get_team();
+
+    if(0 == team->single_counter++){
+        return 1;
+    }
+    return 0;
+}
+
+void __kmpc_end_single(ident_t *loc, int tid){
+    parallel_region *team = hpx_backend->get_team();
+    if(!in_parallel)
+        return;
+    team->single_counter--;
+}

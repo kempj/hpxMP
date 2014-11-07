@@ -112,6 +112,7 @@ struct parallel_region {
     bool dyn_var{false};//not used
     bool nest_var{false};
     int max_active_levels{std::numeric_limits<int>::max()};
+    atomic<int> single_counter{0};
 };
 
 class omp_data {

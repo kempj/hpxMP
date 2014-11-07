@@ -89,3 +89,6 @@ extern "C" void __kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int3
                           kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk );
 
 extern "C" void __kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid );
+
+extern "C" int __kmpc_single(ident_t *loc, int tid);
+extern "C" void __kmpc_end_single(ident_t *loc, int tid);
