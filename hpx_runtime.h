@@ -156,6 +156,7 @@ class hpx_runtime {
             initial_nest_var = nest;
         }
         
+        mutex_type crit_mtx{};
     private:
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;

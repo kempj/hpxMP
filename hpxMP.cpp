@@ -194,7 +194,7 @@ omp_int32 __ompc_copyin_thdprv(int num,...) {
 
 omp_int32 __ompc_copyprivate( omp_int32 mpsp_status,
                               void *cppriv, 
-                              void(*cp)(void* src, void* dst) ) {
+                                  void(*cp)(void* src, void* dst) ) {
     cout << "unimplemented function called: __ompc_copyprivate" << endl;
     return 0;
 }

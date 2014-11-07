@@ -9,6 +9,8 @@ typedef int                 (*launch_t)( int gtid );
 
 typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
 
+typedef kmp_int32 kmp_critical_name[8];
+
 enum sched_type {
         kmp_sch_lower                     = 32,   /**< lower bound for unordered values */
         kmp_sch_static_chunked            = 33,
@@ -95,6 +97,10 @@ extern "C" void __kmpc_end_single(ident_t *loc, int tid);
 
 extern "C" int __kmpc_master(ident_t *loc, int global_tid);
 extern "C" void __kmpc_end_master(ident_t *loc, int global_tid);
+
+
+extern "C" void __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit );
+extern "C" void __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit);
 
 
 extern "C" int omp_get_thread_num();

@@ -156,3 +156,14 @@ int omp_get_thread_num(){
     //TODO: check if hpx is running
     return hpx_backend->get_thread_num();
 }
+void
+__kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit ) {
+    hpx_backend->crit_mtx.lock();
+}
+
+void
+__kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit) {
+    hpx_backend->crit_mtx.unlock();
+}
+
+
