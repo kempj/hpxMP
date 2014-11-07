@@ -66,7 +66,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     }
 
     void **argv = new void*[argc];
-    //void* argv[3];
+    void **argp = argv;
 
     va_list     ap;
     va_start(   ap, microtask );
@@ -88,8 +88,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
         in_parallel = false;
     }
-    //FIXME: this causes hpx to crash when deallocating... something at exit.
-    //delete[] argv;
+    delete[] argp;
 }
 
 void
