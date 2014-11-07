@@ -141,3 +141,18 @@ void __kmpc_end_single(ident_t *loc, int tid){
         return;
     team->single_counter--;
 }
+
+int __kmpc_master(ident_t *loc, int global_tid){
+    //TODO: if master can be called from tasks, then this doesn't work.
+    if(hpx_backend->get_thread_num() == 0) 
+        return 1;
+    return 0;
+}
+
+void __kmpc_end_master(ident_t *loc, int global_tid){
+}
+
+int omp_get_thread_num(){
+    //TODO: check if hpx is running
+    return hpx_backend->get_thread_num();
+}

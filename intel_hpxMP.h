@@ -92,3 +92,9 @@ extern "C" void __kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid );
 
 extern "C" int __kmpc_single(ident_t *loc, int tid);
 extern "C" void __kmpc_end_single(ident_t *loc, int tid);
+
+extern "C" int __kmpc_master(ident_t *loc, int global_tid);
+extern "C" void __kmpc_end_master(ident_t *loc, int global_tid);
+
+
+extern "C" int omp_get_thread_num();
