@@ -2,6 +2,7 @@
 #include "loop_schedule.h"
 #include <boost/shared_ptr.hpp>
 #include <iostream>
+#include <assert.h>
 
 using std::cout;
 using std::endl;
@@ -35,6 +36,7 @@ void omp_thread_func(int tid, void *fp) {
     //Are the arguments packed in order, or in reverse order?
     //They are in reverse order, and argv points one past the data.
 
+    assert(argc < 2);
     switch(argc) {
         case 0: args->fork_func(&tid, &tid);
                 break;
@@ -64,6 +66,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     }
 
     void **argv = new void*[argc];
+    //void* argv[3];
 
     va_list     ap;
     va_start(   ap, microtask );
@@ -79,13 +82,14 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     //TODO:make the number of threads executed consistent with the spec.
     if( hpx::threads::get_self_ptr() ) {
-        hpx_backend->fork(1, omp_thread_func, (void*)&args);
+        hpx_backend->fork(0, omp_thread_func, (void*)&args);
     } else {
         in_parallel = true;
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
         in_parallel = false;
     }
-    delete[] argv;
+    //FIXME: this causes hpx to crash when deallocating... something at exit.
+    //delete[] argv;
 }
 
 void
@@ -113,6 +117,7 @@ __kmpc_barrier(ident_t *loc, kmp_int32 global_tid) {
 }
 
 int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
+    hpx_backend->barrier_wait();
     return 0;
 }
 

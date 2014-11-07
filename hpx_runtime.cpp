@@ -158,11 +158,11 @@ void hpx_runtime::set_num_threads(int nthreads) {
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
 void hpx_runtime::barrier_wait(){
-    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
-    while(task_data->team->num_tasks > 0){
+    //auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    while(get_team()->num_tasks > get_team()->nthreads_var){
         hpx::this_thread::yield();
     }
-    task_data->team->globalBarrier.wait();
+    get_team()->globalBarrier.wait();
 }
 
 int hpx_runtime::get_thread_num() {
@@ -180,6 +180,7 @@ void hpx_runtime::task_wait() {
 //This needs to be here to make sure to wait for dependant children finish
 // before destroying the stack of the task. If this work is done in task_create
 // the stack of the user's task does not get preserved.
+// Note: in OpenUH this gets called at the end of implicit and explicit tasks
 void hpx_runtime::task_exit() {
     auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
     {
@@ -224,6 +225,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
         parent_task->blocking_children += 1;
         parent_task->has_dependents = true;
     }
+    //TODO: setup/init the child task here, and do not pass the parent 
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
                                 firstprivates, parent_task, blocks_parent));
@@ -238,21 +240,24 @@ void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *te
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
     thread_func(tid, fp);
-    
-    {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data.team->thread_mtx);
-        while(task_data.team->num_tasks > 0) {
-            task_data.team->cond.wait(lock);
-        }
+    team->num_tasks--;
+    if(team->num_tasks == 0) {
+        team->cond.notify_all();
     }
+    //How do I know if this thread can return without task_exit()?
 }
 
-void fork_worker( omp_micro thread_func, 
-                  frame_pointer_t fp, parallel_region *team) {
+void fork_worker( omp_micro thread_func, frame_pointer_t fp, parallel_region *team) {
     vector<hpx::lcos::future<void>> threads;
-
     for(int i = 0; i < team->nthreads_var; i++) {
+        team->num_tasks++;
         threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, team));
+    }
+    {
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(team->thread_mtx);
+        while(team->num_tasks > 0) {
+            team->cond.wait(lock);
+        }
     }
     hpx::wait_all(threads);
 }
