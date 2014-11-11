@@ -106,8 +106,13 @@ kmp_int32
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
-    //note: there is no task exit. so num_tasks must be decremented somewhere. TODO
+    //see__kmp_invoke_task
+    new_task->routine(gtid, new_task);
     return 0;
+}
+
+kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
+    hpx_backend->task_wait();
 }
 
 void

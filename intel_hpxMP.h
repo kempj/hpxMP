@@ -82,7 +82,8 @@ typedef struct ident {
 } ident_t;
 
 
-typedef void* kmp_routine_entry_t;
+typedef kmp_int32 (* kmp_routine_entry_t)( kmp_int32, void * );
+
 typedef void* kmp_depend_info_t;
 
 typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned somehow? */
@@ -106,7 +107,10 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
 
-extern "C" void   __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );
+extern "C" kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid );
+
+
+extern "C" void __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );
 extern "C" int  __kmpc_global_thread_num(ident_t *loc);
 extern "C" void __kmpc_push_num_threads ( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_threads );
 extern "C" int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid);
