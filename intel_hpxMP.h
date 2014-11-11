@@ -4,6 +4,8 @@
 typedef int kmp_int32;
 typedef long long kmp_int64;
 
+typedef mutex_type omp_lock_t;
+
 typedef void                (*microtask_t)( int *gtid, int *npr, ... );
 typedef int                 (*launch_t)( int gtid );
 
@@ -102,5 +104,35 @@ extern "C" void __kmpc_end_master(ident_t *loc, int global_tid);
 extern "C" void __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit );
 extern "C" void __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit);
 
+extern "C" void __kmpc_flush(ident_t *loc, ...);
+ 
+
+extern "C" void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache);
 
 extern "C" int omp_get_thread_num();
+extern "C" int omp_get_num_threads();
+extern "C" void omp_set_num_threads(int);
+extern "C" int omp_get_max_threads();
+extern "C" int omp_get_num_procs();
+
+extern "C" double omp_get_wtime();
+extern "C" double omp_get_wtick();
+extern "C" int omp_in_parallel();
+extern "C" void omp_set_dynamic(int dynamic_threads);
+
+
+extern "C" void omp_init_lock(omp_lock_t *lock);
+//extern "C" void omp_init_nest_lock(omp_nest_lock_t *lock);
+
+extern "C" void omp_destroy_lock(omp_lock_t *lock);
+//extern "C" void omp_destroy_nest_lock(omp_nest_lock_t *lock);
+
+extern "C" void omp_set_lock(omp_lock_t *lock);
+//extern "C" void omp_set_nest_lock(omp_nest_lock_t *lock);
+
+extern "C" void omp_unset_lock(omp_lock_t *lock);
+//extern "C" void omp_unset_nest_lock(omp_nest_lock_t *lock);
+
+extern "C" int omp_test_lock(omp_lock_t *lock);
+//extern "C" int omp_test_nest_lock(omp_nest_lock_t *lock);
+

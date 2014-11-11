@@ -165,6 +165,8 @@ void __ompc_critical(int gtid, omp_lock_t **lck) {
 
     omp_lock_t* tmp_mtx = new omp_lock_t;
     if(*lck == NULL ) {
+        //FIXME:
+        //hpx_backend->crit_mtx.lock();
         team->crit_mtx.lock();
         if(*lck == NULL ){
             *lck = tmp_mtx;

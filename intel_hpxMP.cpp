@@ -80,7 +80,6 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     args.fork_func = microtask;
 
-    //TODO:make the number of threads executed consistent with the spec.
     if( hpx::threads::get_self_ptr() ) {
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
     } else {
@@ -152,12 +151,9 @@ int __kmpc_master(ident_t *loc, int global_tid){
 void __kmpc_end_master(ident_t *loc, int global_tid){
 }
 
-int omp_get_thread_num(){
-    //TODO: check if hpx is running
-    return hpx_backend->get_thread_num();
-}
 void
 __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit ) {
+    //I am not sure how the crit name is allocated or initialized.
     hpx_backend->crit_mtx.lock();
 }
 
@@ -166,4 +162,63 @@ __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit)
     hpx_backend->crit_mtx.unlock();
 }
 
+void __kmpc_flush(ident_t *loc, ...){
+    __sync_synchronize();
+}
+
+//I think I need to pair up *data to with the memory allocated to represend the threadlocal version
+void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){
+    if(!hpx_backend) {
+        start_backend();
+    }
+    if(!in_parallel)
+        //special thread 0
+    void ** tp_pointer = hpx_backend->get_threadprivate();
+    if(tp_pointer){
+        return *(tp_pointer);
+    }
+    void *tmp = new char[size];
+    *(tp_pointer) = tmp;
+    //std::copy((char*)data, (char*)data + size, (char*)tmp);
+    return tmp;
+}
+
+//Library functions:--------------------------------------------------
+int omp_get_thread_num(){
+    //TODO: check if hpx is running
+    return hpx_backend->get_thread_num();
+}
+
+int omp_get_num_threads(){
+    if(in_parallel){
+        return hpx_backend->get_team()->nthreads_var;
+    } else {
+        return 1;
+    }
+}
+
+double omp_get_wtime(){
+    if(!hpx_backend)
+        start_backend();
+    return hpx_backend->get_time();
+}
+
+double omp_get_wtick(){
+    return .000000001;
+}
+
+int omp_in_parallel(){
+    return in_parallel;
+}
+
+void omp_init_lock(omp_lock_t *lock){
+    if(!hpx_backend) {
+        start_backend();
+    }
+    lock = new omp_lock_t;
+}
+
+void omp_destroy_lock(omp_lock_t *lock) {
+    delete lock;
+}
 

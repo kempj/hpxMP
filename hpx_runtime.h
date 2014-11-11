@@ -75,8 +75,8 @@ class loop_data {
         mutex_type loop_mtx{};
 };
 
-    //Does this need to keep track of the parallel region it is nested in,
-    // the omp_data of the parent thread, or both?
+//Does this need to keep track of the parallel region it is nested in,
+// the omp_data of the parent thread, or both?
 struct parallel_region {
     parallel_region(int N) : nthreads_var(N), globalBarrier(N), 
                              loop_sched(N), depth(0) {};
@@ -105,7 +105,7 @@ struct parallel_region {
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type single_mtx{}; 
-    mutex_type crit_mtx{};
+    mutex_type crit_mtx{};//TODO: this needs to be removed and the mtx in the runtime used.
     mutex_type thread_mtx{};
     loop_data loop_sched;
     int depth;
@@ -131,6 +131,7 @@ class omp_data {
         vector<future<void>> task_handles;
         parallel_region *team;
         int active_levels;
+        void *threadprivate{NULL};
 };
 
 class hpx_runtime {
@@ -155,6 +156,7 @@ class hpx_runtime {
         void set_default_nesting(bool nest) {
             initial_nest_var = nest;
         }
+        void** get_threadprivate();
         
         mutex_type crit_mtx{};
     private:

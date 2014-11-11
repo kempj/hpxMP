@@ -108,8 +108,8 @@ hpx_runtime::hpx_runtime() {
     //cout << "Starting HPX OpenMP runtime" << endl; 
 
     hpx::start(f, desc_cmdline, argc, argv, cfg,
-            HPX_STD_BIND(&wait_for_startup, 
-                boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
+            //HPX_STD_BIND(&wait_for_startup, boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
+            std::bind(&wait_for_startup, boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
 
     { // Wait for the thread to run.
         boost::mutex::scoped_lock lk(local_mtx);
@@ -120,6 +120,11 @@ hpx_runtime::hpx_runtime() {
     atexit(fini_runtime);
 
     delete[] argv;
+}
+
+void** hpx_runtime::get_threadprivate() {
+    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    return &(task_data->threadprivate);
 }
 
 parallel_region* hpx_runtime::get_team(){
@@ -293,8 +298,8 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) 
         bool running = false;
     
         hpx::applier::register_thread_nullary(
-                HPX_STD_BIND(&fork_and_sync, Nthreads, thread_func, fp,
-                    boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                //HPX_STD_BIND(&fork_and_sync, Nthreads, thread_func, fp, boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                std::bind(&fork_and_sync, Nthreads, thread_func, fp, boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
             boost::mutex::scoped_lock lk(mtx);
