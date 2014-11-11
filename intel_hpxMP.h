@@ -166,6 +166,18 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
 
 extern "C" kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid );
 
+extern "C" void 
+__kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps, 
+                      kmp_depend_info_t *dep_list, kmp_int32 ndeps_noalias, 
+                      kmp_depend_info_t *noalias_dep_list );
+
+extern "C" void 
+__kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * task );
+
+extern "C" void
+__kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task );
+
+
 
 extern "C" void __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );
 extern "C" int  __kmpc_global_thread_num(ident_t *loc);

@@ -197,13 +197,34 @@ void hpx_runtime::task_exit() {
     }
 }
 
+//Maybe have team hand out task id's round robin?
+void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
+                       omp_data *parent, parallel_region *team, int thread_num) {
+    omp_data task_data(thread_num, team);
+    task_data.parent = parent;
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+
+    task_func(gtid, task);
+
+    team->num_tasks--;
+    if(team->num_tasks == 0) {
+        team->cond.notify_all();
+    }
+}
+
+void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
+    auto *parent_task = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    parent_task->team->num_tasks++;
+    parent_task->task_handles.push_back( 
+                    hpx::async( intel_task_setup, task_func, gtid, task, parent_task,
+                                parent_task->team, parent_task->thread_num));
+}
+
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
                  omp_data *parent_task, int blocks_parent) {
     auto thread_id = get_self_id();
     omp_data task_data(parent_task);
-    //Can this go out of scope when the function ends, with child tasks still depending on it?
-    //It looks fine. Nothing aside from blocking children access their parent at all
-    //I don't think this is correct. The thread id gets accessed above, if the parent has been
+    //The thread id gets accessed above, if the parent has been
     // deallocated, this could segfault or return bad info. FIXME
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
@@ -222,6 +243,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     }
 }
 
+
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int is_tied, 
                                int blocks_parent) {
@@ -238,7 +260,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 }
 
 //Thread tasks currently have no parent. In the future it might work out well
-// to have their parent be some sort of thread team object
+// to have their prent be some sort of thread team object
 void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *team ) {
 
     omp_data task_data(tid, team);

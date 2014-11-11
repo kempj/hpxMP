@@ -35,6 +35,8 @@ typedef void (*omp_task_func)(void *firstprivates, void *fp);
 typedef hpx::lcos::local::spinlock mutex_type;
 typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
+typedef int (* kmp_routine_entry_t)( int, void * );
+
 using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
@@ -147,6 +149,7 @@ class hpx_runtime {
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates,// int may_delay,
                          int is_tied, int blocks_parent);
+        void create_intel_task( kmp_routine_entry_t taskfunc, int gtid, void *task);
         void task_exit();
         void task_wait();
         double get_time();
