@@ -28,7 +28,6 @@ void start_backend(){
 }
 
 void omp_thread_func(int tid, void *fp) {
-    //int tid = hpx_backend->get_thread_num();//not sure if correct
     task_args *args = (task_args*)fp;
     void **argv = args->argv;
     int argc = args->argc - 1;
@@ -37,11 +36,8 @@ void omp_thread_func(int tid, void *fp) {
     switch(argc) {
         case 0: args->fork_func(&tid, &tid);
                 break;
-        //case 1: args->fork_func(&tid, &tid, argv[-argc-1]);
         case 1: args->fork_func(&tid, &tid, argv[0]);
                 break;
-        //case 2: args->fork_func(&tid, &tid, args->argv[0], args->argv[1]);
-        //        break;
     }
 }
 
@@ -53,16 +49,12 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
         start_backend();
     }
 
-    //void **argv = new void*[argc];
     void *argv[2] = {0,0};
-    //void **argp = argv;
 
     va_list     ap;
     va_start(   ap, microtask );
 
-    //for( int i = argc-1; i >= 0; --i ){
     for( int i = 0; i < argc; i++ ){
-        //*argv++ = va_arg( ap, void * );
         argv[i] = va_arg( ap, void * );
     }
     va_end( ap );
@@ -78,7 +70,6 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
         in_parallel = false;
     }
-    //delete[] argp;
 }
 
 // ----- Tasks -----
