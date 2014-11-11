@@ -94,9 +94,11 @@ kmp_task_t*
 __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        size_t sizeof_kmp_task_t, size_t sizeof_shareds,
                        kmp_routine_entry_t task_entry ){
-    kmp_task_t *task = new kmp_task_t;
+
+    kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
+    kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t];//new kmp_task_t;
     task->routine = task_entry;
-    task->shareds = new char[sizeof_shareds];
+    task->shareds = new char[sizeof_shareds];//FIXME: this never gets deallocated.
     task->part_id = 0;
 
     return task;

@@ -81,6 +81,63 @@ typedef struct ident {
     char const *psource;    /**< String describing the source location.*/
 } ident_t;
 
+/*
+struct kmp_taskdata {                                 // aligned during dynamic allocation       
+    kmp_int32               td_task_id;               // id, assigned by debugger                
+    kmp_tasking_flags_t     td_flags;                 // task flags                              
+    kmp_team_t *            td_team;                  // team for this task                      
+    kmp_info_p *            td_alloc_thread;          // thread that allocated data structures   
+                                                      // Currently not used except for perhaps IDB
+    kmp_taskdata_t *        td_parent;                // parent task                             
+    kmp_int32               td_level;                 // task nesting level                      
+    ident_t *               td_ident;                 // task identifier                         
+    // Taskwait data.
+    
+    tydent_t *              td_taskwait_ident;
+    kmp_uint32              td_taskwait_counter;
+    kmp_int32               td_taskwait_thread;       // gtid + 1 of thread encountered taskwait 
+    kmp_internal_control_t  td_icvs;                  // Internal control variables for the task 
+    volatile kmp_uint32     td_allocated_child_tasks;  // Child tasks (+ current task) not yet deallocated 
+    volatile kmp_uint32     td_incomplete_child_tasks; // Child tasks not yet complete 
+#if OMP_40_ENABLED
+    kmp_taskgroup_t *       td_taskgroup;         // Each task keeps pointer to its current taskgroup
+    kmp_dephash_t *         td_dephash;           // Dependencies for children tasks are tracked from here
+    kmp_depnode_t *         td_depnode;           // Pointer to graph node if this task has dependencies
+#endif
+#if KMP_HAVE_QUAD
+    _Quad                   td_dummy;             // Align structure 16-byte size since allocated just before kmp_task_t
+#else
+    kmp_uint32              td_dummy[2];
+#endif
+};
+*/
+
+typedef struct kmp_tasking_flags {          /* Total struct must be exactly 32 bits */
+    /* Compiler flags */                    /* Total compiler flags must be 16 bits */
+    unsigned tiedness    : 1;               /* task is either tied (1) or untied (0) */
+    unsigned final       : 1;               /* task is final(1) so execute immediately */
+    unsigned merged_if0  : 1;               /* no __kmpc_task_{begin/complete}_if0 calls in if0 code path */
+#if OMP_40_ENABLED
+    unsigned destructors_thunk : 1;         /* set if the compiler creates a thunk to invoke destructors from the runtime */
+    unsigned reserved    : 12;              /* reserved for compiler use */
+#else // OMP_40_ENABLED
+    unsigned reserved    : 13;              /* reserved for compiler use */
+#endif // OMP_40_ENABLED
+    /* Library flags */                     /* Total library flags must be 16 bits */
+    unsigned tasktype    : 1;               /* task is either explicit(1) or implicit (0) */
+    unsigned task_serial : 1;               /* this task is executed immediately (1) or deferred (0) */
+    unsigned tasking_ser : 1;               /* all tasks in team are either executed immediately (1) or may be deferred (0) */
+    unsigned team_serial : 1;               /* entire team is serial (1) [1 thread] or parallel (0) [>= 2 threads] */
+                                            /* If either team_serial or tasking_ser is set, task team may be NULL */
+    /* Task State Flags: */
+    unsigned started     : 1;               /* 1==started, 0==not started     */
+    unsigned executing   : 1;               /* 1==executing, 0==not executing */
+    unsigned complete    : 1;               /* 1==complete, 0==not complete   */
+    unsigned freed       : 1;               /* 1==freed, 0==allocateed        */
+    unsigned native      : 1;               /* 1==gcc-compiled task, 0==intel */
+    unsigned reserved31  : 7;               /* reserved for library use */
+} kmp_tasking_flags_t;
+
 
 typedef kmp_int32 (* kmp_routine_entry_t)( kmp_int32, void * );
 
