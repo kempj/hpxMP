@@ -81,6 +81,31 @@ typedef struct ident {
     char const *psource;    /**< String describing the source location.*/
 } ident_t;
 
+
+typedef void* kmp_routine_entry_t;
+typedef void* kmp_depend_info_t;
+
+typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned somehow? */
+    void *              shareds;            /**< pointer to block of pointers to shared vars   */
+    kmp_routine_entry_t routine;            /**< pointer to routine to call for executing task */
+    kmp_int32           part_id;            /**< part id for the task                          */
+#if OMP_40_ENABLED
+    kmp_routine_entry_t destructors;        /* pointer to function to invoke deconstructors of firstprivate C++ objects */
+#endif // OMP_40_ENABLED
+} kmp_task_t;
+
+extern "C" 
+kmp_task_t*
+__kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
+                       size_t sizeof_kmp_task_t, size_t sizeof_shareds,
+                       kmp_routine_entry_t task_entry );
+
+extern "C"
+kmp_int32 
+__kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
+                           kmp_int32 ndeps, kmp_depend_info_t *dep_list,
+                           kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
+
 extern "C" void   __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );
 extern "C" int  __kmpc_global_thread_num(ident_t *loc);
 extern "C" void __kmpc_push_num_threads ( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_threads );

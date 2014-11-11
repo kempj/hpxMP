@@ -90,6 +90,26 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     delete[] argp;
 }
 
+kmp_task_t*
+__kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
+                       size_t sizeof_kmp_task_t, size_t sizeof_shareds,
+                       kmp_routine_entry_t task_entry ){
+    kmp_task_t *task = new kmp_task_t;
+    task->routine = task_entry;
+    task->shareds = new char[sizeof_shareds];
+    task->part_id = 0;
+
+    return task;
+}
+
+kmp_int32 
+__kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
+                           kmp_int32 ndeps, kmp_depend_info_t *dep_list,
+                           kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
+    //note: there is no task exit. so num_tasks must be decremented somewhere. TODO
+    return 0;
+}
+
 void
 __kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
                           kmp_int32 *plower, kmp_int32 *pupper,
@@ -171,9 +191,9 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
     if(!hpx_backend) {
         start_backend();
     }
-    if(!in_parallel)
+    //if(!in_parallel)
         //special thread 0
-    void ** tp_pointer = hpx_backend->get_threadprivate();
+    void **tp_pointer = hpx_backend->get_threadprivate();
     if(tp_pointer){
         return *(tp_pointer);
     }
