@@ -123,6 +123,7 @@ hpx_runtime::hpx_runtime() {
 }
 
 void** hpx_runtime::get_threadprivate() {
+    //need to use special omp_data for initial thread. TODO
     auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
     return &(task_data->threadprivate);
 }
