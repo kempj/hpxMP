@@ -109,7 +109,8 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
     //see__kmp_invoke_task
-    new_task->routine(gtid, new_task);
+    //new_task->routine(gtid, new_task);
+    hpx_backend->create_task((omp_task_func)new_task->routine, new_task, (void*)gtid, 0, 0);
     return 0;
 }
 
