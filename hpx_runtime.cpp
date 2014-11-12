@@ -210,6 +210,7 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
+    delete task;
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){

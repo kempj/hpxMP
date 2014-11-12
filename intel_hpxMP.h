@@ -150,6 +150,7 @@ typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned so
 #if OMP_40_ENABLED
     kmp_routine_entry_t destructors;        /* pointer to function to invoke deconstructors of firstprivate C++ objects */
 #endif // OMP_40_ENABLED
+    //private variables are also tacked on here
 } kmp_task_t;
 
 extern "C" 
@@ -234,3 +235,6 @@ extern "C" void omp_unset_lock(omp_lock_t *lock);
 extern "C" int omp_test_lock(omp_lock_t *lock);
 //extern "C" int omp_test_nest_lock(omp_nest_lock_t *lock);
 
+extern "C" void __kmpc_atomic_fixed4_add(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs );
+extern "C" void __kmpc_atomic_fixed4_sub(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs );
+extern "C" void __kmpc_atomic_float8_add(  ident_t *id_ref, int gtid, double * lhs, double rhs);

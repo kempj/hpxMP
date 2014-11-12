@@ -19,6 +19,11 @@ extern "C" void
 __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
                       int *plower, int *pupper, int *pstride,
                       int incr, int chunk);
+
+extern "C" void 
+kmp_static_init_4u( int global_tid, omp_sched_t schedtype,
+                    uint32_t *plower, uint32_t *pupper, int *pstride,
+                    int incr, int chunk);
 extern "C" void 
 __ompc_static_init_8( int global_tid, omp_sched_t schedtype,
                       int64_t *plower, int64_t *pupper, int64_t *pstride,

@@ -73,22 +73,24 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 }
 
 // ----- Tasks -----
+//sizeof_kmp_task_t includes the private variables for the task
 kmp_task_t*
 __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        size_t sizeof_kmp_task_t, size_t sizeof_shareds,
                        kmp_routine_entry_t task_entry ){
 
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
-    //so, flags is stored on the stack. Do I need to copy all need data out now?
-    //what do I need to do with flags?
-    kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t];//new kmp_task_t;
+    kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds]; 
+    //This gets deleted at the end of intel_task_setup
     task->routine = task_entry;
-    task->shareds = new char[sizeof_shareds];//FIXME: this never gets deallocated.
+    task->shareds = (char*)task + sizeof_kmp_task_t;
     task->part_id = 0;
 
     return task;
 }
 
+//    TASK_CURRENT_NOT_QUEUED (0) if did not suspend and queue current task to be resumed later.
+//    TASK_CURRENT_QUEUED (1) if suspended and queued the current task to be resumed later.
 kmp_int32 
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
@@ -99,7 +101,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     //requires only 3 arguments to OpenUH's 5, and they are not the same types.
     //hpx_backend->create_task((omp_task_func)new_task->routine, new_task, (void*)gtid, 0, 0);
     hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
-    return 0;
+    return 1;
 }
 
 kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
@@ -134,6 +136,13 @@ __kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp
                           kmp_int32 *plower, kmp_int32 *pupper,
                           kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk ){
     __ompc_static_init_4(gtid, (omp_sched_t)2, plower, pupper, pstride, incr, chunk);
+}
+
+void
+__kmpc_for_static_init_4u( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
+                          uint32_t *plower, uint32_t *pupper,
+                          kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk ){
+    kmp_static_init_4u(gtid, (omp_sched_t)2, plower, pupper, pstride, incr, chunk);
 }
 
 void
@@ -236,6 +245,10 @@ int omp_get_num_threads(){
     }
 }
 
+int omp_get_num_procs(){
+    return hpx_backend->get_num_procs();
+}
+
 double omp_get_wtime(){
     if(!hpx_backend)
         start_backend();
@@ -261,3 +274,14 @@ void omp_destroy_lock(omp_lock_t *lock) {
     delete lock;
 }
 
+void __kmpc_atomic_fixed4_add(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs ){
+    *lhs = *lhs + rhs;
+}
+
+void __kmpc_atomic_fixed4_sub(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs ){
+    *lhs = *lhs - rhs;
+}
+
+void __kmpc_atomic_float8_add(  ident_t *id_ref, int gtid, double * lhs, double rhs){
+    *lhs = *lhs + rhs;
+}

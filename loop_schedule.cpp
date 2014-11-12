@@ -58,10 +58,10 @@ void scheduler_init( int global_tid, omp_sched_t schedtype,
     loop_sched->unlock();
 }
 
-template<typename T>
+template<typename T, typename D=T>
 void omp_static_init( int global_tid, omp_sched_t schedtype, 
                       T *p_lower, T *p_upper,
-                      T * p_stride, T incr, T chunk, loop_data *loop_sched) {
+                      D *p_stride, D incr, D chunk, loop_data *loop_sched) {
     int block_size, stride, my_lower, my_upper;
     int team_size = loop_sched->num_threads;
     if (schedtype == OMP_SCHED_STATIC_EVEN) {
@@ -82,7 +82,7 @@ void omp_static_init( int global_tid, omp_sched_t schedtype,
     *p_upper = my_upper;
 }
 
-template<typename T>
+template<typename T, typename D=T>
 int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride, loop_data *loop_sched) {
 
     switch (static_cast<omp_sched_t>(loop_sched->schedule)) {
@@ -98,7 +98,7 @@ int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride, loop_data *loo
                 *p_lower= loop_sched->lower;
                 *p_upper= loop_sched->upper;
 
-                omp_static_init<T>( loop_sched->schedule_count, static_cast<omp_sched_t>(loop_sched->schedule),
+                omp_static_init<T,D>( loop_sched->schedule_count, static_cast<omp_sched_t>(loop_sched->schedule),
                                     p_lower, p_upper, p_stride, 
                                     loop_sched->stride, loop_sched->chunk, loop_sched);
                 loop_sched->iter_remaining[global_tid] = (*p_upper - *p_lower) / *p_stride + 1;
@@ -195,4 +195,19 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     omp_static_init<int>( global_tid, schedtype, p_lower, p_upper,
                           p_stride, incr, chunk, loop_sched);
+}
+
+void
+__kmpc_for_static_init_4( ident_t *loc, int gtid, int schedtype, int *plastiter,
+                          int *plower, int *pupper,
+                          int *pstride, int incr, int chunk ){
+    __ompc_static_init_4(gtid, (omp_sched_t)2, plower, pupper, pstride, incr, chunk);
+}
+
+void kmp_static_init_4u( int global_tid, omp_sched_t schedtype,
+                         uint32_t *p_lower, uint32_t *p_upper, 
+                         int *p_stride, int incr, int chunk) {
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    omp_static_init<uint32_t, int>( global_tid, schedtype, p_lower, p_upper,
+                                    p_stride, incr, chunk, loop_sched);
 }
