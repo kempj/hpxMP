@@ -171,6 +171,8 @@ void hpx_runtime::barrier_wait(){
 }
 
 int hpx_runtime::get_thread_num() {
+    if( !hpx::threads::get_self_ptr() )
+        return 0;
     auto thread_id = get_self_id();
     auto *data = reinterpret_cast<omp_data*>( get_thread_data(thread_id) );
     return data->thread_num;

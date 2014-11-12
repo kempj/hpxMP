@@ -159,6 +159,8 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        size_t sizeof_kmp_task_t, size_t sizeof_shareds,
                        kmp_routine_entry_t task_entry );
 
+extern "C" int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task);
+    
 extern "C"
 kmp_int32 
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
@@ -179,8 +181,9 @@ extern "C" void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task );
 
 
-extern "C" int __kmpc_ok_to_fork(ident_t *loc);
-extern "C" void __kmpc_begin( ident_t *, kmp_int32 flags );
+extern "C" int __kmpc_ok_to_fork(ident_t *loc);//used in icc
+extern "C" void __kmpc_begin( ident_t *, kmp_int32 flags );//used in icc
+extern "C" void __kmpc_end(ident_t *loc);//used in icc
 
 extern "C" void __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );
 extern "C" int  __kmpc_global_thread_num(ident_t *loc);
@@ -188,6 +191,9 @@ extern "C" void __kmpc_push_num_threads ( ident_t *loc, kmp_int32 global_tid, km
 extern "C" int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid);
 
 extern "C" void __kmpc_barrier(ident_t *loc, kmp_int32 global_tid);
+
+//TODO:
+//__kmpc_for_static_init_8
 
 extern "C" void __kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
                           kmp_int32 *plower, kmp_int32 *pupper,
@@ -237,6 +243,8 @@ extern "C" void omp_unset_lock(omp_lock_t *lock);
 extern "C" int omp_test_lock(omp_lock_t *lock);
 //extern "C" int omp_test_nest_lock(omp_nest_lock_t *lock);
 
+/*
 extern "C" void __kmpc_atomic_fixed4_add(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs );
 extern "C" void __kmpc_atomic_fixed4_sub(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs );
 extern "C" void __kmpc_atomic_float8_add(  ident_t *id_ref, int gtid, double * lhs, double rhs);
+*/

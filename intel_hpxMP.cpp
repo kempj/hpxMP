@@ -22,8 +22,10 @@ struct task_args {
 };
 
 void start_backend(){
-    if( !hpx::get_runtime_ptr() ) {
-        hpx_backend.reset(new hpx_runtime());
+    if( !hpx::get_runtime_ptr()){
+        if(!hpx_backend) {//why wasn't this here before?
+            hpx_backend.reset(new hpx_runtime());
+        }
     }
 }
 
@@ -34,7 +36,12 @@ int __kmpc_ok_to_fork(ident_t *loc){
 void __kmpc_begin( ident_t *, kmp_int32 flags ){
     start_backend();
 }
+
+void __kmpc_end(ident_t *loc){
+}
+
 void omp_thread_func(int tid, void *fp) {
+    //cout <<"thread function being called, tid = " << tid << endl;
     task_args *args = (task_args*)fp;
     void **argv = args->argv;
     int argc = args->argc - 1;
@@ -45,12 +52,16 @@ void omp_thread_func(int tid, void *fp) {
                 break;
         case 1: args->fork_func(&tid, &tid, argv[0]);
                 break;
+        default:
+                args->fork_func(&tid, &tid);
     }
+    //cout <<"thread function returning, tid = " << tid << endl;
 }
 
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 {
+    //cout << "entering the fork\n";
     task_args args;
     if(!hpx_backend) {
         start_backend();
@@ -95,6 +106,11 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
     task->part_id = 0;
 
     return task;
+}
+
+int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
+    hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+    return 1;
 }
 
 //    TASK_CURRENT_NOT_QUEUED (0) if did not suspend and queue current task to be resumed later.
@@ -176,6 +192,10 @@ int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
 }
 
 int __kmpc_global_thread_num(ident_t *loc){
+    //cout << "global_thread_num not implemented\n";
+    //return 0;
+    if(hpx_backend)
+        return hpx_backend->get_thread_num();
     return 0;
 }
 
@@ -199,8 +219,9 @@ void __kmpc_end_single(ident_t *loc, int tid){
 
 int __kmpc_master(ident_t *loc, int global_tid){
     //TODO: if master can be called from tasks, then this doesn't work.
-    if(hpx_backend->get_thread_num() == 0) 
+    if(hpx_backend->get_thread_num() == 0) {
         return 1;
+    }
     return 0;
 }
 
@@ -241,8 +262,10 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
 
 //Library functions:--------------------------------------------------
 int omp_get_thread_num(){
-    //TODO: check if hpx is running
-    return hpx_backend->get_thread_num();
+    if(hpx_backend)
+        return hpx_backend->get_thread_num();
+    else
+        return 1;
 }
 
 int omp_get_num_threads(){
@@ -281,7 +304,7 @@ void omp_init_lock(omp_lock_t *lock){
 void omp_destroy_lock(omp_lock_t *lock) {
     delete lock;
 }
-
+/*
 void __kmpc_atomic_fixed4_add(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs ){
     *lhs = *lhs + rhs;
 }
@@ -292,4 +315,4 @@ void __kmpc_atomic_fixed4_sub(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_
 
 void __kmpc_atomic_float8_add(  ident_t *id_ref, int gtid, double * lhs, double rhs){
     *lhs = *lhs + rhs;
-}
+}*/
