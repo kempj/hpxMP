@@ -27,6 +27,9 @@ void start_backend(){
     }
 }
 
+void __kmpc_begin( ident_t *, kmp_int32 flags ){
+    start_backend();
+}
 void omp_thread_func(int tid, void *fp) {
     task_args *args = (task_args*)fp;
     void **argv = args->argv;

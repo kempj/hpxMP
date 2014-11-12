@@ -226,8 +226,6 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     auto thread_id = get_self_id();
     omp_data task_data(thread_num, team);
     task_data.parent = parent_task;
-    //The thread id gets accessed above, if the parent has been
-    // deallocated, this could segfault or return bad info. FIXME
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
     task_func(firstprivates, fp);
@@ -254,7 +252,6 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
         parent_task->blocking_children += 1;
         parent_task->has_dependents = true;
     }
-    //TODO: setup/init the child task here, and do not pass the parent 
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
                                 firstprivates, parent_task, parent_task->team,
@@ -275,6 +272,7 @@ void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *te
         team->cond.notify_all();
     }
     //How do I know if this thread can return without task_exit()?
+    //I think the cancel barrier does this
 }
 
 void fork_worker( omp_micro thread_func, frame_pointer_t fp, parallel_region *team) {
