@@ -108,7 +108,6 @@ hpx_runtime::hpx_runtime() {
     //cout << "Starting HPX OpenMP runtime" << endl; 
 
     hpx::start(f, desc_cmdline, argc, argv, cfg,
-            //HPX_STD_BIND(&wait_for_startup, boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
             std::bind(&wait_for_startup, boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
 
     { // Wait for the thread to run.
@@ -222,9 +221,11 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
 }
 
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
-                 omp_data *parent_task, int blocks_parent) {
+                 omp_data *parent_task, parallel_region *team,
+                 int thread_num, int blocks_parent) {
     auto thread_id = get_self_id();
-    omp_data task_data(parent_task);
+    omp_data task_data(thread_num, team);
+    task_data.parent = parent_task;
     //The thread id gets accessed above, if the parent has been
     // deallocated, this could segfault or return bad info. FIXME
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
@@ -244,7 +245,6 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
     }
 }
 
-
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int is_tied, 
                                int blocks_parent) {
@@ -257,7 +257,8 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
     //TODO: setup/init the child task here, and do not pass the parent 
     parent_task->task_handles.push_back( 
                     hpx::async( task_setup, taskfunc, frame_pointer, 
-                                firstprivates, parent_task, blocks_parent));
+                                firstprivates, parent_task, parent_task->team,
+                                parent_task->thread_num, blocks_parent));
 }
 
 //Thread tasks currently have no parent. In the future it might work out well
@@ -322,7 +323,6 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) 
         bool running = false;
     
         hpx::applier::register_thread_nullary(
-                //HPX_STD_BIND(&fork_and_sync, Nthreads, thread_func, fp, boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 std::bind(&fork_and_sync, Nthreads, thread_func, fp, boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.

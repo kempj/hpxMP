@@ -79,6 +79,7 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        size_t sizeof_kmp_task_t, size_t sizeof_shareds,
                        kmp_routine_entry_t task_entry ){
 
+    //TODO: is it possible to allocate the hpx thread here?
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
     kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds]; 
     //This gets deleted at the end of intel_task_setup
