@@ -179,6 +179,7 @@ extern "C" void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task );
 
 
+extern "C" int __kmpc_ok_to_fork(ident_t *loc);
 extern "C" void __kmpc_begin( ident_t *, kmp_int32 flags );
 
 extern "C" void __kmpc_fork_call          ( ident_t *, kmp_int32 nargs, kmpc_micro microtask, ... );

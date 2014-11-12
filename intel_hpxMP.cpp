@@ -27,6 +27,10 @@ void start_backend(){
     }
 }
 
+int __kmpc_ok_to_fork(ident_t *loc){
+    return 1;
+}
+
 void __kmpc_begin( ident_t *, kmp_int32 flags ){
     start_backend();
 }
