@@ -11,6 +11,9 @@ int main() {
 #pragma omp critical
         x = 42;
         printf("\tx = %d\n",x);
+#pragma omp critical
+        x = 43;
+        printf("\tx = %d\n",x);
     }
     return 0;
 }
