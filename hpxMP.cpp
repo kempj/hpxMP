@@ -228,7 +228,8 @@ int omp_get_max_threads() {
     if(!hpx_backend) {
         start_backend();
     }                      
-    return hpx_backend->get_num_threads();
+    //return hpx_backend->get_num_threads();
+    return hpx_backend->get_num_procs();
 }
 
 //OpenMP 3.1 spec, section 3.2.4

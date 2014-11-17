@@ -97,7 +97,6 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        size_t sizeof_kmp_task_t, size_t sizeof_shareds,
                        kmp_routine_entry_t task_entry ){
 
-    //TODO: is it possible to allocate the hpx thread here?
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
     kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds]; 
     //This gets deleted at the end of intel_task_setup
@@ -121,9 +120,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
     //see__kmp_invoke_task
     //new_task->routine(gtid, new_task);
-    //TODO: this might warrant a different create_task call, as the intel runtime
-    //requires only 3 arguments to OpenUH's 5, and they are not the same types.
-    //hpx_backend->create_task((omp_task_func)new_task->routine, new_task, (void*)gtid, 0, 0);
+    //TODO:how to I handle immediate tasks?
     hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
     return 1;
 }
