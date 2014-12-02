@@ -211,6 +211,7 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
+    //kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds];
     delete task;
 }
 

@@ -96,8 +96,7 @@ struct parallel_region {
 
         if(nest_var == false || depth > max_active_levels)
             return 1;
-        //if(nthreads > hpx_backend->thread_limit_var)
-        //    return 1;
+        //if(nthreads > hpx_backend->thread_limit_var){ return 1;}
         //TODO: increment ThreadsBusy, and decrement it... somewhere
         return nthreads;
     }
@@ -107,7 +106,7 @@ struct parallel_region {
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type single_mtx{}; 
-    mutex_type crit_mtx{};//TODO: this needs to be removed and the mtx in the runtime used.
+    //mutex_type crit_mtx{};//TODO: this needs to be removed and the mtx in the runtime used.
     mutex_type thread_mtx{};
     loop_data loop_sched;
     int depth;
@@ -163,6 +162,7 @@ class hpx_runtime {
         
         mutex_type crit_mtx{};
     private:
+        shared_ptr<parallel_region> implicit_region;//TODO: when does this need to be initialized?
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;

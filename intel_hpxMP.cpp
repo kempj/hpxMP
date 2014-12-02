@@ -69,6 +69,8 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     void *argv[2] = {0,0};
 
+    assert(argc < 3);
+
     va_list     ap;
     va_start(   ap, microtask );
 
@@ -80,6 +82,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     args.argv = argv;
 
     args.fork_func = microtask;
+
 
     if( hpx::threads::get_self_ptr() ) {
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
@@ -127,6 +130,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
 
 kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
     hpx_backend->task_wait();
+    return 0;
 }
 
 void
@@ -227,13 +231,16 @@ void __kmpc_end_master(ident_t *loc, int global_tid){
 
 void
 __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit ) {
-    //I am not sure how the crit name is allocated or initialized.
-    hpx_backend->crit_mtx.lock();
+    parallel_region *team = hpx_backend->get_team();
+    team->crit_mtx.lock();
+    //hpx_backend->crit_mtx.lock();
 }
 
 void
 __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit) {
-    hpx_backend->crit_mtx.unlock();
+    parallel_region *team = hpx_backend->get_team();
+    team->crit_mtx.unlock();
+    //hpx_backend->crit_mtx.unlock();
 }
 
 void __kmpc_flush(ident_t *loc, ...){
@@ -242,12 +249,15 @@ void __kmpc_flush(ident_t *loc, ...){
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
 void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){
+    cout << "tid = " << tid << ", cache = " << cache << endl;
     if(!hpx_backend) {
         start_backend();
     }
     //if(!in_parallel)
         //special thread 0
-    void **tp_pointer = hpx_backend->get_threadprivate();
+    
+    void **tp_pointer;
+    tp_pointer = hpx_backend->get_threadprivate();
     if(tp_pointer){
         return *(tp_pointer);
     }
