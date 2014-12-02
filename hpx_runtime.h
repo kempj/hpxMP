@@ -106,7 +106,7 @@ struct parallel_region {
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type single_mtx{}; 
-    //mutex_type crit_mtx{};//TODO: this needs to be removed and the mtx in the runtime used.
+    mutex_type crit_mtx{};//TODO: this needs to be removed and the mtx in the runtime used.
     mutex_type thread_mtx{};
     loop_data loop_sched;
     int depth;
@@ -160,7 +160,7 @@ class hpx_runtime {
         }
         void** get_threadprivate();
         
-        mutex_type crit_mtx{};
+        //mutex_type crit_mtx{};
     private:
         shared_ptr<parallel_region> implicit_region;//TODO: when does this need to be initialized?
         int num_procs;
