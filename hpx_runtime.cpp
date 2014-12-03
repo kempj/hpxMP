@@ -16,7 +16,7 @@ extern boost::shared_ptr<hpx_runtime> hpx_backend;
 //boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
-    //cout << "HPX OpenMP runtime has started" << endl;
+    cout << "HPX OpenMP runtime has started" << endl;
     {   // Let the main thread know that we're done.
         boost::mutex::scoped_lock lk(mtx);
         running = true;
@@ -31,13 +31,10 @@ void fini_runtime() {
 
 //This will break if the users shuts down hpx and an OpenMP call is made
 hpx_runtime::hpx_runtime() {
+    int initial_num_threads;
     num_procs = hpx::threads::hardware_concurrency();
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
 
-    external_hpx = !(hpx::get_runtime_ptr() == NULL);
-    if(external_hpx) {
-        num_procs = hpx::get_os_thread_count();
-    }
     if(omp_num_threads != NULL){
         initial_num_threads = atoi(omp_num_threads);
     } else { 
@@ -49,16 +46,22 @@ hpx_runtime::hpx_runtime() {
     //stacksize_var
     /*
     char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
-    if(omp_max_levels != NULL) {
-        max_active_levels = atoi(omp_max_levels);
-    }
+    if(omp_max_levels != NULL) { max_active_levels = atoi(omp_max_levels); }
     
     //Not device specific, so it needs to move to parallel region:
     char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
-    if(omp_thread_limit != NULL) {
-        thread_limit_var = atoi(omp_thread_limit);
-    }
+    if(omp_thread_limit != NULL) { thread_limit_var = atoi(omp_thread_limit); }
     */
+
+    external_hpx = hpx::get_runtime_ptr();
+    if(external_hpx){
+        //It doesn't make much sense to try and use openMP thread settings
+        // when the application has already initialized it's own threads.
+        num_procs = hpx::get_os_thread_count();
+        initial_num_threads = num_procs;
+    }
+
+    implicit_region.reset(new parallel_region(initial_num_threads));
     walltime.reset(new high_resolution_timer);
 
     if(external_hpx)
@@ -105,17 +108,14 @@ hpx_runtime::hpx_runtime() {
     boost::condition cond;
     bool running = false;
 
-    //cout << "Starting HPX OpenMP runtime" << endl; 
-
     hpx::start(f, desc_cmdline, argc, argv, cfg,
             std::bind(&wait_for_startup, boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
 
-    { // Wait for the thread to run.
+    { 
         boost::mutex::scoped_lock lk(local_mtx);
         if (!running)
             cond.wait(lk);
     }
-    //Must be called while hpx is running
     atexit(fini_runtime);
 
     delete[] argv;
@@ -128,8 +128,13 @@ void** hpx_runtime::get_threadprivate() {
 }
 
 parallel_region* hpx_runtime::get_team(){
-    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
-    return task_data->team;
+    parallel_region *team;
+    if(hpx::get_runtime_ptr()) {
+        team = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()))->team;
+    } else {
+        team = implicit_region.get();
+    }
+    return team;
 }
 
 double hpx_runtime::get_time() {
@@ -156,7 +161,8 @@ void hpx_runtime::set_num_threads(int nthreads) {
             get_team()->nthreads_var = nthreads;
         }
     } else {//not an hpx thread
-       initial_num_threads = nthreads; 
+       //initial_num_threads = nthreads; 
+       implicit_region->nthreads_var = nthreads; 
     }
 }
 
@@ -310,14 +316,17 @@ void fork_and_sync( int num_threads, omp_micro thread_func,
 //For Intel, the Nthreads isn't passed in, another function sets Nthreads, so Nthreads should be 0;
 //  Also for Intel, fp is not a frame pointer, but a pointer to a struct,
 //      but is still passed around correctly internally.
-void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp) { 
-    //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
-    if( hpx::threads::get_self_ptr() ){
+
+//TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
+
+void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
+{ 
+    if( hpx::threads::get_self_ptr() ) {
         parallel_region team(get_team(), get_team()->request_threads(Nthreads));
         fork_worker(thread_func, fp, &team);
-    } else {//is main, non-hpx thread.
+    } else {
         if(Nthreads <= 0){
-            Nthreads = initial_num_threads;
+            Nthreads = implicit_region->nthreads_var;
         }
         boost::mutex mtx;
         boost::condition cond;

@@ -170,7 +170,7 @@ class hpx_runtime {
         //atomic<int> threads_running{0};//ThreadsBusy
         //ICVs:
         bool initial_nest_var{false};
-        int initial_num_threads;
+        //int initial_num_threads;
         //int thread_limit_var{std::numeric_limits<int>::max()};
         //int initial_max_active_levels{std::numeric_limits<int>::max()};
         //bool cancel_var{false};//not implemented
