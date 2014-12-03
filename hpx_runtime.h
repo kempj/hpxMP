@@ -80,42 +80,52 @@ class loop_data {
 //Does this need to keep track of the parallel region it is nested in,
 // the omp_data of the parent thread, or both?
 struct parallel_region {
-    parallel_region(int N) : nthreads_var(N), globalBarrier(N), 
-                             loop_sched(N), depth(0) {};
+    parallel_region( int N ) : nthreads_var(N), globalBarrier(N), 
+                               loop_sched(N), depth(0) {};
 
-    parallel_region(parallel_region *parent, int threads_requested) : 
-                                    parallel_region(threads_requested) {
+    parallel_region(const parallel_region &PR) : parallel_region(PR.nthreads_var) {} ;
+
+    parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
         depth = parent->depth + 1; 
         dyn_var = parent->dyn_var;
         nest_var = parent->nest_var;
         max_active_levels = parent->max_active_levels;
     }
-    int request_threads(int nthreads){
+    parallel_region make_child_region(int nthreads){
         if(nthreads <= 0)
             nthreads = nthreads_var;
 
         if(nest_var == false || depth > max_active_levels)
-            return 1;
-        //if(nthreads > hpx_backend->thread_limit_var){ return 1;}
-        //TODO: increment ThreadsBusy, and decrement it... somewhere
-        return nthreads;
+            nthreads = 1;
+        return parallel_region(this, nthreads);
     }
 
-    int nthreads_var;
+    int num_threads;
     atomic<int> num_tasks{0};
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type single_mtx{}; 
-    mutex_type crit_mtx{};//TODO: this needs to be removed and the mtx in the runtime used.
+    mutex_type crit_mtx{};
     mutex_type thread_mtx{};
     loop_data loop_sched;
     int depth;
-    bool dyn_var{false};//not used
-    bool nest_var{false};
     int max_active_levels{std::numeric_limits<int>::max()};
     atomic<int> single_counter{0};
+    //data-env scope ICVs:
+    bool dyn_var{false};//not used
+    bool nest_var{false};
+    int nthreads_var;
+    //run_sched_var
+    //bind_var
+    //int thread_limit_var{std::numeric_limits<int>::max()};
+    //active_levels_var
+    //levels_var
+    //default_device_var
+    //TODO:make sure this is the best place for these
 };
 
+
+//TODO: If I keep track of task depth, can I implement a useful cutoff?
 class omp_data {
     public:
         omp_data(int tid, parallel_region *T):thread_num(tid), team(T){};
@@ -123,7 +133,6 @@ class omp_data {
                                 parent(p), team(p->team) {};
         int thread_num;
         omp_data *parent;
-        //TODO: If I keep track of task depth, can I implement a useful cutoff?
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
         atomic<int> blocking_children {0};
@@ -168,10 +177,8 @@ class hpx_runtime {
         bool external_hpx;
 
         //atomic<int> threads_running{0};//ThreadsBusy
-        //ICVs:
+        //device scoped ICVs:
         bool initial_nest_var{false};
-        //int initial_num_threads;
-        //int thread_limit_var{std::numeric_limits<int>::max()};
         //int initial_max_active_levels{std::numeric_limits<int>::max()};
         //bool cancel_var{false};//not implemented
         //int stacksize_var; //-Ihpx.stacks.small_size=... (use hex numbers)

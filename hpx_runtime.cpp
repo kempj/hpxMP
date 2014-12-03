@@ -61,6 +61,8 @@ hpx_runtime::hpx_runtime() {
         initial_num_threads = num_procs;
     }
 
+    //TODO: nthreads_var is a list of ints where the nth item corresponds
+    // to the number of threads in nth level parallel regions.
     implicit_region.reset(new parallel_region(initial_num_threads));
     walltime.reset(new high_resolution_timer);
 
@@ -129,7 +131,7 @@ void** hpx_runtime::get_threadprivate() {
 
 parallel_region* hpx_runtime::get_team(){
     parallel_region *team;
-    if(hpx::get_runtime_ptr()) {
+    if(hpx::threads::get_self_ptr()) {
         team = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()))->team;
     } else {
         team = implicit_region.get();
@@ -284,27 +286,27 @@ void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *te
     //I think the cancel barrier does this
 }
 
-void fork_worker( omp_micro thread_func, frame_pointer_t fp, parallel_region *team) {
+void fork_worker( omp_micro thread_func, frame_pointer_t fp, parallel_region &team) {
     vector<hpx::lcos::future<void>> threads;
-    for(int i = 0; i < team->nthreads_var; i++) {
-        team->num_tasks++;
-        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, team));
+    for(int i = 0; i < team.nthreads_var; i++) {
+        team.num_tasks++;
+        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team));
     }
     {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(team->thread_mtx);
-        while(team->num_tasks > 0) {
-            team->cond.wait(lock);
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(team.thread_mtx);
+        while(team.num_tasks > 0) {
+            team.cond.wait(lock);
         }
     }
     hpx::wait_all(threads);
 }
 
-void fork_and_sync( int num_threads, omp_micro thread_func,
+void fork_and_sync( parallel_region &team, omp_micro thread_func,
                         frame_pointer_t fp, boost::mutex& mtx, 
                         boost::condition& cond, bool& running) {
 
-    parallel_region team(num_threads);
-    fork_worker(thread_func, fp, &team);
+    //parallel_region team(num_threads);
+    fork_worker(thread_func, fp, team);
 
     {
         boost::mutex::scoped_lock lk(mtx);
@@ -314,26 +316,31 @@ void fork_and_sync( int num_threads, omp_micro thread_func,
 }
  
 //For Intel, the Nthreads isn't passed in, another function sets Nthreads, so Nthreads should be 0;
-//  Also for Intel, fp is not a frame pointer, but a pointer to a struct,
-//      but is still passed around correctly internally.
+// Also for Intel, fp is not a frame pointer, but a pointer to a struct,
+// but is still passed around correctly internally.
 
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
 
 void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
 { 
+    parallel_region team = get_team()->make_child_region(Nthreads);
+
     if( hpx::threads::get_self_ptr() ) {
-        parallel_region team(get_team(), get_team()->request_threads(Nthreads));
-        fork_worker(thread_func, fp, &team);
+        //parallel_region team(get_team(), get_team()->request_threads(Nthreads));
+        fork_worker(thread_func, fp, team);
     } else {
-        if(Nthreads <= 0){
-            Nthreads = implicit_region->nthreads_var;
-        }
+
+        //implicit_region.reset(new parallel_region(initial_num_threads));
+        //if(Nthreads <= 0){
+        //    Nthreads = implicit_region->nthreads_var;
+        //}
         boost::mutex mtx;
         boost::condition cond;
         bool running = false;
     
         hpx::applier::register_thread_nullary(
-                std::bind(&fork_and_sync, Nthreads, thread_func, fp, boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                std::bind(&fork_and_sync, team, thread_func, fp, boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                //std::bind(&fork_and_sync, boost::ref(team), thread_func, fp, boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
             boost::mutex::scoped_lock lk(mtx);
