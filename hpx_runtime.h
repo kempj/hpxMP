@@ -149,6 +149,7 @@ class hpx_runtime {
         hpx_runtime();
         void fork(int num_threads, omp_micro thread_func, frame_pointer_t fp);
         parallel_region* get_team();
+        omp_thread_data* get_thread();
         int get_thread_num();
         int get_num_threads();
         int get_num_procs();
@@ -171,6 +172,7 @@ class hpx_runtime {
         
     private:
         shared_ptr<parallel_region> implicit_region;//TODO: when does this need to be initialized?
+        shared_ptr<omp_thread_data> initial_thread;
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;

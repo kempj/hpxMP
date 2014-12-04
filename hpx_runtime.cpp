@@ -64,6 +64,7 @@ hpx_runtime::hpx_runtime() {
     //TODO: nthreads_var is a list of ints where the nth item corresponds
     // to the number of threads in nth level parallel regions.
     implicit_region.reset(new parallel_region(initial_num_threads));
+    initial_thread.reset(new omp_thread_data(0, implicit_region.get()));
     walltime.reset(new high_resolution_timer);
 
     if(external_hpx)
@@ -137,6 +138,16 @@ parallel_region* hpx_runtime::get_team(){
         team = implicit_region.get();
     }
     return team;
+}
+
+omp_thread_data* hpx_runtime::get_thread(){
+    omp_thread_data *thread_data;
+    if(hpx::threads::get_self_ptr()) {
+         thread_data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
+    } else { 
+        thread_data = initial_thread.get();
+    }
+    return thread_data;
 }
 
 double hpx_runtime::get_time() {
