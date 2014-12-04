@@ -225,7 +225,10 @@ extern "C" int omp_get_num_procs();
 extern "C" double omp_get_wtime();
 extern "C" double omp_get_wtick();
 extern "C" int omp_in_parallel();
+
+//ICV get and put functions:
 extern "C" void omp_set_dynamic(int dynamic_threads);
+extern "C" int omp_get_dynamic();
 
 
 extern "C" void omp_init_lock(omp_lock_t *lock);

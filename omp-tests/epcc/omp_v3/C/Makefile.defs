@@ -3,9 +3,25 @@
 # Uncomment the following line to use OpenMP 3.0 features
 OMPFLAG = -DOMPVER2 -DOMPVER3
 
-CC=~/openUH/bin/uhcc
-CFLAGS = -O1 -lm -mp -pg
-#CFLAGS = -O1 -lm -mp -pg -CLIST:emit_nested_pu:before_cg 
-LDFLAGS = -O0 -lm -mp -pg
-CPP = /usr/bin/cpp
-LIBS =
+#icc
+CC=icc                                                                           
+CFLAGS = -O0 -g -openmp                                                          
+LDFLAGS = -O0 -g -openmp                                                         
+CPP = icpc                                                                       
+LIBS =   
+
+
+
+#CC=~/openUH/bin/uhcc
+#CFLAGS = -O1 -lm -mp -pg
+##CFLAGS = -O1 -lm -mp -pg -CLIST:emit_nested_pu:before_cg 
+#LDFLAGS = -O0 -lm -mp -pg
+#CPP = /usr/bin/cpp
+#LIBS =
+
+#clang:
+#CC=clang
+#CFLAGS = -fopenmp
+##CFLAGS = -emit-llvm -S -c -fopenmp
+#CPP=clang++
+#LDFLAGS= -fopenmp

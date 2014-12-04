@@ -260,7 +260,9 @@ void omp_set_dynamic(int dynamic_threads){
     //setting the value of the dyn-var ICV.
 }
 //OpenMP 3.1 spec, section 3.2.8
-//int omp_get_dynamic(void);
+int omp_get_dynamic(void) {
+    return 0;
+}
 //OpenMP 3.1 spec, section 3.2.9
 void omp_set_nested(int nested){
 }

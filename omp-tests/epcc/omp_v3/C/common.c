@@ -226,11 +226,16 @@ void printreferencefooter(char *name, double referencetime, double referencesd) 
 
 void init(int argc, char **argv)
 {
+    printf("entering the parallel region:\n");
+    printf("&nthreads = %p\n",&nthreads);
 #pragma omp parallel
     {
+        printf("\npar: omp_get_num_threads() = %d\n",omp_get_num_threads());
 #pragma omp master
 	{
+        printf("from inside the master region: &nthreads = %p\n",&nthreads);
 	    nthreads = omp_get_num_threads();
+        printf("\nomp_get_num_threads() = %d\n",omp_get_num_threads());
 	}
 
     }

@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     benchmark("LOCK/UNLOCK", &testlock);
 
     /* TEST ORDERED SECTION */
-    //benchmark("ORDERED", &testorder);
+    benchmark("ORDERED", &testorder);
 
     /* GENERATE NEW REFERENCE TIME */
     reference("reference time 2", &referatom);

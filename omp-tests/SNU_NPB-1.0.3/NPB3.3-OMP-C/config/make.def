@@ -75,14 +75,14 @@ FLINKFLAGS = -O3 -fopenmp -mcmodel=medium
 #---------------------------------------------------------------------------
 # This is the C compiler used for C programs
 #---------------------------------------------------------------------------
-CC = opencc
+CC = clang
 # This links C programs; usually the same as ${CC}
 CLINK	= $(CC)
 
 #---------------------------------------------------------------------------
 # These macros are passed to the linker 
 #---------------------------------------------------------------------------
-C_LIB  = -lm
+C_LIB  = -lm -fopenmp
 
 #---------------------------------------------------------------------------
 # These macros are passed to the compiler 
@@ -120,7 +120,7 @@ CLINKFLAGS = -O3 -fopenmp -mcmodel=medium
 # this compiler go here also; typically there are few flags required; hence 
 # there are no separate macros provided for such flags.
 #---------------------------------------------------------------------------
-UCC	= opencc
+UCC	= clang
 
 
 #---------------------------------------------------------------------------

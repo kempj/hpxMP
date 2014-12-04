@@ -308,6 +308,22 @@ int omp_in_parallel(){
     return in_parallel;
 }
 
+
+void omp_set_dynamic(int dynamic_threads){
+    if(!hpx_backend) {
+        start_backend();
+    }
+    //FIXME: this needs to be task local
+    hpx_backend->get_team()->dyn_var = (dynamic_threads != 0);
+}
+
+int omp_get_dynamic(){
+    if(!hpx_backend) {
+        start_backend();
+    }
+    return hpx_backend->get_team()->dyn_var;
+}
+
 void omp_init_lock(omp_lock_t *lock){
     if(!hpx_backend) {
         start_backend();

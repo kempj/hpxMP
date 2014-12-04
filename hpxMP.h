@@ -96,6 +96,7 @@ extern "C" double omp_get_wtick();
 extern "C" void omp_set_nested();
 extern "C" int omp_in_parallel();
 extern "C" void omp_set_dynamic(int dynamic_threads);
+extern "C" void omp_get_dynamic(int dynamic_threads);
 
 
 extern "C" void omp_init_lock(omp_lock_t *lock);

@@ -46,7 +46,7 @@ hpx_runtime::hpx_runtime() {
     //stacksize_var
     /*
     char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
-    if(omp_max_levels != NULL) { max_active_levels = atoi(omp_max_levels); }
+    if(omp_max_levels != NULL) { max_active_levels_var = atoi(omp_max_levels); }
     
     //Not device specific, so it needs to move to parallel region:
     char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
@@ -124,15 +124,15 @@ hpx_runtime::hpx_runtime() {
 }
 
 void** hpx_runtime::get_threadprivate() {
-    //need to use special omp_data for initial thread. TODO
-    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    //need to use special omp_thread_data for initial thread. TODO
+    auto *task_data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
     return &(task_data->threadprivate);
 }
 
 parallel_region* hpx_runtime::get_team(){
     parallel_region *team;
     if(hpx::threads::get_self_ptr()) {
-        team = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()))->team;
+        team = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()))->team;
     } else {
         team = implicit_region.get();
     }
@@ -171,7 +171,7 @@ void hpx_runtime::set_num_threads(int nthreads) {
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
 void hpx_runtime::barrier_wait(){
-    //auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    //auto *task_data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
     while(get_team()->num_tasks > get_team()->nthreads_var){
         hpx::this_thread::yield();
     }
@@ -182,12 +182,12 @@ int hpx_runtime::get_thread_num() {
     if( !hpx::threads::get_self_ptr() )
         return 0;
     auto thread_id = get_self_id();
-    auto *data = reinterpret_cast<omp_data*>( get_thread_data(thread_id) );
+    auto *data = reinterpret_cast<omp_thread_data*>( get_thread_data(thread_id) );
     return data->thread_num;
 }
 
 void hpx_runtime::task_wait() {
-    auto *data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    auto *data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
     hpx::wait_all(data->task_handles);
     data->task_handles.clear();
 }
@@ -197,7 +197,7 @@ void hpx_runtime::task_wait() {
 // the stack of the user's task does not get preserved.
 // Note: in OpenUH this gets called at the end of implicit and explicit tasks
 void hpx_runtime::task_exit() {
-    auto *task_data = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    auto *task_data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
         while(task_data->blocking_children > 0) {
@@ -208,8 +208,8 @@ void hpx_runtime::task_exit() {
 
 //Maybe have team hand out task id's round robin?
 void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
-                       omp_data *parent, parallel_region *team, int thread_num) {
-    omp_data task_data(thread_num, team);
+                       omp_thread_data *parent, parallel_region *team, int thread_num) {
+    omp_thread_data task_data(thread_num, team);
     task_data.parent = parent;
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
@@ -224,7 +224,7 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
-    auto *parent_task = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    auto *parent_task = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
     parent_task->team->num_tasks++;
     parent_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, task_func, gtid, task, parent_task,
@@ -232,10 +232,10 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
 }
 
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
-                 omp_data *parent_task, parallel_region *team,
+                 omp_thread_data *parent_task, parallel_region *team,
                  int thread_num, int blocks_parent) {
     auto thread_id = get_self_id();
-    omp_data task_data(thread_num, team);
+    omp_thread_data task_data(thread_num, team);
     task_data.parent = parent_task;
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
@@ -257,7 +257,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int is_tied, 
                                int blocks_parent) {
-    auto *parent_task = reinterpret_cast<omp_data*>(get_thread_data(get_self_id()));
+    auto *parent_task = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
     parent_task->team->num_tasks++;
     if(blocks_parent) {
         parent_task->blocking_children += 1;
@@ -273,7 +273,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
 // to have their prent be some sort of thread team object
 void thread_setup( omp_micro thread_func, void *fp, int tid, parallel_region *team ) {
 
-    omp_data task_data(tid, team);
+    omp_thread_data task_data(tid, team);
     auto thread_id = get_self_id();
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 

@@ -78,7 +78,7 @@ class loop_data {
 };
 
 //Does this need to keep track of the parallel region it is nested in,
-// the omp_data of the parent thread, or both?
+// the omp_thread_data of the parent thread, or both?
 struct parallel_region {
     parallel_region( int N ) : nthreads_var(N), globalBarrier(N), 
                                loop_sched(N), depth(0) {};
@@ -89,13 +89,13 @@ struct parallel_region {
         depth = parent->depth + 1; 
         dyn_var = parent->dyn_var;
         nest_var = parent->nest_var;
-        max_active_levels = parent->max_active_levels;
+        max_active_levels_var = parent->max_active_levels_var;
     }
     parallel_region make_child_region(int nthreads){
         if(nthreads <= 0)
             nthreads = nthreads_var;
 
-        if(nest_var == false || depth > max_active_levels)
+        if(nest_var == false || depth > max_active_levels_var)
             nthreads = 1;
         return parallel_region(this, nthreads);
     }
@@ -109,7 +109,7 @@ struct parallel_region {
     mutex_type thread_mtx{};
     loop_data loop_sched;
     int depth;
-    int max_active_levels{std::numeric_limits<int>::max()};
+    int max_active_levels_var{std::numeric_limits<int>::max()};
     atomic<int> single_counter{0};
     //data-env scope ICVs:
     bool dyn_var{false};//not used
@@ -126,13 +126,13 @@ struct parallel_region {
 
 
 //TODO: If I keep track of task depth, can I implement a useful cutoff?
-class omp_data {
+class omp_thread_data {
     public:
-        omp_data(int tid, parallel_region *T):thread_num(tid), team(T){};
-        omp_data(omp_data *p): thread_num(p->thread_num),
+        omp_thread_data(int tid, parallel_region *T):thread_num(tid), team(T){};
+        omp_thread_data(omp_thread_data *p): thread_num(p->thread_num),
                                 parent(p), team(p->team) {};
         int thread_num;
-        omp_data *parent;
+        omp_thread_data *parent;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
         atomic<int> blocking_children {0};
@@ -169,7 +169,6 @@ class hpx_runtime {
         }
         void** get_threadprivate();
         
-        //mutex_type crit_mtx{};
     private:
         shared_ptr<parallel_region> implicit_region;//TODO: when does this need to be initialized?
         int num_procs;
@@ -179,7 +178,7 @@ class hpx_runtime {
         //atomic<int> threads_running{0};//ThreadsBusy
         //device scoped ICVs:
         bool initial_nest_var{false};
-        //int initial_max_active_levels{std::numeric_limits<int>::max()};
+        //int initial_max_active_levels_var{std::numeric_limits<int>::max()};
         //bool cancel_var{false};//not implemented
         //int stacksize_var; //-Ihpx.stacks.small_size=... (use hex numbers)
             //http://stellar-group.github.io/hpx/docs/html/hpx/manual/init/configuration/config_defaults.html
