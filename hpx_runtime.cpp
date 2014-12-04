@@ -29,7 +29,6 @@ void fini_runtime() {
     hpx::get_runtime().stop();
 }
 
-//This will break if the users shuts down hpx and an OpenMP call is made
 hpx_runtime::hpx_runtime() {
     int initial_num_threads;
     num_procs = hpx::threads::hardware_concurrency();
@@ -126,18 +125,13 @@ hpx_runtime::hpx_runtime() {
 
 void** hpx_runtime::get_threadprivate() {
     //need to use special omp_thread_data for initial thread. TODO
-    auto *task_data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
+    auto *task_data = get_thread();
     return &(task_data->threadprivate);
 }
 
+//This isn't really a thread team, it's a region. I think.
 parallel_region* hpx_runtime::get_team(){
-    parallel_region *team;
-    if(hpx::threads::get_self_ptr()) {
-        team = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()))->team;
-    } else {
-        team = implicit_region.get();
-    }
-    return team;
+    return get_thread()->team;
 }
 
 omp_thread_data* hpx_runtime::get_thread(){
@@ -182,7 +176,6 @@ void hpx_runtime::set_num_threads(int nthreads) {
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
 void hpx_runtime::barrier_wait(){
-    //auto *task_data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
     while(get_team()->num_tasks > get_team()->nthreads_var){
         hpx::this_thread::yield();
     }
@@ -190,17 +183,15 @@ void hpx_runtime::barrier_wait(){
 }
 
 int hpx_runtime::get_thread_num() {
-    if( !hpx::threads::get_self_ptr() )
-        return 0;
-    auto thread_id = get_self_id();
-    auto *data = reinterpret_cast<omp_thread_data*>( get_thread_data(thread_id) );
-    return data->thread_num;
+    return get_thread()->thread_num;
 }
 
 void hpx_runtime::task_wait() {
-    auto *data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
-    hpx::wait_all(data->task_handles);
-    data->task_handles.clear();
+    //TODO:
+    //get_thread()->task_wait();
+    auto *tasks = &(get_thread()->task_handles);
+    hpx::wait_all(*tasks);
+    tasks->clear();
 }
 
 //This needs to be here to make sure to wait for dependant children finish
@@ -208,7 +199,7 @@ void hpx_runtime::task_wait() {
 // the stack of the user's task does not get preserved.
 // Note: in OpenUH this gets called at the end of implicit and explicit tasks
 void hpx_runtime::task_exit() {
-    auto *task_data = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
+    auto *task_data = get_thread();
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
         while(task_data->blocking_children > 0) {
@@ -235,7 +226,7 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
-    auto *parent_task = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
+    auto *parent_task = get_thread();
     parent_task->team->num_tasks++;
     parent_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, task_func, gtid, task, parent_task,
@@ -268,7 +259,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
 void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                                void *firstprivates, int is_tied, 
                                int blocks_parent) {
-    auto *parent_task = reinterpret_cast<omp_thread_data*>(get_thread_data(get_self_id()));
+    auto *parent_task = get_thread();
     parent_task->team->num_tasks++;
     if(blocks_parent) {
         parent_task->blocking_children += 1;
