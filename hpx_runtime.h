@@ -78,7 +78,7 @@ class loop_data {
 };
 
 //Does this need to keep track of the parallel region it is nested in,
-// the omp_thread_data of the parent thread, or both?
+// the omp_task_data of the parent thread, or both?
 struct parallel_region {
     parallel_region( int N ) : nthreads_var(N), globalBarrier(N), 
                                loop_sched(N), depth(0) {};
@@ -87,7 +87,7 @@ struct parallel_region {
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
         depth = parent->depth + 1; 
-        dyn_var = parent->dyn_var;
+        //dyn_var = parent->dyn_var;
         nest_var = parent->nest_var;
         max_active_levels_var = parent->max_active_levels_var;
     }
@@ -112,7 +112,7 @@ struct parallel_region {
     int max_active_levels_var{std::numeric_limits<int>::max()};
     atomic<int> single_counter{0};
     //data-env scope ICVs:
-    bool dyn_var{false};//not used
+    //bool dyn_var{false};//not used
     bool nest_var{false};
     int nthreads_var;
     //run_sched_var
@@ -126,22 +126,34 @@ struct parallel_region {
 
 
 //TODO: If I keep track of task depth, can I implement a useful cutoff?
-class omp_thread_data {
+class omp_task_data {
     public:
-        omp_thread_data(int tid, parallel_region *T):thread_num(tid), team(T){};
-        omp_thread_data(omp_thread_data *p): thread_num(p->thread_num),
-                                parent(p), team(p->team) {};
+        //This constructor should only be used once for the implicit task
+        omp_task_data(int tid, parallel_region *T) : thread_num(tid), team(T){};
+
+        //should be used for implicit tasks/threads
+        omp_task_data(int tid, parallel_region *T, omp_task_data *P ) : thread_num(tid), team(T), parent(P){};
+
+        //This is for explicit tasks
+        omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), parent(P){
+            //TODO: once all the ICVs are implemented, might be a good idea to make an icv object to copy here
+            dyn_var = P->dyn_var;
+        };
+        
         int thread_num;
-        omp_thread_data *parent;
+        parallel_region *team;
+        omp_task_data *parent;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
         atomic<int> blocking_children {0};
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
         vector<future<void>> task_handles;
-        parallel_region *team;
         int active_levels;
         void *threadprivate{NULL};
+
+        //ICV variables:
+        bool dyn_var{false};
 };
 
 class hpx_runtime {
@@ -149,7 +161,7 @@ class hpx_runtime {
         hpx_runtime();
         void fork(int num_threads, omp_micro thread_func, frame_pointer_t fp);
         parallel_region* get_team();
-        omp_thread_data* get_thread();
+        omp_task_data* get_task_data();
         int get_thread_num();
         int get_num_threads();
         int get_num_procs();
@@ -172,7 +184,7 @@ class hpx_runtime {
         
     private:
         shared_ptr<parallel_region> implicit_region;//TODO: when does this need to be initialized?
-        shared_ptr<omp_thread_data> initial_thread;
+        shared_ptr<omp_task_data> initial_thread;
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;
