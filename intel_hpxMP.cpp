@@ -179,7 +179,10 @@ void
 __kmpc_push_num_threads( ident_t *loc, 
                          kmp_int32 global_tid, 
                          kmp_int32 num_threads ){
-    hpx_backend->set_num_threads(num_threads);
+    //TODO: this needs to be local to the task
+    //hpx_backend->set_num_threads(num_threads);
+    omp_task_data *data = hpx_backend->get_task_data();
+    data->set_threads_requested( num_threads );
 }
 
 void
@@ -249,22 +252,22 @@ void __kmpc_flush(ident_t *loc, ...){
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
 void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){
-    cout << "tid = " << tid << ", cache = " << cache << endl;
     if(!hpx_backend) {
         start_backend();
     }
-    //if(!in_parallel)
-        //special thread 0
-    
-    void **tp_pointer;
-    tp_pointer = hpx_backend->get_threadprivate();
-    if(tp_pointer){
-        return *(tp_pointer);
+    /*
+    parallel_region *team =  hpx_backend->get_team();
+    if(!(*cache)){
+        team->thread_mtx.lock();
+        if(!(*cache)){
+            *cache = (void**)new char[size * team->num_threads];//FIXME: this never gets deallocated
+            //should I try and do this as one large malloc?
+        }
+        team->thread_mtx.unlock();
     }
-    void *tmp = new char[size];
-    *(tp_pointer) = tmp;
-    //std::copy((char*)data, (char*)data + size, (char*)tmp);
-    return tmp;
+    return **cache + tid * data;
+    */
+    return **cache;
 }
 
 //Library functions:--------------------------------------------------
@@ -277,8 +280,8 @@ int omp_get_thread_num(){
 
 int omp_get_num_threads(){
     if(in_parallel){
-        //return hpx_backend->get_team()->nthreads_var;
-        return hpx_backend->get_task_data()->nthreads_var;
+        return hpx_backend->get_team()->num_threads;
+        //return hpx_backend->get_task_data()->nthreads_var;//not sure why this was added
     } else {
         return 1;
     }

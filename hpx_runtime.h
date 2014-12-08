@@ -25,6 +25,8 @@
 #include <hpx/util/high_resolution_timer.hpp>
 #include <map>
 
+#include <icv-vars.h>
+
 
 typedef void *frame_pointer_t;
 typedef int omp_tid;
@@ -80,26 +82,13 @@ class loop_data {
 //Does this need to keep track of the parallel region it is nested in,
 // the omp_task_data of the parent thread, or both?
 struct parallel_region {
-    parallel_region( int N ) : nthreads_var(N), globalBarrier(N), 
-                               loop_sched(N), depth(0) {};
 
-    parallel_region(const parallel_region &PR) : parallel_region(PR.nthreads_var) {} ;
+    parallel_region( int N ) : num_threads(N), globalBarrier(N), 
+                               loop_sched(N), depth(0) {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
         depth = parent->depth + 1; 
-        //dyn_var = parent->dyn_var;
-        nest_var = parent->nest_var;
-        max_active_levels_var = parent->max_active_levels_var;
     }
-    parallel_region make_child_region(int nthreads){
-        if(nthreads <= 0)
-            nthreads = nthreads_var;
-
-        if(nest_var == false || depth > max_active_levels_var)
-            nthreads = 1;
-        return parallel_region(this, nthreads);
-    }
-
     int num_threads;
     atomic<int> num_tasks{0};
     hpx::lcos::local::condition_variable cond;
@@ -109,19 +98,7 @@ struct parallel_region {
     mutex_type thread_mtx{};
     loop_data loop_sched;
     int depth;
-    int max_active_levels_var{std::numeric_limits<int>::max()};
     atomic<int> single_counter{0};
-    //data-env scope ICVs:
-    //bool dyn_var{false};//not used
-    bool nest_var{false};
-    int nthreads_var;
-    //run_sched_var
-    //bind_var
-    //int thread_limit_var{std::numeric_limits<int>::max()};
-    //active_levels_var
-    //levels_var
-    //default_device_var
-    //TODO:make sure this is the best place for these
 };
 
 
@@ -129,18 +106,29 @@ struct parallel_region {
 class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
-        omp_task_data(int tid, parallel_region *T) : thread_num(tid), team(T){};
+        omp_task_data(parallel_region *T, omp_device_icv *global) : team(T) {
+            thread_num = 0;
+            icv.device = global;
+            icv.nthreads = T->num_threads;
+            threads_requested = icv.nthreads;
+        };
 
         //should be used for implicit tasks/threads
-        omp_task_data(int tid, parallel_region *T, omp_task_data *P ) : thread_num(tid), team(T), parent(P){};
+        omp_task_data(int tid, parallel_region *T, omp_task_data *P ) : omp_task_data(P) {//: thread_num(tid), team(T), parent(P){
+            icv.levels++;
+            if(team->num_threads > 1) {
+                icv.active_levels++;
+            }
+        };
 
         //This is for explicit tasks
         omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), parent(P){
-            //TODO: once all the ICVs are implemented, might be a good idea to make an icv object to copy here
-            dyn_var = P->dyn_var;
+            icv = parent->icv;
+            threads_requested = icv.nthreads;
         };
         
         int thread_num;
+        int threads_requested;
         parallel_region *team;
         omp_task_data *parent;
         mutex_type thread_mutex;
@@ -149,11 +137,24 @@ class omp_task_data {
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
         vector<future<void>> task_handles;
-        int active_levels;
         void *threadprivate{NULL};
 
-        //ICV variables:
-        bool dyn_var{false};
+        omp_icv icv;
+
+        //assuming the number of threads that can be created is infinte (so I can avoid using ThreadsBusy)
+        void set_threads_requested( int nthreads ){
+            if( nthreads > 0) {
+                threads_requested = nthreads;
+            }
+            int active_regions = icv.active_levels;
+            if( icv.nest && active_regions > 1) {
+                threads_requested = 1;
+            }
+            if(active_regions == icv.device->max_active_levels) {
+                threads_requested = 1;
+            }
+            cout << "Threads_requested set to " << threads_requested << endl;
+        }
 };
 
 class hpx_runtime {
@@ -177,25 +178,16 @@ class hpx_runtime {
         void delete_hpx_objects();
         void env_init();
         bool nesting_enabled();
-        void set_default_nesting(bool nest) {
-            initial_nest_var = nest;
-        }
         void** get_threadprivate();
-        
+
     private:
-        shared_ptr<parallel_region> implicit_region;//TODO: when does this need to be initialized?
+        shared_ptr<parallel_region> implicit_region;
         shared_ptr<omp_task_data> initial_thread;
         int num_procs;
         shared_ptr<high_resolution_timer> walltime;
         bool external_hpx;
+        omp_device_icv device_icv;
 
         //atomic<int> threads_running{0};//ThreadsBusy
-        //device scoped ICVs:
-        bool initial_nest_var{false};
-        //int initial_max_active_levels_var{std::numeric_limits<int>::max()};
-        //bool cancel_var{false};//not implemented
-        //int stacksize_var; //-Ihpx.stacks.small_size=... (use hex numbers)
-            //http://stellar-group.github.io/hpx/docs/html/hpx/manual/init/configuration/config_defaults.html
-        //wait-policy-var OMP_WAIT_POLICY//This is a compile time HPX option
 };
 
