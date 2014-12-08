@@ -255,13 +255,22 @@ int omp_in_parallel(){
 
 //OpenMP 3.1 spec, section 3.2.7
 void omp_set_dynamic(int dynamic_threads){
-    //The omp_set_dynamic routine enables or disables dynamic adjustment of the
-    //number of threads available for the execution of subsequent parallel regions by
-    //setting the value of the dyn-var ICV.
+    if(!hpx_backend) {
+        start_backend();
+    }
+    hpx_backend->get_task_data()->dyn_var = (dynamic_threads != 0);
 }
+
+//The omp_set_dynamic routine enables or disables dynamic adjustment of the
+//number of threads available for the execution of subsequent parallel regions by
+//setting the value of the dyn-var ICV.
+
 //OpenMP 3.1 spec, section 3.2.8
 int omp_get_dynamic(void) {
-    return 0;
+    if(!hpx_backend) {
+        start_backend();
+    }
+    return hpx_backend->get_task_data()->dyn_var;
 }
 //OpenMP 3.1 spec, section 3.2.9
 void omp_set_nested(int nested){

@@ -314,7 +314,6 @@ void omp_set_dynamic(int dynamic_threads){
     if(!hpx_backend) {
         start_backend();
     }
-    //hpx_backend->get_team()->dyn_var = (dynamic_threads != 0);
     hpx_backend->get_task_data()->dyn_var = (dynamic_threads != 0);
 }
 
@@ -322,7 +321,6 @@ int omp_get_dynamic(){
     if(!hpx_backend) {
         start_backend();
     }
-    //return hpx_backend->get_team()->dyn_var;
     return hpx_backend->get_task_data()->dyn_var;
 }
 
