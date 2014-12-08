@@ -258,7 +258,7 @@ void omp_set_dynamic(int dynamic_threads){
     if(!hpx_backend) {
         start_backend();
     }
-    hpx_backend->get_task_data()->dyn_var = (dynamic_threads != 0);
+    hpx_backend->get_task_data()->icv.dyn = (dynamic_threads != 0);
 }
 
 //The omp_set_dynamic routine enables or disables dynamic adjustment of the
@@ -270,7 +270,7 @@ int omp_get_dynamic(void) {
     if(!hpx_backend) {
         start_backend();
     }
-    return hpx_backend->get_task_data()->dyn_var;
+    return hpx_backend->get_task_data()->icv.dyn;
 }
 //OpenMP 3.1 spec, section 3.2.9
 void omp_set_nested(int nested){

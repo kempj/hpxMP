@@ -317,14 +317,14 @@ void omp_set_dynamic(int dynamic_threads){
     if(!hpx_backend) {
         start_backend();
     }
-    hpx_backend->get_task_data()->dyn_var = (dynamic_threads != 0);
+    hpx_backend->get_task_data()->icv.dyn = (dynamic_threads != 0);
 }
 
 int omp_get_dynamic(){
     if(!hpx_backend) {
         start_backend();
     }
-    return hpx_backend->get_task_data()->dyn_var;
+    return hpx_backend->get_task_data()->icv.dyn;
 }
 
 void omp_init_lock(omp_lock_t *lock){

@@ -123,12 +123,6 @@ hpx_runtime::hpx_runtime() {
     delete[] argv;
 }
 
-void** hpx_runtime::get_threadprivate() {
-    //need to use special omp_task_data for initial thread. TODO
-    auto *task_data = get_task_data();
-    return &(task_data->threadprivate);
-}
-
 //This isn't really a thread team, it's a region. I think.
 parallel_region* hpx_runtime::get_team(){
     return get_task_data()->team;

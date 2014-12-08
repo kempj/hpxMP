@@ -137,8 +137,6 @@ class omp_task_data {
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
         vector<future<void>> task_handles;
-        void *threadprivate{NULL};
-
         omp_icv icv;
 
         //assuming the number of threads that can be created is infinte (so I can avoid using ThreadsBusy)
