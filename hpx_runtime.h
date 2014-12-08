@@ -115,6 +115,7 @@ class omp_task_data {
 
         //should be used for implicit tasks/threads
         omp_task_data(int tid, parallel_region *T, omp_task_data *P ) : omp_task_data(P) {//: thread_num(tid), team(T), parent(P){
+            thread_num = tid;
             icv.levels++;
             if(team->num_threads > 1) {
                 icv.active_levels++;
@@ -151,7 +152,6 @@ class omp_task_data {
             if(active_regions == icv.device->max_active_levels) {
                 threads_requested = 1;
             }
-            cout << "Threads_requested set to " << threads_requested << endl;
         }
 };
 

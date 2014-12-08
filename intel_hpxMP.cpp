@@ -255,19 +255,23 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
     if(!hpx_backend) {
         start_backend();
     }
-    /*
-    parallel_region *team =  hpx_backend->get_team();
+    parallel_region *team = hpx_backend->get_team();
+    int num_threads = team->num_threads;
     if(!(*cache)){
         team->thread_mtx.lock();
         if(!(*cache)){
-            *cache = (void**)new char[size * team->num_threads];//FIXME: this never gets deallocated
-            //should I try and do this as one large malloc?
+            *cache = new void*[num_threads]{0};//FIXME: this never gets deallocated
         }
         team->thread_mtx.unlock();
     }
-    return **cache + tid * data;
-    */
-    return **cache;
+    //if(tid == 0) {
+    //    return data;
+    //}
+    if( !((*cache)[tid]) ) {
+        (*cache)[tid] = new char[size];
+        std::memcpy((*cache)[tid], data, size);
+    }
+    return (*cache)[tid];
 }
 
 //Library functions:--------------------------------------------------
