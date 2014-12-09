@@ -91,6 +91,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
         hpx_backend->fork(0, omp_thread_func, (void*)&args);
         in_parallel = false;
     }
+    //cout << "leaving main fork" << endl;
 }
 
 // ----- Tasks -----
@@ -214,11 +215,13 @@ int __kmpc_single(ident_t *loc, int tid){
     return 0;
 }
 
+//in intel, only the single thread calls this
 void __kmpc_end_single(ident_t *loc, int tid){
     parallel_region *team = hpx_backend->get_team();
     if(!in_parallel)
         return;
-    team->single_counter--;
+    team->single_counter = 0;// will this break if there are consecutive single regions? FIXME
+    //team->single_counter -= team->num_threads();
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){
@@ -312,8 +315,14 @@ double omp_get_wtick(){
     return .000000001;
 }
 
+//TODO: change in_parallel to this? 
+//    or, is this necessary once single is fixed?
 int omp_in_parallel(){
-    return in_parallel;
+    if(!hpx_backend) {
+        start_backend();
+    }
+    int active_levels = hpx_backend->get_task_data()->icv.active_levels;
+    return (active_levels > 0);
 }
 
 

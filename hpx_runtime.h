@@ -120,6 +120,7 @@ class omp_task_data {
             if(team->num_threads > 1) {
                 icv.active_levels++;
             }
+            if(tid == 0) cout << endl;
         };
 
         //This is for explicit tasks
