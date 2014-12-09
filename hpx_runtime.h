@@ -99,6 +99,7 @@ struct parallel_region {
     loop_data loop_sched;
     int depth;
     atomic<int> single_counter{0};
+    //atomic<int> single_iter_counter{0};
 };
 
 

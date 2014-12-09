@@ -209,9 +209,14 @@ int __kmpc_single(ident_t *loc, int tid){
         return 1;
     parallel_region *team = hpx_backend->get_team();
 
-    if(0 == team->single_counter++){
+    if( (team->single_counter++) % team->num_threads == 0){
+        if(team->single_counter >= team->num_threads) {
+            team->single_counter -= team->num_threads;
+        }
+        cout <<"Thread " << hpx_backend->get_thread_num() << " got the single" << endl;
         return 1;
     }
+    //team->single_counter--;
     return 0;
 }
 
@@ -220,8 +225,11 @@ void __kmpc_end_single(ident_t *loc, int tid){
     parallel_region *team = hpx_backend->get_team();
     if(!in_parallel)
         return;
-    team->single_counter = 0;// will this break if there are consecutive single regions? FIXME
-    //team->single_counter -= team->num_threads();
+    //team->single_counter -= team->num_threads;
+    //team->single_counter--;
+    //team->single_iter_counter--;
+    // will this break if there are consecutive single regions?
+    //  I don't think so, the first thread just executes the region
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){
