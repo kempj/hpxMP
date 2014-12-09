@@ -208,28 +208,32 @@ int __kmpc_single(ident_t *loc, int tid){
     if(!in_parallel)
         return 1;
     parallel_region *team = hpx_backend->get_team();
+    int num_threads = hpx_backend->get_num_threads();
 
-    if( (team->single_counter++) % team->num_threads == 0){
-        if(team->single_counter >= team->num_threads) {
-            team->single_counter -= team->num_threads;
-        }
-        cout <<"Thread " << hpx_backend->get_thread_num() << " got the single" << endl;
+    team->single_mtx.lock();
+    if(team->current_single_thread == -1 && team->single_counter == 0) {
+        team->current_single_thread = tid;
+        team->single_counter = 1 - num_threads;
+    } else {
+        team->single_counter++;
+    }
+    team->single_mtx.unlock();
+    if(team->current_single_thread == tid) {
         return 1;
     }
-    //team->single_counter--;
     return 0;
 }
 
 //in intel, only the single thread calls this
 void __kmpc_end_single(ident_t *loc, int tid){
-    parallel_region *team = hpx_backend->get_team();
     if(!in_parallel)
         return;
-    //team->single_counter -= team->num_threads;
-    //team->single_counter--;
-    //team->single_iter_counter--;
-    // will this break if there are consecutive single regions?
-    //  I don't think so, the first thread just executes the region
+    parallel_region *team = hpx_backend->get_team();
+    team->single_mtx.lock();
+    if(team->single_counter == 0) {
+        team->current_single_thread = -1;
+    }
+    team->single_mtx.unlock();
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){
@@ -283,6 +287,24 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
         std::memcpy((*cache)[tid], data, size);
     }
     return (*cache)[tid];
+}
+
+//Only one of the threads (called the single thread) should have the didit variable set to 1
+//This function copies the copyprivate variable of the task that got ran the single
+// into the other implicit tasks, at the end of the single region
+// it also needs to cause other implicit tasks to wait until the single task is complete
+void
+__kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_data, void(*cpy_func)(void*,void*), kmp_int32 didit )
+{
+    void **data_ptr = &(hpx_backend->get_team()->copyprivate_data);
+    //what is t.t_copypriv_data? What is it if there are more than 1 variables copied?
+    //data_ptr = & __kmp_team_from_gtid( gtid )->t.t_copypriv_data;
+    if(didit) {
+        *data_ptr = cpy_data;
+    }
+    hpx_backend->barrier_wait();
+    cpy_func(cpy_data, *data_ptr);
+    hpx_backend->barrier_wait();
 }
 
 //Library functions:--------------------------------------------------

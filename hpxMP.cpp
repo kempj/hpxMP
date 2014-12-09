@@ -15,8 +15,8 @@ using namespace std;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 
 bool started = false;
-int single_counter = 0;
-int current_single_thread = -1;
+//int single_counter = 0;
+//int current_single_thread = -1;
 
 
 //overwrites global in openmp
@@ -91,14 +91,14 @@ int __ompc_single(int tid){
 
     int num_threads = __ompc_get_num_threads();
     team->single_mtx.lock();
-    if(current_single_thread == -1 && single_counter == 0) {
-        current_single_thread = tid;
-        single_counter = 1 - num_threads;
+    if(team->current_single_thread == -1 && team->single_counter == 0) {
+        team->current_single_thread = tid;
+        team->single_counter = 1 - num_threads;
     } else {
-        single_counter++;
+        team->single_counter++;
     }
     team->single_mtx.unlock();
-    if(current_single_thread == tid) {
+    if(team->current_single_thread == tid) {
         return 1;
     }
     return 0;
@@ -109,8 +109,8 @@ void __ompc_end_single(int tid){
     if(!started)
         return;
     team->single_mtx.lock();
-    if(single_counter == 0) {
-        current_single_thread = -1;
+    if(team->single_counter == 0) {
+        team->current_single_thread = -1;
     }
     team->single_mtx.unlock();
 }

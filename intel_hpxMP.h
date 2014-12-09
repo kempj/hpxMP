@@ -216,6 +216,10 @@ extern "C" void __kmpc_flush(ident_t *loc, ...);
 
 extern "C" void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache);
 
+extern "C" void
+__kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, 
+                    void *cpy_data, void(*cpy_func)(void*,void*), kmp_int32 didit);
+
 extern "C" int omp_get_thread_num();
 extern "C" int omp_get_num_threads();
 extern "C" void omp_set_num_threads(int);
