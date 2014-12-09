@@ -297,8 +297,6 @@ void
 __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_data, void(*cpy_func)(void*,void*), kmp_int32 didit )
 {
     void **data_ptr = &(hpx_backend->get_team()->copyprivate_data);
-    //what is t.t_copypriv_data? What is it if there are more than 1 variables copied?
-    //data_ptr = & __kmp_team_from_gtid( gtid )->t.t_copypriv_data;
     if(didit) {
         *data_ptr = cpy_data;
     }
@@ -370,25 +368,49 @@ int omp_get_dynamic(){
     return hpx_backend->get_task_data()->icv.dyn;
 }
 
-void omp_init_lock(omp_lock_t *lock){
+void omp_init_lock(omp_lock_t **lock){
     if(!hpx_backend) {
         start_backend();
     }
-    lock = new omp_lock_t;
+    *lock = new omp_lock_t;
+}
+void omp_init_nest_lock(omp_lock_t **lock){
+    if(!hpx_backend) {
+        start_backend();
+    }
+    *lock = new omp_lock_t;
 }
 
-void omp_destroy_lock(omp_lock_t *lock) {
-    delete lock;
+void omp_destroy_lock(omp_lock_t **lock) {
+    delete *lock;
 }
-/*
-void __kmpc_atomic_fixed4_add(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs ){
-    *lhs = *lhs + rhs;
-}
-
-void __kmpc_atomic_fixed4_sub(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs ){
-    *lhs = *lhs - rhs;
+void omp_destroy_nest_lock(omp_lock_t **lock) {
+    delete *lock;
 }
 
-void __kmpc_atomic_float8_add(  ident_t *id_ref, int gtid, double * lhs, double rhs){
-    *lhs = *lhs + rhs;
-}*/
+int omp_test_lock(omp_lock_t **lock) {
+    if((*lock)->try_lock())
+        return 1;
+    return 0;
+}
+int omp_test_nest_lock(omp_lock_t **lock) {
+    if((*lock)->try_lock())
+        return 1;
+    return 0;
+}
+
+void omp_set_lock(omp_lock_t **lock) {
+    (*lock)->lock();
+}
+void omp_set_nest_lock(omp_lock_t **lock) {
+    (*lock)->lock();
+}
+
+void omp_unset_lock(omp_lock_t **lock) {
+    (*lock)->unlock();
+}
+void omp_unset_nest_lock(omp_lock_t **lock) {
+    (*lock)->unlock();
+}
+
+

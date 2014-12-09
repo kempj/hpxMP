@@ -298,6 +298,7 @@ void omp_set_nested(int nested){
 //OpenMP 3.1 spec, section 3.2.20
 //int omp_in_final(void);
 
+//TODO: I am pretty sure these all need to be pointers to pointers
 //OpenMP 3.1 spec, section 3.3.1
 void omp_init_lock(omp_lock_t *lock) {
     if(!hpx_backend) {

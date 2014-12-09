@@ -235,20 +235,20 @@ extern "C" void omp_set_dynamic(int dynamic_threads);
 extern "C" int omp_get_dynamic();
 
 
-extern "C" void omp_init_lock(omp_lock_t *lock);
-//extern "C" void omp_init_nest_lock(omp_nest_lock_t *lock);
+extern "C" void omp_init_lock(omp_lock_t **lock);
+extern "C" void omp_init_nest_lock(omp_lock_t **lock);
 
-extern "C" void omp_destroy_lock(omp_lock_t *lock);
-//extern "C" void omp_destroy_nest_lock(omp_nest_lock_t *lock);
+extern "C" void omp_destroy_lock(omp_lock_t **lock);
+extern "C" void omp_destroy_nest_lock(omp_lock_t **lock);
 
-extern "C" void omp_set_lock(omp_lock_t *lock);
-//extern "C" void omp_set_nest_lock(omp_nest_lock_t *lock);
+extern "C" void omp_set_lock(omp_lock_t **lock);
+extern "C" void omp_set_nest_lock(omp_lock_t **lock);
 
-extern "C" void omp_unset_lock(omp_lock_t *lock);
-//extern "C" void omp_unset_nest_lock(omp_nest_lock_t *lock);
+extern "C" void omp_unset_lock(omp_lock_t **lock);
+extern "C" void omp_unset_nest_lock(omp_lock_t **lock);
 
-extern "C" int omp_test_lock(omp_lock_t *lock);
-//extern "C" int omp_test_nest_lock(omp_nest_lock_t *lock);
+extern "C" int omp_test_lock(omp_lock_t **lock);
+extern "C" int omp_test_nest_lock(omp_lock_t **lock);
 
 /*
 extern "C" void __kmpc_atomic_fixed4_add(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs );
