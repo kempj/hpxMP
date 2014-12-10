@@ -1,5 +1,5 @@
 #include "intel_hpxMP.h"
-#include "loop_schedule.h"
+//#include "loop_schedule.h"
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <assert.h>
@@ -134,6 +134,11 @@ kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
     return 0;
 }
 
+kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part ){
+    hpx::this_thread::yield();
+    return 0;
+}
+
 void
 __kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps, 
                       kmp_depend_info_t *dep_list, kmp_int32 ndeps_noalias, 
@@ -156,25 +161,6 @@ __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task
 }
 
 // ----- End Tasks -----
-
-void
-__kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
-                          kmp_int32 *plower, kmp_int32 *pupper,
-                          kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk ){
-    __ompc_static_init_4(gtid, (omp_sched_t)2, plower, pupper, pstride, incr, chunk);
-}
-
-void
-__kmpc_for_static_init_4u( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
-                          uint32_t *plower, uint32_t *pupper,
-                          kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk ){
-    kmp_static_init_4u(gtid, (omp_sched_t)2, plower, pupper, pstride, incr, chunk);
-}
-
-void
-__kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid ){
-    //Only seems to do internal tracking in intel runtime
-}
 
 void 
 __kmpc_push_num_threads( ident_t *loc, 

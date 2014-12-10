@@ -15,9 +15,6 @@ using namespace std;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 
 bool started = false;
-//int single_counter = 0;
-//int current_single_thread = -1;
-
 
 //overwrites global in openmp
 int __ompc_init_rtl(int num_threads) {

@@ -167,6 +167,8 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
 
+extern "C" kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part );
+
 extern "C" kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid );
 
 extern "C" void 
@@ -191,15 +193,6 @@ extern "C" void __kmpc_push_num_threads ( ident_t *loc, kmp_int32 global_tid, km
 extern "C" int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid);
 
 extern "C" void __kmpc_barrier(ident_t *loc, kmp_int32 global_tid);
-
-//TODO:
-//__kmpc_for_static_init_8
-
-extern "C" void __kmpc_for_static_init_4( ident_t *loc, kmp_int32 gtid, kmp_int32 schedtype, kmp_int32 *plastiter,
-                          kmp_int32 *plower, kmp_int32 *pupper,
-                          kmp_int32 *pstride, kmp_int32 incr, kmp_int32 chunk );
-
-extern "C" void __kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid );
 
 extern "C" int __kmpc_single(ident_t *loc, int tid);
 extern "C" void __kmpc_end_single(ident_t *loc, int tid);
