@@ -25,7 +25,7 @@
 #include <hpx/util/high_resolution_timer.hpp>
 #include <map>
 
-#include <icv-vars.h>
+#include "icv-vars.h"
 
 
 typedef void *frame_pointer_t;
