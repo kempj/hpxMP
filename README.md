@@ -16,3 +16,7 @@ http://svn.open64.net/svnroot/open64/branches/OpenUH
 Directives not implemented:
 threadprivate, copyprivate, and copyin 
 ordered 
+
+Build Notes:
+In addition to the other cmake options, HPX must be built with the following option:
+ -DHPX_THREAD_MAINTAIN_LOCAL_STORAGE=ON 
