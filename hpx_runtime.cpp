@@ -132,6 +132,9 @@ omp_task_data* hpx_runtime::get_task_data(){
     omp_task_data *data;
     if(hpx::threads::get_self_ptr()) {
          data = reinterpret_cast<omp_task_data*>(get_thread_data(get_self_id()));
+         if(!data) {
+             data = initial_thread.get();
+         }
     } else { 
         data = initial_thread.get();
     }

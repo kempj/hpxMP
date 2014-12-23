@@ -22,10 +22,8 @@ struct task_args {
 };
 
 void start_backend(){
-    if( !hpx::get_runtime_ptr()){
-        if(!hpx_backend) {//why wasn't this here before?
-            hpx_backend.reset(new hpx_runtime());
-        }
+    if(!hpx_backend) {//why wasn't this here before?
+        hpx_backend.reset(new hpx_runtime());
     }
 }
 
@@ -166,6 +164,7 @@ void
 __kmpc_push_num_threads( ident_t *loc, 
                          kmp_int32 global_tid, 
                          kmp_int32 num_threads ){
+    start_backend();
     //TODO: this needs to be local to the task
     //hpx_backend->set_num_threads(num_threads);
     omp_task_data *data = hpx_backend->get_task_data();
