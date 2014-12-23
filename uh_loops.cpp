@@ -196,18 +196,3 @@ void __ompc_static_init_4( int global_tid, omp_sched_t schedtype,
     omp_static_init<int>( global_tid, schedtype, p_lower, p_upper,
                           p_stride, incr, chunk, loop_sched);
 }
-
-void
-__kmpc_for_static_init_4( ident_t *loc, int gtid, int schedtype, int *plastiter,
-                          int *plower, int *pupper,
-                          int *pstride, int incr, int chunk ){
-    __ompc_static_init_4(gtid, (omp_sched_t)2, plower, pupper, pstride, incr, chunk);
-}
-
-void kmp_static_init_4u( int global_tid, omp_sched_t schedtype,
-                         uint32_t *p_lower, uint32_t *p_upper, 
-                         int *p_stride, int incr, int chunk) {
-    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    omp_static_init<uint32_t, int>( global_tid, schedtype, p_lower, p_upper,
-                                    p_stride, incr, chunk, loop_sched);
-}
