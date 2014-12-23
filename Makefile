@@ -18,8 +18,8 @@ hpx_runtimed.o: hpx_runtime.cpp
 hpxMPd.o: hpxMP.cpp hpxMP.h
 	$(CC) -g -fPIC -c hpxMP.cpp -o hpxMPd.o `pkg-config --cflags --libs hpx_application_debug`
 
-libopenmp.so.1: hpxMP.o hpx_runtime.o uh_loops.o
-	$(CC) -g -shared -Wl,-x -Wl,-soname=libopenmp.so.1,--version-script=libopenmp.vs -o libopenmp.so.1 hpxMP.o hpx_runtime.o uh_loops.o  -L. `pkg-config --cflags --libs hpx_application`
+libopenmp.so.1: hpxMP.o hpx_runtime.o 
+	$(CC) -g -shared -Wl,-x -Wl,-soname=libopenmp.so.1,--version-script=libopenmp.vs -o libopenmp.so.1 hpxMP.o hpx_runtime.o -L. `pkg-config --cflags --libs hpx_application`
 
 hpx_runtime.o: hpx_runtime.cpp hpx_runtime.h 
 	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs hpx_application`
@@ -29,9 +29,6 @@ hpxMP.o: hpxMP.cpp hpxMP.h
 
 loop_schedule.o: loop_schedule.cpp loop_schedule.h
 	$(CC) -g -fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs hpx_application`
-
-uh_loops.o: uh_loops.cpp uh_loops.h
-	$(CC) -g -fPIC -c uh_loops.cpp -o uh_loops.o `pkg-config --cflags --libs hpx_application`
 
 
 
