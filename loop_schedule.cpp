@@ -8,42 +8,94 @@ using std::cout;
 using std::endl;
 
 
+//D is the signed version of T, for when T is unsigned
 template<typename T, typename D=T>
-void omp_static_init( int global_tid, int schedtype, int *plastiter,
+void omp_static_init( int gtid, int schedtype, int *p_last_iter,
                       T *p_lower, T *p_upper,
                       D *p_stride, D incr, D chunk) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    int block_size, stride, my_lower, my_upper;
     int team_size = loop_sched->num_threads;
-    //if(team_size == 1) {*plastiter = 1;return;}
     int trip_count = (*p_upper - *p_lower) / incr + 1;
     int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
 
-    if (schedtype == kmp_sch_static) {//TODO: is this correct for negative incr?
-        *plastiter = ( global_tid == trip_count - 1 );
+    if(team_size == 1) {
+        *p_last_iter = 1;
+        return;
+    }
+
+    int block_size, stride, my_lower, my_upper;
+
+    if (schedtype == kmp_sch_static) {
+        *p_last_iter = ( gtid == trip_count - 1 );
 
         stride = (trip_count / team_size + adjustment + 1) * incr;
         block_size = (trip_count / team_size + adjustment) * incr;
-        my_lower = *p_lower + global_tid * stride;
+        my_lower = *p_lower + gtid * stride;
         my_upper = my_lower + block_size;
     } else { //kmp_sch_static_chunked
         block_size = (chunk - 1) * incr;
         stride = chunk * incr;
-        my_lower = *p_lower + global_tid * stride;
+        my_lower = *p_lower + gtid * stride;
         my_upper = my_lower + block_size;
         *p_stride = stride * team_size;
-        if(*plastiter) {
-            *plastiter = (global_tid == (trip_count - 1) / chunk) % team_size;
+        if(*p_last_iter) {
+            *p_last_iter = (gtid == (trip_count - 1) / chunk) % team_size;
         }
     }
     *p_lower = my_lower;
     *p_upper = my_upper;
 }
 
-/*
-template<typename T>
-void scheduler_init( int global_tid, int schedtype, int *plastiter,
-                     T lower, T upper, T stride, T chunk) {
+void
+__kmpc_for_static_init_4( ident_t *loc, int32_t gtid, int32_t schedtype, 
+                          int32_t *p_last_iter,int32_t *p_lower, int32_t *p_upper, 
+                          int32_t *p_stride, int32_t incr, int32_t chunk ) 
+{
+    omp_static_init<int>( gtid, schedtype, p_last_iter, p_lower, p_upper,
+                          p_stride, incr, chunk );
+}
+
+void
+__kmpc_for_static_init_4u( ident_t *loc, int32_t gtid, int32_t schedtype,
+                           int32_t *p_last_iter, uint32_t *p_lower, uint32_t *p_upper,
+                           int32_t *p_stride, int32_t incr, int32_t chunk )
+{
+    omp_static_init<uint32_t, int>( gtid, schedtype, p_last_iter,
+                                    p_lower, p_upper, p_stride, incr, chunk );
+}
+
+void
+__kmpc_for_static_init_8( ident_t *loc, int32_t gtid, 
+                          int32_t schedtype, int32_t *p_last_iter, 
+                          int64_t *p_lower, int64_t *p_upper, 
+                          int64_t *p_stride, int64_t incr, int64_t chunk ) 
+{
+    omp_static_init<int64_t>( gtid, schedtype, p_last_iter,
+                               p_lower, p_upper, p_stride, incr, chunk );
+}
+
+void 
+__kmpc_for_static_init_8u( ident_t *loc, int32_t gtid, 
+                           int32_t schedtype, int32_t *p_last_iter, 
+                           uint64_t *p_lower, uint64_t *p_upper,
+                           int64_t *p_stride, int64_t incr, int64_t chunk )
+{
+    omp_static_init<uint64_t, int64_t>( gtid, schedtype, p_last_iter,
+                                    p_lower, p_upper, p_stride, incr, chunk );
+}
+
+void
+__kmpc_for_static_fini( ident_t *loc, int32_t gtid ){
+    //Only seems to do internal tracking in intel runtime
+}
+
+//------------------------------------------------------------------------
+//Dynamic loops:
+//------------------------------------------------------------------------
+
+//D is the signed version of T, for when T is unsigned
+template<typename T, typename D=T>
+void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chunk) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     // waiting for last loop to finish.
     while(loop_sched->is_done && loop_sched->num_workers > 0 ) {
@@ -67,31 +119,62 @@ void scheduler_init( int global_tid, int schedtype, int *plastiter,
     } else {
         loop_sched->num_workers++;
     }
-    loop_sched->iter_remaining[global_tid] = 0;
-    loop_sched->local_iter[global_tid] = 0;
+    loop_sched->iter_remaining[gtid] = 0;
+    loop_sched->local_iter[gtid] = 0;
     loop_sched->unlock();
 }
 
-template<typename T, typename D=T>
-int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride, loop_data *loop_sched) {
 
-    switch (static_cast<omp_sched_t>(loop_sched->schedule)) {
-        case OMP_SCHED_STATIC_EVEN: //STATIC_EVEN uses default chunking.
-        case OMP_SCHED_STATIC: //STATIC_EVEN can have user specified chunking.
-        case OMP_SCHED_ORDERED_STATIC_EVEN:
-        case OMP_SCHED_ORDERED_STATIC:
+void 
+__kmpc_dispatch_init_4( ident_t *loc, int32_t gtid, enum sched_type schedule,
+                        int32_t lb, int32_t ub, int32_t st, int32_t chunk ) {
+    scheduler_init<int32_t>( gtid, schedule, lb, ub, st, chunk);
+}
+
+void
+__kmpc_dispatch_init_4u( ident_t *loc, int32_t gtid, enum sched_type schedule,
+                         uint32_t lb, uint32_t ub, 
+                         int32_t st, int32_t chunk ) {
+    scheduler_init<uint32_t>( gtid, schedule, lb, ub, st, chunk);
+}
+
+void
+__kmpc_dispatch_init_8( ident_t *loc, int32_t gtid, enum sched_type schedule,
+                        int64_t lb, int64_t ub, 
+                        int64_t st, int64_t chunk ) {
+    scheduler_init<int64_t>( gtid, schedule, lb, ub, st, chunk);
+}
+
+void
+__kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
+                         uint64_t lb, uint64_t ub, 
+                         int64_t st, int64_t chunk ) {
+    scheduler_init<uint64_t>( gtid, schedule, lb, ub, st, chunk);
+}
+
+template<typename T, typename D=T>
+int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
+    //TODO p_last is not touched in this function
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    int schedule = loop_sched->schedule;
+
+    switch (schedule) {
+        case kmp_sch_static:
+        case kmp_sch_static_chunked:
+        case kmp_ord_static:
+        case kmp_ord_static_chunked:
             loop_sched->lock();
             if(loop_sched->schedule_count < loop_sched->num_threads && !loop_sched->is_done) {
-                loop_sched->local_iter[global_tid] = loop_sched->schedule_count;
+                loop_sched->local_iter[gtid] = loop_sched->schedule_count;
                 loop_sched->schedule_count++;
                 loop_sched->unlock();
                 *p_lower= loop_sched->lower;
                 *p_upper= loop_sched->upper;
 
-                omp_static_init<T,D>( loop_sched->schedule_count, static_cast<omp_sched_t>(loop_sched->schedule),
+                omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
                                     p_lower, p_upper, p_stride, 
-                                    loop_sched->stride, loop_sched->chunk, loop_sched);
-                loop_sched->iter_remaining[global_tid] = (*p_upper - *p_lower) / *p_stride + 1;
+                                    loop_sched->stride, loop_sched->chunk);
+                loop_sched->iter_remaining[gtid] = (*p_upper - *p_lower) / *p_stride + 1;
                 return 1;
             } 
             loop_sched->unlock();
@@ -106,12 +189,12 @@ int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride, loop_data *loo
             loop_sched->unlock();
             return 0;
 
-        case OMP_SCHED_GUIDED:
-        case OMP_SCHED_DYNAMIC:
-        case OMP_SCHED_ORDERED_DYNAMIC:
-        case OMP_SCHED_ORDERED_GUIDED:
-        case OMP_SCHED_RUNTIME:
-        case OMP_SCHED_ORDERED_RUNTIME:
+        case kmp_sch_guided_chunked:
+        case kmp_sch_dynamic_chunked:
+        case kmp_ord_dynamic_chunked:
+        case kmp_ord_guided_chunked:
+        case kmp_sch_runtime:
+        case kmp_ord_runtime:
             if((loop_sched->upper - loop_sched->lower) * loop_sched->stride < 0 ) {
                 loop_sched->unlock();
                 while( loop_sched->num_workers < loop_sched->num_threads &&
@@ -129,43 +212,22 @@ int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride, loop_data *loo
             *p_upper = *p_lower + (loop_sched->chunk -1) * (*p_stride);
             loop_sched->lower = *p_upper + *p_stride;
             loop_sched->unlock();
-            loop_sched->local_iter[global_tid] = loop_sched->schedule_count;
-            loop_sched->iter_remaining[global_tid] = loop_sched->chunk;
+            loop_sched->local_iter[gtid] = loop_sched->schedule_count;
+            loop_sched->iter_remaining[gtid] = loop_sched->chunk;
             loop_sched->schedule_count++;
             return 1;
 
         default:
-            if(global_tid == 0)
-                cout << "default" << endl;
+            if(gtid == 0) {
+                cout << "default, scheduler = " << schedule << endl;
+            }
     }
     return 0;
 }
-*/
 
-void
-__kmpc_for_static_init_4( ident_t *loc, kmp_int32 global_tid, kmp_int32 schedtype, 
-                          kmp_int32 *plastiter,kmp_int32 *p_lower, kmp_int32 *p_upper, 
-                          kmp_int32 *p_stride, kmp_int32 incr, kmp_int32 chunk ) 
-{
-    omp_static_init<int>( global_tid, schedtype, plastiter, p_lower, p_upper,
-                          p_stride, incr, chunk );
+int
+__kmpc_dispatch_next_4( ident_t *loc, int32_t gtid, int32_t *p_last,
+                        int32_t *p_lb, int32_t *p_ub, int32_t *p_st ){
+    return kmp_next<int32_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
-void
-__kmpc_for_static_init_4u( ident_t *loc, kmp_int32 global_tid, kmp_int32 schedtype,
-                           kmp_int32 *plastiter, uint32_t *p_lower, uint32_t *p_upper,
-                           kmp_int32 *p_stride, kmp_int32 incr, kmp_int32 chunk )
-{
-    omp_static_init<uint32_t, int>( global_tid, schedtype, plastiter,
-                                    p_lower, p_upper, p_stride, incr, chunk );
-}
-
-void 
-__kmpc_dispatch_init_4( ident_t *loc, kmp_int32 global_tid, enum sched_type schedule,
-                        kmp_int32 lb, kmp_int32 ub, kmp_int32 st, kmp_int32 chunk ){
-}
-
-void
-__kmpc_for_static_fini( ident_t *loc, kmp_int32 global_tid ){
-    //Only seems to do internal tracking in intel runtime
-}
