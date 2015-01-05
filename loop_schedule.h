@@ -54,3 +54,15 @@ extern "C" int
 __kmpc_dispatch_next_4( ident_t *loc, int32_t gtid, int32_t *p_last,
                         int32_t *p_lb, int32_t *p_ub, int32_t *p_st );
 
+extern "C" int
+__kmpc_dispatch_next_4u( ident_t *loc, int32_t gtid, int32_t *p_last,
+                        uint32_t *p_lb, uint32_t *p_ub, int32_t *p_st );
+
+extern "C" int
+__kmpc_dispatch_next_8( ident_t *loc, int32_t gtid, int32_t *p_last,
+                        int64_t *p_lb, int64_t *p_ub, int64_t *p_st );
+
+extern "C" int
+__kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
+                        uint64_t *p_lb, uint64_t *p_ub, int64_t *p_st );
+

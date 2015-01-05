@@ -135,7 +135,7 @@ void
 __kmpc_dispatch_init_4u( ident_t *loc, int32_t gtid, enum sched_type schedule,
                          uint32_t lb, uint32_t ub, 
                          int32_t st, int32_t chunk ) {
-    scheduler_init<uint32_t>( gtid, schedule, lb, ub, st, chunk);
+    scheduler_init<uint32_t, int32_t>( gtid, schedule, lb, ub, st, chunk);
 }
 
 void
@@ -149,7 +149,7 @@ void
 __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
                          uint64_t lb, uint64_t ub, 
                          int64_t st, int64_t chunk ) {
-    scheduler_init<uint64_t>( gtid, schedule, lb, ub, st, chunk);
+    scheduler_init<uint64_t, int64_t>( gtid, schedule, lb, ub, st, chunk);
 }
 
 template<typename T, typename D=T>
@@ -229,5 +229,23 @@ int
 __kmpc_dispatch_next_4( ident_t *loc, int32_t gtid, int32_t *p_last,
                         int32_t *p_lb, int32_t *p_ub, int32_t *p_st ){
     return kmp_next<int32_t>(gtid, p_last, p_lb, p_ub, p_st);
+}
+
+int
+__kmpc_dispatch_next_4u( ident_t *loc, int32_t gtid, int32_t *p_last,
+                        uint32_t *p_lb, uint32_t *p_ub, int32_t *p_st ){
+    return kmp_next<uint32_t, int32_t>(gtid, p_last, p_lb, p_ub, p_st);
+}
+
+int
+__kmpc_dispatch_next_8( ident_t *loc, int32_t gtid, int32_t *p_last,
+                        int64_t *p_lb, int64_t *p_ub, int64_t *p_st ){
+    return kmp_next<int64_t>(gtid, p_last, p_lb, p_ub, p_st);
+}
+
+int
+__kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
+                        uint64_t *p_lb, uint64_t *p_ub, int64_t *p_st ){
+    return kmp_next<uint64_t, int64_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
