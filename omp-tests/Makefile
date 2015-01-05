@@ -4,6 +4,9 @@ all: parallel for nested-parallel task barrier master single par-for
 for: omp-for.c
 	$(CC) -g omp-for.c -fopenmp -o omp-for
 
+for-dec: omp-for-decrement.c
+	$(CC) -g omp-for-decrement.c -fopenmp -o omp-for-decrement
+
 par-for: omp-par-for.c
 	$(CC) -g omp-par-for.c -fopenmp -o omp-par-for
 
