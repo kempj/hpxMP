@@ -1,0 +1,11 @@
+# Uncomment the following line to use OpenMP 2.0 features
+#OMPFLAG = -DOMPVER2
+# Uncomment the following line to use OpenMP 3.0 features
+OMPFLAG = -DOMPVER2 -DOMPVER3
+
+CC=~/openUH/bin/uhcc
+CFLAGS = -fopenmp -O1 -lm
+LDFLAGS = -fopenmp -O0 -lm 
+#CPP = ~/openUH/bin/uhcc
+CPP = /usr/bin/cpp
+LIBS = 

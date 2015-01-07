@@ -1,0 +1,15 @@
+#!/bin/sh
+#PBS -N ex1
+#PBS -l walltime=00:01:00
+#PBS -l select=1:ncpus=32:mpiprocs=9
+#PBS -A ACCOUNT
+
+module load intelcomp
+module load mpt
+
+cd $PBS_O_WORKDIR
+
+mpiexec_mpt -n 3 ./fdm1
+mpiexec_mpt -n 3 ./fdm2
+mpiexec_mpt -n 9 ./fdm3
+mpiexec_mpt -n 9 ./fdm4

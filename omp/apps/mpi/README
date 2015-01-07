@@ -1,0 +1,12 @@
+This directory contains examples of how one can MPI parallelize programs 
+that have complex dependencies and are close to production applications.
+
+The examples are:
+
+1. 2D Finite Difference Method
+2. Finite Element Method
+3. LU Factorization
+4. SOR Method
+5. Monte Carlo Method
+6. Molecular Dynamics
+7. MPMD Models

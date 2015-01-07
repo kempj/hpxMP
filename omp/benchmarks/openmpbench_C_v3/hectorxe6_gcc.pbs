@@ -1,0 +1,94 @@
+#!/bin/bash --login
+#PBS -N OpenMPBench
+#PBS -l mppwidth=24
+#PBS -l mppnppn=24
+#PBS -l walltime=02:00:00
+#PBS -A d23-epcc
+
+# EXEDIR is the location of the executable files (on /home usually)
+# RUNDIR is where the job will be executed from (this needs to be on /work) 
+export EXEDIR=/home/d23/d23/fiona/Projects/TEXT/dev/openmpbench_C_v3
+export RUNDIR=/work/d23/d23/fiona/TEXT
+
+# cd to RUNDIR
+cd $RUNDIR
+
+# CC_FLAG is used to specify the binding (or otherwise of threads for the GCC
+# compiler on HECToR. none = threads are free to migrate to any process
+# numa_node means that threads are bound to their numa_node
+# default (i.e. CC_FLAG=" " threads are bound to processors) this is 
+# fine for the PGI, CRAY compilers but with the GNU compiler results 
+# in very poor peformance. 
+# CC_FLAG should be set to none for the HECToR XE6
+export CC_FLAG="-cc none"
+
+# Remove any old output (*bench.all) files before starting the run
+rm *bench*.all
+
+for RUN in {1..10}
+do
+
+	echo "EPCC OpenMP microbenchmark,Run $RUN"
+	
+# Run schedbench and arraybench on the common thread count to all systems = 12
+	export OMP_NUM_THREADS=12
+	touch schedbench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/schedbench 2>&1 >> schedbench_common.all
+	
+	touch arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_1 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_3 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_9 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_27 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_81 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_243 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_729 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_2187 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_6561 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_19683 2>&1 >> arraybench_common.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_59049 2>&1 >> arraybench_common.all
+
+# Run on max thread count for this machine (xe6 = 24 threasds)
+	export OMP_NUM_THREADS=24
+	touch schedbench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/schedbench 2>&1 >> schedbench.all
+	
+	touch arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_1 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_3 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_9 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_27 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_81 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_243 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_729 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_2187 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_6561 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_19683 2>&1 >> arraybench.all
+	aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_59049 2>&1 >> arraybench.all
+	
+# Now run the syncbench, arraybench (with variable thread count) & taskbench
+# benchmarks over a range of thread counts
+	for OMP_NUM_THREADS in 1 2 4 8 12 16 20 24
+	do
+		touch syncbench.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/syncbench 2>&1 >> syncbench.all
+		
+		touch arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_1  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_3  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_9  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_27  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_81  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_243  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_729  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_2187  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_6561  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_19683  2>&1 >> arraybench.vthreads.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/arraybench_59049  2>&1 >> arraybench.vthreads.all
+		
+		touch taskbench.all
+		aprun -n 1 -N 1 -d $OMP_NUM_THREADS $CC_FLAG $EXEDIR/taskbench  2>&1 >> taskbench.all
+	
+	done
+	
+done
