@@ -30,17 +30,21 @@ hpxMP.o: hpxMP.cpp hpxMP.h
 loop_schedule.o: loop_schedule.cpp loop_schedule.h
 	$(CC) -g -fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs hpx_application`
 
-.PHONY: clean tests omp-tests
+.PHONY: clean
 clean:
 	rm -rf *.o
 	rm -rf *.so
 	rm -rf *.so.1
 
-#hpx-tests hybrid-tests
-tests: omp-tests 
+.PHONY: tests tests-omp tests-omp-clang tests-omp-UH
+tests: tests-omp
 
-omp-tests: 
+tests-omp: tests-omp-clang tests-omp-UH
+
+tests-omp-clang:
 	cd omp/tests; make CC=clang RT=libiomp5.so
+
+tests-omp-UH:
 	cd omp/tests; make CC=uhcc RT=libopenmp.so.1
 
 

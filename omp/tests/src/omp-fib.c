@@ -26,13 +26,16 @@ int main(int argc, char* argv[])
     double m;
 
     if (argc != 2 && argc != 3) {
-        fprintf(stderr, "Usage: ./fib <input> <cutoff>\n");
-        return 1;
+        //fprintf(stderr, "Usage: ./fib <input> <cutoff>\n");
+        input = 24;
+        cutoff = 0;
+        //return 1;
+    } else {
+        input = atoi(argv[1]);
+        if(argc == 3) {
+            cutoff= atoi(argv[2]);
+        }
     }
-
-    input = atoi(argv[1]);
-    if(argc == 3)
-        cutoff= atoi(argv[2]);
 
     gettimeofday(&t1, NULL);
 
