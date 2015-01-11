@@ -1,19 +1,17 @@
 CC = clang
-BIN_DIR = bin/clang
+RT = libiomp5.so
 
 CFLAGS = -g -fopenmp
 
 SRCS = $(wildcard src/*.c)
 
-TESTS= $(patsubst src/%.c,$(BIN_DIR)/%,$(SRCS))
+TESTS = $(patsubst src/%.c,bin/$(RT)/$(CC)/%,$(SRCS))
 
 default: $(TESTS)
 
-
-$(BIN_DIR)/%: src/%.c
+bin/$(RT)/$(CC)/%: src/%.c
 	$(CC) $(CFLAGS) -o $@ $<
-
 
 .PHONY: clean
 clean:
-	rm -rf $(BIN_DIR)/*
+	rm -rf bin/$(RT)/$(CC)/*

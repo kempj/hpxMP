@@ -30,66 +30,17 @@ hpxMP.o: hpxMP.cpp hpxMP.h
 loop_schedule.o: loop_schedule.cpp loop_schedule.h
 	$(CC) -g -fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs hpx_application`
 
-
-
+.PHONY: clean tests omp-tests
 clean:
 	rm -rf *.o
 	rm -rf *.so
 	rm -rf *.so.1
 
-tests: libopenmp.so.1 par-test for-test par-nested-test barrier-test single-test master-test par-for-test
+#hpx-tests hybrid-tests
+tests: omp-tests 
 
-par-for-test:
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-par-for
-
-par-test:
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-par
-for-test:
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-for
-par-nested-test:
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-nested-par
-barrier-test: libopenmp.so.1 ./omp-tests/omp-barrier
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-barrier
-
-single-test: libopenmp.so.1 ./omp-tests/omp-single
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-single
-
-master-test: libopenmp.so.1 ./omp-tests/omp-master
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-master
+omp-tests: 
+	cd omp/tests; make CC=clang RT=libiomp5.so
+	cd omp/tests; make CC=uhcc RT=libopenmp.so.1
 
 
-not-working: libopenmp.so.1 task-test
-
-task-test: libopenmp.so.1 ./omp-tests/omp-task
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-task
-
-fib-test: libopenmp.so.1 ./omp-tests/omp-fib
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-fib task 24 0
-
-#first number should be 100x the second, to keep the blocksize the same
-#blocksize = 100x100 : 1000/10 = 100
-lu-test: libopenmp.so.1 ./omp-tests/omp-lu
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/omp-lu 1000 10
-
-epcc: schedbench-test taskbench-test
-
-syncbench-test: libopenmp.so.1 syncbench
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/syncbench
-
-schedbench-test: libopenmp.so.1 schedbench
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/schedbench
-
-taskbench-test: libopenmp.so.1 taskbench
-	LD_PRELOAD=./libopenmp.so.1 ./omp-tests/epcc/omp_v3/C/taskbench
-
-syncbench:
-	cd omp-tests/epcc/omp_v3/C; make syncbench
-
-schedbench:
-	cd omp-tests/epcc/omp_v3/C; make schedbench
-
-taskbench:
-	cd omp-tests/epcc/omp_v3/C; make taskbench
-
-buildTests:
-	cd omp-tests; make
