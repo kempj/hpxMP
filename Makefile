@@ -36,13 +36,16 @@ clean:
 	rm -rf *.so
 	rm -rf *.so.1
 
-.PHONY: tests tests-omp tests-omp-clang tests-omp-UH
+.PHONY: tests tests-omp tests-omp-clang tests-omp-UH tests-omp-icc
 tests: tests-omp
 
-tests-omp: tests-omp-clang tests-omp-UH
+tests-omp: tests-omp-clang tests-omp-UH tests-omp-icc
 
 tests-omp-clang:
 	cd omp/tests; make CC=clang RT=libiomp5.so
+
+tests-omp-icc:
+	cd omp/tests; make CC=icc RT=libiomp5.so
 
 tests-omp-UH:
 	cd omp/tests; make CC=uhcc RT=libopenmp.so.1
