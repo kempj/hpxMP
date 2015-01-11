@@ -47,4 +47,3 @@ tests-omp-clang:
 tests-omp-UH:
 	cd omp/tests; make CC=uhcc RT=libopenmp.so.1
 
-

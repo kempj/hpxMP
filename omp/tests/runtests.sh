@@ -10,7 +10,7 @@ echo $logfile
 for test in $TEST_DIR/*
 do
     echo "running $test"
-    timeout 30s ./$test >> $logfile
+    LD_PRELOAD=../../$RT timeout 30s ./$test >> $logfile
     if [ $? -eq 124 ]
     then 
         echo "ERROR: test ran for longer than 30 seconds"
