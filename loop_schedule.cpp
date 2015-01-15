@@ -249,3 +249,30 @@ __kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
     return kmp_next<uint64_t, int64_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
+
+void __kmpc_dispatch_fini_4( ident_t *loc, kmp_int32 gtid ){
+}
+
+void __kmpc_dispatch_fini_8( ident_t *loc, kmp_int32 gtid ){
+}
+
+void __kmpc_dispatch_fini_4u( ident_t *loc, kmp_int32 gtid ){
+}
+
+void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid ){
+}
+
+void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    while(loop_sched->ordered_count != loop_sched->local_iter[global_tid]){
+        loop_sched->yield();
+    }
+}
+
+void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
+    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    loop_sched->iter_remaining[global_tid]--;
+    if(loop_sched->iter_remaining[global_tid] <= 0) {
+        loop_sched->ordered_count++;
+    }
+}

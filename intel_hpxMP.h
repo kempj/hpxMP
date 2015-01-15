@@ -205,7 +205,7 @@ extern "C" void __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critic
 extern "C" void __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit);
 
 extern "C" void __kmpc_flush(ident_t *loc, ...);
- 
+
 
 extern "C" void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache);
 

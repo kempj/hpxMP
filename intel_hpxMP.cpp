@@ -21,7 +21,7 @@ struct task_args {
 };
 
 void start_backend(){
-    if(!hpx_backend) {//why wasn't this here before?
+    if(!hpx_backend) {
         hpx_backend.reset(new hpx_runtime());
     }
 }
@@ -229,18 +229,19 @@ void
 __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit ) {
     parallel_region *team = hpx_backend->get_team();
     team->crit_mtx.lock();
-    //hpx_backend->crit_mtx.lock();
 }
 
 void
 __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit) {
     parallel_region *team = hpx_backend->get_team();
     team->crit_mtx.unlock();
-    //hpx_backend->crit_mtx.unlock();
 }
 
 void __kmpc_flush(ident_t *loc, ...){
     __sync_synchronize();
+}
+
+void __kmpc_ordered( ident_t *, kmp_int32 global_tid ) {
 }
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
@@ -320,8 +321,6 @@ double omp_get_wtick(){
     return .000000001;
 }
 
-//TODO: change in_parallel to this? 
-//    or, is this necessary once single is fixed?
 int omp_in_parallel(){
     if(!hpx_backend) {
         start_backend();

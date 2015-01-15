@@ -2,10 +2,11 @@
 #include "intel_hpxMP.h"
 
 
-extern "C" void __kmpc_for_static_fini( ident_t *loc, int32_t global_tid );
+extern "C" void __kmpc_ordered( ident_t *, kmp_int32 global_tid );
+extern "C" void __kmpc_end_ordered( ident_t *, kmp_int32 global_tid );
+ 
 
-//TODO:
-//__kmpc_for_static_init_8
+extern "C" void __kmpc_for_static_fini( ident_t *loc, int32_t global_tid );
 
 extern "C" void 
 __kmpc_for_static_init_4( ident_t *loc, int32_t gtid, int32_t schedtype, 
@@ -65,4 +66,10 @@ __kmpc_dispatch_next_8( ident_t *loc, int32_t gtid, int32_t *p_last,
 extern "C" int
 __kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
                         uint64_t *p_lb, uint64_t *p_ub, int64_t *p_st );
+
+
+extern "C" void __kmpc_dispatch_fini_4( ident_t *loc, kmp_int32 gtid );
+extern "C" void __kmpc_dispatch_fini_8( ident_t *loc, kmp_int32 gtid );
+extern "C" void __kmpc_dispatch_fini_4u( ident_t *loc, kmp_int32 gtid );
+extern "C" void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid );
 
