@@ -3,7 +3,7 @@ RT=$1
 CC=$2
 TEST_DIR=bin/$RT/$CC
 logfile=logs/$CC-$RT.log
-
+nthreads=4
 preload=../../$RT
 
 echo "running the $CC compiled code with the $RT runtime"
@@ -14,7 +14,7 @@ echo `date` > $logfile
 for test in $TEST_DIR/*
 do
     echo "running $test" | tee -a $logfile
-    LD_PRELOAD=$preload timeout 30s ./$test >>$logfile 2>&1
+    OMP_NUM_THREADS=$nthreads LD_PRELOAD=$preload timeout 30s ./$test >>$logfile 2>&1
     retval=$?
     if [ $retval -eq 124 ]
     then 
