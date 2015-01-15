@@ -298,13 +298,12 @@ int omp_get_thread_num(){
         return 1;
 }
 
+//"returns the number of threads in the current team"
 int omp_get_num_threads(){
-    if(in_parallel){
-        return hpx_backend->get_team()->num_threads;
-        //return hpx_backend->get_task_data()->nthreads_var;//not sure why this was added
-    } else {
-        return 1;
-    }
+    if(!hpx_backend) {
+        start_backend();
+    }                      
+    return hpx_backend->get_num_threads();
 }
 
 int omp_get_max_threads() {

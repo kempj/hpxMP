@@ -108,10 +108,10 @@ struct parallel_region {
 class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
-        omp_task_data(parallel_region *T, omp_device_icv *global) : team(T) {
+        omp_task_data(parallel_region *T, omp_device_icv *global, int init_num_threads) : team(T) {
             thread_num = 0;
             icv.device = global;
-            icv.nthreads = T->num_threads;
+            icv.nthreads = init_num_threads;
             threads_requested = icv.nthreads;
         };
 
@@ -122,7 +122,6 @@ class omp_task_data {
             if(team->num_threads > 1) {
                 icv.active_levels++;
             }
-            if(tid == 0) cout << endl;
         };
 
         //This is for explicit tasks
@@ -144,6 +143,8 @@ class omp_task_data {
         omp_icv icv;
 
         //assuming the number of threads that can be created is infinte (so I can avoid using ThreadsBusy)
+        //This is the way it is because of the OMP spec. 
+        //See section 2.3 of the OpenMP 4.0 spec for details on ICVs.
         void set_threads_requested( int nthreads ){
             if( nthreads > 0) {
                 threads_requested = nthreads;

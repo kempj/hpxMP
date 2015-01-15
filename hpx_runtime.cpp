@@ -62,8 +62,10 @@ hpx_runtime::hpx_runtime() {
 
     //TODO: nthreads_var is a list of ints where the nth item corresponds
     // to the number of threads in nth level parallel regions.
-    implicit_region.reset(new parallel_region(initial_num_threads));
-    initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv));
+
+    //FIXME: the implicit region is supposet to have 1 thread.
+    implicit_region.reset(new parallel_region(1));
+    initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv, initial_num_threads));
     walltime.reset(new high_resolution_timer);
 
     if(external_hpx)
@@ -146,13 +148,7 @@ double hpx_runtime::get_time() {
 }
 
 int hpx_runtime::get_num_threads() {
-    int num_threads;
-    if( hpx::threads::get_self_ptr() ){
-        num_threads = get_team()->num_threads;
-    } else {
-        num_threads = 1;
-    }
-    return num_threads;
+    return get_team()->num_threads;
 }
 
 int hpx_runtime::get_num_procs() {
@@ -160,14 +156,14 @@ int hpx_runtime::get_num_procs() {
 }
 
 void hpx_runtime::set_num_threads(int nthreads) {
-    if( hpx::threads::get_self_ptr() ){
-        if(nthreads > 0) {
-            get_task_data()->icv.nthreads = nthreads;
-        }
-    } else {//not an hpx thread
-       //initial_num_threads = nthreads; 
-       initial_thread->icv.nthreads = nthreads; 
+    //if( hpx::threads::get_self_ptr() ){
+    if(nthreads > 0) {
+        get_task_data()->icv.nthreads = nthreads;
     }
+    //} else {//not an hpx thread
+       //initial_num_threads = nthreads; 
+    //   initial_thread->icv.nthreads = nthreads; 
+    //}
 }
 
 //According to the spec, this should only be called from a "thread", 
@@ -302,7 +298,6 @@ void fork_and_sync( parallel_region *team, omp_micro thread_func,
                         boost::mutex& mtx, boost::condition& cond, 
                         bool& running) {
 
-    //parallel_region team(num_threads);
     fork_worker(thread_func, fp, team, parent);
     {
         boost::mutex::scoped_lock lk(mtx);
