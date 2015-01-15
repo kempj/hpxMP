@@ -13,7 +13,6 @@ boost::shared_ptr<hpx_runtime> hpx_backend;
 //typedef void (*microtask_t)( int *gtid, int *npr, ... );
 //typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
 
-bool in_parallel = false;
 
 struct task_args {
     kmpc_micro fork_func;
@@ -81,14 +80,8 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     args.fork_func = microtask;
 
+    hpx_backend->fork(0, omp_thread_func, (void*)&args);
 
-    if( hpx::threads::get_self_ptr() ) {
-        hpx_backend->fork(0, omp_thread_func, (void*)&args);
-    } else {
-        in_parallel = true;
-        hpx_backend->fork(0, omp_thread_func, (void*)&args);
-        in_parallel = false;
-    }
     //cout << "leaving main fork" << endl;
 }
 
@@ -182,16 +175,15 @@ int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
 }
 
 int __kmpc_global_thread_num(ident_t *loc){
-    //cout << "global_thread_num not implemented\n";
-    //return 0;
     if(hpx_backend)
         return hpx_backend->get_thread_num();
     return 0;
 }
 
 int __kmpc_single(ident_t *loc, int tid){
-    if(!in_parallel)
+    if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return 1;
+    }
     parallel_region *team = hpx_backend->get_team();
     int num_threads = hpx_backend->get_num_threads();
 
@@ -211,8 +203,9 @@ int __kmpc_single(ident_t *loc, int tid){
 
 //in intel, only the single thread calls this
 void __kmpc_end_single(ident_t *loc, int tid){
-    if(!in_parallel)
+    if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return;
+    }
     parallel_region *team = hpx_backend->get_team();
     team->single_mtx.lock();
     if(team->single_counter == 0) {
