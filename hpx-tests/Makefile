@@ -1,5 +1,8 @@
 all: lu-hpx lu-hpx-dataflow
 
+1d_stencil:
+	clang++ -fopenmp 1d_stencil_3_omp_task.cpp -o omp4 `pkg-config --cflags --libs hpx_application`
+
 lu-hpx: hpx-lu.cpp
 	g++  hpx-lu.cpp -o hpx-lu `pkg-config --cflags --libs hpx_application`
 
