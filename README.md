@@ -1,10 +1,33 @@
 hpxMP
 =====
 
-hpxcMP.cpp contains all of the current code for the translation library
+requires HPX, which can be found at https://github.com/STEllAR-GROUP/hpx
 
-omp-tests contains simple openMP programs and the Makefile in omp-tests to build them with OpenUH.
-Make buildTests at the top level will do the same thing.
+In addition to the other cmake options, HPX must be built with the following option:
+ -DHPX_THREAD_MAINTAIN_LOCAL_STORAGE=ON 
+
+omp/tests contains simple openMP programs and the Makefile to build them.
+currently, multiple runtimes and compilers have been added to the tests with the following targets:
+tests-omp tests-omp-clang tests-omp-icc tests-omp-UH
+
+to build the library for OpenUH, use
+
+make libopenmp.so.1
+
+and to build the library for clang/icc, use 
+
+make libiomp5.so
+
+Any applications that you want to run need only be compiled with OpenUH or icc/clang+OpenMP, with
+the normal openmp flags. Then run the application with the corresponding hpxMP library: 
+
+LD_PRELOAD=/path/to/lib/libiomp5.so myapplication
+
+This library will read in most OpenMP environment variables, as well as pass hpx arguments using the
+OMP_HPX_ARGS environment variable. Any HPX arguments passed to the openmp application will not be
+passed to hpx.
+
+
 
 To build with OpenUH build on Hermoine, add /home/jkemp/openUH/bin to your path, or use your own installation of openUH.
 I also have "/home/jkemp/openUH/lib/gcc-lib/x86_64-open64-linux/5.0/" appended to my LD_LIBRARY_PATH, though I forget why.
@@ -17,6 +40,3 @@ Directives not implemented:
 threadprivate, copyprivate, and copyin 
 ordered 
 
-Build Notes:
-In addition to the other cmake options, HPX must be built with the following option:
- -DHPX_THREAD_MAINTAIN_LOCAL_STORAGE=ON 

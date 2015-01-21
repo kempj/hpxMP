@@ -127,16 +127,18 @@ hpx_runtime::hpx_runtime() {
 
 //This isn't really a thread team, it's a region. I think.
 parallel_region* hpx_runtime::get_team(){
-    return get_task_data()->team;
+    auto task_data = get_task_data();
+    auto team = task_data->team;
+    return team;
 }
 
 omp_task_data* hpx_runtime::get_task_data(){
     omp_task_data *data;
     if(hpx::threads::get_self_ptr()) {
-         data = reinterpret_cast<omp_task_data*>(get_thread_data(get_self_id()));
-         if(!data) {
-             data = initial_thread.get();
-         }
+        data = reinterpret_cast<omp_task_data*>(get_thread_data(get_self_id()));
+        if(!data) {
+            data = initial_thread.get();
+        }
     } else { 
         data = initial_thread.get();
     }
@@ -176,6 +178,8 @@ void hpx_runtime::barrier_wait(){
 }
 
 int hpx_runtime::get_thread_num() {
+    auto *data = get_task_data();
+    cout << "data = " << data << endl;
     return get_task_data()->thread_num;
 }
 

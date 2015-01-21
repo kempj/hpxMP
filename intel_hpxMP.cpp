@@ -255,6 +255,7 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
         team->thread_mtx.lock();
         if(!(*cache)){
             *cache = new void*[num_threads]{0};//FIXME: this never gets deallocated
+            // add_thread_exit_callback(thread_id_type const& id, HPX_STD_FUNCTION<void()> const& f);
         }
         team->thread_mtx.unlock();
     }
