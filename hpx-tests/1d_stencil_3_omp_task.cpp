@@ -140,9 +140,11 @@ struct stepper
             space const& current = U[t % 2];
             space& next = U[(t + 1) % 2];
 
+//shared(current[idx(i-1,np)], current[i], current[idx(i+1, np)])
             for (size_t i = 0; i < np; ++i) 
             {
-#pragma omp task untied depend( in: current[idx(i-1, np)], current[i], current[idx(i+1, np)] ) depend( out: U[(t+1)%2][i] )
+#pragma omp task untied depend( in: current[idx(i-1, np)], current[i], current[idx(i+1, np)] ) depend( out: U[(t+1)%2][i] ) \
+shared(current)
                 {
                     U[(t+1) % 2][i] = heat_part(current[idx(i-1, np)], current[i], current[idx(i+1, np)]);
                 }
