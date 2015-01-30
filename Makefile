@@ -35,7 +35,7 @@ tests-omp-UH: libopenmp.so.1
 	cd omp/tests; make CC=uhcc RT=libopenmp.so.1
 
 .PHONY: debug
-debug: 
+debug:  intel_rt.o hpx_runtime.o loop_schedule.o
 	$(CC) -g -shared -Wl,-soname,libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o hpx_runtime.o loop_schedule.o  `pkg-config --cflags --libs hpx_application_debug`
 
 hpx_runtimed.o: hpx_runtime.cpp
