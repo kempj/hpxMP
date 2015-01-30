@@ -171,6 +171,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 loop_sched->unlock();
                 *p_lower= loop_sched->lower;
                 *p_upper= loop_sched->upper;
+                *p_stride= loop_sched->stride;
 
                 omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
                                     p_lower, p_upper, p_stride, 
