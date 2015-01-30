@@ -20,12 +20,6 @@ hpxMP.o: hpxMP.cpp hpxMP.h
 loop_schedule.o: loop_schedule.cpp loop_schedule.h
 	$(CC) -g -fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs hpx_application`
 
-.PHONY: clean
-clean:
-	rm -rf *.o
-	rm -rf *.so
-	rm -rf *.so.1
-
 .PHONY: tests tests-omp tests-omp-clang tests-omp-UH tests-omp-icc
 tests: tests-omp
 
@@ -40,9 +34,9 @@ tests-omp-icc: libiomp5.so
 tests-omp-UH: libopenmp.so.1
 	cd omp/tests; make CC=uhcc RT=libopenmp.so.1
 
-
-debug: hpxMPd.o hpx_runtimed.o
-	$(CC) -g -shared -Wl,-soname,libopenmp.so.1 -o libopenmp.so.1 hpxMPd.o hpx_runtimed.o `pkg-config --cflags --libs hpx_application_debug`
+.PHONY: debug
+debug: 
+	$(CC) -g -shared -Wl,-soname,libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o hpx_runtime.o loop_schedule.o  `pkg-config --cflags --libs hpx_application_debug`
 
 hpx_runtimed.o: hpx_runtime.cpp
 	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtimed.o `pkg-config --cflags --libs hpx_application_debug`
@@ -50,3 +44,9 @@ hpx_runtimed.o: hpx_runtime.cpp
 hpxMPd.o: hpxMP.cpp hpxMP.h
 	$(CC) -g -fPIC -c hpxMP.cpp -o hpxMPd.o `pkg-config --cflags --libs hpx_application_debug`
 
+
+.PHONY: clean
+clean:
+	rm -rf *.o
+	rm -rf *.so
+	rm -rf *.so.1
