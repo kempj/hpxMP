@@ -14,7 +14,8 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
                       T *p_lower, T *p_upper,
                       D *p_stride, D incr, D chunk) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    int team_size = loop_sched->num_threads;
+    //int team_size = loop_sched->num_threads;
+    int team_size = hpx_backend->get_num_threads();
     int trip_count = (*p_upper - *p_lower) / incr + 1;
     int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
 
