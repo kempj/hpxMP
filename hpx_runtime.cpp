@@ -179,7 +179,7 @@ void hpx_runtime::barrier_wait(){
 
 int hpx_runtime::get_thread_num() {
     auto *data = get_task_data();
-    cout << "data = " << data << endl;
+    //cout << "data = " << data << endl;
     return get_task_data()->thread_num;
 }
 
