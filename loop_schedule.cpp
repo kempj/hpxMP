@@ -103,6 +103,8 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
     while(loop_sched->is_done && loop_sched->num_workers > 0 ) {
         loop_sched->yield();
     }
+    //if(schedtype == kmp_sch_static) schedtype = kmp_sch_static_greedy
+    //TODO: look at the Intel code to see what data checks are done here. :738
     int NT = loop_sched->num_threads;
     loop_sched->lock();
     if(loop_sched->num_workers == 0) {
@@ -154,19 +156,30 @@ __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
     scheduler_init<uint64_t, int64_t>( gtid, schedule, lb, ub, st, chunk);
 }
 
+//return one if there is work to be done, zero otherwise
+
 template<typename T, typename D=T>
 int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
     //TODO p_last is not touched in this function
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     int schedule = loop_sched->schedule;
+    T init;
 
     switch (schedule) {
+        case kmp_sch_static_greedy:
         case kmp_sch_static:
-        case kmp_sch_static_chunked:
+        case kmp_sch_static_chunked: //1668
+        
         case kmp_ord_static:
         case kmp_ord_static_chunked:
+            if( loop_sched->iter_remaining[gtid] == -1){
+                loop_sched->iter_remaining[gtid] = 0;
+                return 0;
+            }
+
             loop_sched->lock();
             if(loop_sched->schedule_count < loop_sched->num_threads && !loop_sched->is_done) {
+                //TODO:possible to remove lock with assigning the atomic increment?
                 loop_sched->local_iter[gtid] = loop_sched->schedule_count;
                 loop_sched->schedule_count++;
                 loop_sched->unlock();
@@ -174,8 +187,8 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 *p_upper= loop_sched->upper;
                 *p_stride= loop_sched->stride;
 
-                //omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
-                omp_static_init<T,D>( gtid, schedule, p_last,
+                omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
+                //omp_static_init<T,D>( gtid, schedule, p_last,
                                     p_lower, p_upper, p_stride, 
                                     loop_sched->stride, loop_sched->chunk);
                 loop_sched->iter_remaining[gtid] = (*p_upper - *p_lower) / *p_stride + 1;
@@ -188,10 +201,6 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 loop_sched->yield();
             }
             loop_sched->lock();
-            loop_sched->is_done = true;
-            loop_sched->num_workers--;
-            loop_sched->unlock();
-            return 0;
 
         case kmp_sch_guided_chunked:
         case kmp_sch_dynamic_chunked:
@@ -277,6 +286,7 @@ void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     loop_sched->iter_remaining[global_tid]--;
     if(loop_sched->iter_remaining[global_tid] <= 0) {
+        loop_sched->iter_remaining[global_tid] = -1;
         loop_sched->ordered_count++;
     }
 }
