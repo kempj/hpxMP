@@ -49,7 +49,7 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
     loop_sched->lock();
     cout << "thread " << gtid << " out of " << team_size << ": " << endl;
     cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
-         << *p_last_iter << "p_stride  = " << *p_stride << endl;
+         << *p_last_iter << ", p_stride  = " << *p_stride << endl;
     cout << "incr = " << incr << ", chunk = " << chunk << endl;
     loop_sched->unlock();
 }
@@ -193,7 +193,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 *p_upper= loop_sched->upper;
                 *p_stride= loop_sched->stride;
 
-                cout << "loop, tid = " << gtid << ", "<< loop_sched->schedule_count << ", " << *p_last << ", "
+                cout << "loop, tid = " << gtid << ", "<< loop_sched->local_iter[gtid] << ", " << *p_last << ", "
                      << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
                 omp_static_init<T,D>( loop_sched->local_iter[gtid], schedule, p_last,
                 //omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
