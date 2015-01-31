@@ -193,7 +193,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 *p_upper= loop_sched->upper;
                 *p_stride= loop_sched->stride;
 
-                cout << "loop, tid = " << gtid << ", "<< loop_sched->schedule_count << ", " << *p_last << ", "
+                cout << "loop, tid = " << gtid << ", "<< loop_sched->local_iter[gtid] << ", " << *p_last << ", "
                      << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
                 omp_static_init<T,D>( loop_sched->local_iter[gtid], schedule, p_last,
                 //omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
