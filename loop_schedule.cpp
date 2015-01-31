@@ -20,6 +20,15 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
     int trip_count = (*p_upper - *p_lower) / incr + 1;
     int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
 
+
+    loop_sched->lock();
+    cout << "beginning of static_init " << endl;
+    cout << "thread " << gtid << " out of " << team_size << ": " << endl;
+    cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
+         << *p_last_iter << ", p_stride  = " << *p_stride << endl;
+    cout << "incr = " << incr << ", chunk = " << chunk << endl;
+    loop_sched->unlock();
+
     if(team_size == 1) {
         *p_last_iter = 1;
         return;
