@@ -172,10 +172,10 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         
         case kmp_ord_static:
         case kmp_ord_static_chunked:
-            if( loop_sched->iter_remaining[gtid] == -1){
-                loop_sched->iter_remaining[gtid] = 0;
-                return 0;
-            }
+            //if( loop_sched->iter_remaining[gtid] == -1){
+            //    loop_sched->iter_remaining[gtid] = 0;
+            //    return 0;
+            //}
 
             loop_sched->lock();
             if(loop_sched->schedule_count < loop_sched->num_threads && !loop_sched->is_done) {
@@ -187,15 +187,16 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 *p_upper= loop_sched->upper;
                 *p_stride= loop_sched->stride;
 
-                cout << "loop, tid = " << gtid << loop_sched->schedule_count << ", " << *p_last << ", "
-                     << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
-                omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
+                //cout << "loop, tid = " << gtid << ", "<< loop_sched->schedule_count << ", " << *p_last << ", "
+                //     << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
+                omp_static_init<T,D>( loop_sched->local_iter[gtid], schedule, p_last,
+                //omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
                 //omp_static_init<T,D>( gtid, schedule, p_last,
                                     p_lower, p_upper, p_stride, 
                                     loop_sched->stride, loop_sched->chunk);
 
-                cout << "after, tid = " << gtid << " : "  << loop_sched->schedule_count << ", " << *p_last << ", "
-                     << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
+                //cout << "after, tid = " << gtid << " : "  << loop_sched->schedule_count << ", " << *p_last << ", "
+                //     << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
                 loop_sched->iter_remaining[gtid] = (*p_upper - *p_lower) / *p_stride + 1;
                 return 1;
             } 
@@ -291,7 +292,7 @@ void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     loop_sched->iter_remaining[global_tid]--;
     if(loop_sched->iter_remaining[global_tid] <= 0) {
-        loop_sched->iter_remaining[global_tid] = -1;
+        //loop_sched->iter_remaining[global_tid] = -1;
         loop_sched->ordered_count++;
     }
 }
