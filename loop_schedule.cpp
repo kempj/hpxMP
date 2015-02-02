@@ -241,7 +241,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             //*p_lower = loop_sched->lower;
             *p_lower = loop_sched->lower += ( (*p_stride) * loop_sched->chunk);
             *p_upper = *p_lower + (loop_sched->chunk - 1) * (*p_stride);
-            loop_sched->lower = *p_upper + *p_stride;
+            //loop_sched->lower = *p_upper + *p_stride;
 
             loop_sched->local_iter[gtid] = loop_sched->schedule_count;
             loop_sched->iter_remaining[gtid] = loop_sched->chunk;
