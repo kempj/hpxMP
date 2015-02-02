@@ -20,15 +20,6 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
     int trip_count = (*p_upper - *p_lower) / incr + 1;
     int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
 
-
-    //loop_sched->lock();
-    //cout << "beginning of static_init " << endl;
-    //cout << "thread " << gtid << " out of " << team_size << ": " << endl;
-    //cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
-    //     << *p_last_iter << ", p_stride  = " << *p_stride << endl;
-    //cout << "incr = " << incr << ", chunk = " << chunk << endl;
-    //loop_sched->unlock();
-
     if(team_size == 1) {
         *p_last_iter = 1;
         return;
@@ -55,12 +46,6 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
     }
     *p_lower = my_lower;
     *p_upper = my_upper;
-    //loop_sched->lock();
-    //cout << "thread " << gtid << " out of " << team_size << ": " << endl;
-    //cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
-    //     << *p_last_iter << ", p_stride  = " << *p_stride << endl;
-    //cout << "incr = " << incr << ", chunk = " << chunk << endl;
-    //loop_sched->unlock();
 }
 
 void
@@ -115,17 +100,9 @@ template<typename T, typename D=T>
 void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chunk) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     // waiting for last loop to finish.
-    loop_sched->lock();
-    cout << " thread " << gtid << " entering scheduler init, " << loop_sched->work_remains
-         << ", " << loop_sched->num_workers << endl;
-    loop_sched->unlock();
-
     while( !loop_sched->work_remains && loop_sched->num_workers > 0 ) {
         loop_sched->yield();
     }
-    loop_sched->lock();
-    cout << "thread " << gtid << " done waiting" << endl;
-    loop_sched->unlock();
     //if(schedtype == kmp_sch_static) schedtype = kmp_sch_static_greedy
     //TODO: look at the Intel code to see what data checks are done here. :738
     int NT = loop_sched->num_threads;
@@ -209,9 +186,6 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_ord_static_chunked:
 
             loop_id = loop_sched->schedule_count++;
-            loop_sched->lock();
-            cout << "thread " << gtid << "taking work " << loop_id << endl;
-            loop_sched->unlock();
 
             if( loop_id >= loop_sched->num_threads ) {
                 loop_sched->work_remains = false;
@@ -289,7 +263,7 @@ __kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
 
 
 void __kmpc_dispatch_fini_4( ident_t *loc, kmp_int32 gtid ){
-    cout << "kmpc_dispatch_fini by thread " << gtid << endl;
+    //cout << "kmpc_dispatch_fini by thread " << gtid << endl;
 }
 
 void __kmpc_dispatch_fini_8( ident_t *loc, kmp_int32 gtid ){
@@ -303,15 +277,9 @@ void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid ){
 
 void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    loop_sched->lock();
-    cout << "Entering ordered, by thread " << global_tid << endl;
-    cout << "ordered_count = " << loop_sched->ordered_count << endl;
-    cout << "local_iter = " << loop_sched->local_iter[global_tid] << endl;
-    loop_sched->unlock();
     while(loop_sched->ordered_count != loop_sched->local_iter[global_tid]){
         loop_sched->yield();
     }
-    cout << "exiting ordered, by thread " << global_tid << endl;
 }
 
 void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
