@@ -218,7 +218,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 loop_sched->num_workers--;
             }
             if( loop_id < loop_sched->num_threads ) {
-                loop_sched->local_iter[gtid] = loop_sched->schedule_count++;
+                loop_sched->local_iter[gtid] = loop_id;//loop_sched->schedule_count++;
                 *p_lower= loop_sched->lower;
                 *p_upper= loop_sched->upper;
                 *p_stride= loop_sched->stride;
