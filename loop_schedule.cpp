@@ -303,7 +303,11 @@ void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid ){
 
 void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    loop_sched->lock();
     cout << "Entering ordered, by thread " << global_tid << endl;
+    cout << "ordered_count = " << loop_sched->ordered_count << end;
+    cout << "local_iter = " << loop_sched->local_iter[global_tid] << endl;
+    loop_sched->unlock();
     while(loop_sched->ordered_count != loop_sched->local_iter[global_tid]){
         loop_sched->yield();
     }
