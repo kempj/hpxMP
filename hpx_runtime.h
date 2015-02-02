@@ -70,7 +70,7 @@ class loop_data {
         int chunk;
         std::atomic<int> loop_count{0}; //unused inside the loop
         std::atomic<int> num_workers{0}; 
-        bool is_done = false;
+        bool work_remains = false;
         std::atomic<int> ordered_count{0};
         std::atomic<int> schedule_count{0};
         int num_threads;
