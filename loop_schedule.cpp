@@ -21,13 +21,13 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
     int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
 
 
-    loop_sched->lock();
-    cout << "beginning of static_init " << endl;
-    cout << "thread " << gtid << " out of " << team_size << ": " << endl;
-    cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
-         << *p_last_iter << ", p_stride  = " << *p_stride << endl;
-    cout << "incr = " << incr << ", chunk = " << chunk << endl;
-    loop_sched->unlock();
+    //loop_sched->lock();
+    //cout << "beginning of static_init " << endl;
+    //cout << "thread " << gtid << " out of " << team_size << ": " << endl;
+    //cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
+    //     << *p_last_iter << ", p_stride  = " << *p_stride << endl;
+    //cout << "incr = " << incr << ", chunk = " << chunk << endl;
+    //loop_sched->unlock();
 
     if(team_size == 1) {
         *p_last_iter = 1;
@@ -55,12 +55,12 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
     }
     *p_lower = my_lower;
     *p_upper = my_upper;
-    loop_sched->lock();
-    cout << "thread " << gtid << " out of " << team_size << ": " << endl;
-    cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
-         << *p_last_iter << ", p_stride  = " << *p_stride << endl;
-    cout << "incr = " << incr << ", chunk = " << chunk << endl;
-    loop_sched->unlock();
+    //loop_sched->lock();
+    //cout << "thread " << gtid << " out of " << team_size << ": " << endl;
+    //cout << "lower = " << *p_lower << ", upper = " << *p_upper << ", last = " 
+    //     << *p_last_iter << ", p_stride  = " << *p_stride << endl;
+    //cout << "incr = " << incr << ", chunk = " << chunk << endl;
+    //loop_sched->unlock();
 }
 
 void
@@ -121,8 +121,9 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
     //if(schedtype == kmp_sch_static) schedtype = kmp_sch_static_greedy
     //TODO: look at the Intel code to see what data checks are done here. :738
     int NT = loop_sched->num_threads;
-    loop_sched->lock();
-    if(loop_sched->num_workers == 0) {
+    int loop_id = loop_sched->num_workers++;
+
+    if(loop_id == 0) {
         loop_sched->is_done = false;
         loop_sched->lower = lower;
         loop_sched->upper = upper;
@@ -134,13 +135,17 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
         loop_sched->num_threads = NT;
         loop_sched->local_iter.resize(NT);
         loop_sched->iter_remaining.resize(NT);
-        loop_sched->num_workers++;
-    } else {
-        loop_sched->num_workers++;
+
+        if( kmp_ord_lower & loop_sched->schedule ) {
+            loop_sched->ordered == true;
+            loop_sched->schedule = (loop_sched->schedule) - (kmp_ord_lower - kmp_sch_lower);
+        } else {
+            loop_sched->ordered == true;
+        }
     }
+
     loop_sched->iter_remaining[gtid] = 0;
     loop_sched->local_iter[gtid] = 0;
-    loop_sched->unlock();
 }
 
 
@@ -187,41 +192,31 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         
         case kmp_ord_static:
         case kmp_ord_static_chunked:
-            //if( loop_sched->iter_remaining[gtid] == -1){
-            //    loop_sched->iter_remaining[gtid] = 0;
-            //    return 0;
-            //}
 
-            loop_sched->lock();
-            if(loop_sched->schedule_count < loop_sched->num_threads && !loop_sched->is_done) {
-                //TODO:possible to remove lock with assigning the atomic increment?
-                loop_sched->local_iter[gtid] = loop_sched->schedule_count;
-                loop_sched->schedule_count++;
-                loop_sched->unlock();
+            int loop_id = loop_sched->schedule_count++;
+
+            if( loop_id == loop_sched->num_threads ) {
+                loop_sched->is_done = true;
+            }
+            if( loop_id < loop_sched->num_threads ) {
+                loop_sched->local_iter[gtid] = loop_sched->schedule_count++;
                 *p_lower= loop_sched->lower;
                 *p_upper= loop_sched->upper;
                 *p_stride= loop_sched->stride;
 
-                cout << "loop, tid = " << gtid << ", "<< loop_sched->local_iter[gtid] << ", " << *p_last << ", "
-                     << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
                 omp_static_init<T,D>( loop_sched->local_iter[gtid], schedule, p_last,
-                //omp_static_init<T,D>( loop_sched->schedule_count, schedule, p_last,
-                //omp_static_init<T,D>( gtid, schedule, p_last,
                                     p_lower, p_upper, p_stride, 
                                     loop_sched->stride, loop_sched->chunk);
 
-                //cout << "after, tid = " << gtid << " : "  << loop_sched->schedule_count << ", " << *p_last << ", "
-                //     << *p_lower <<  ", " << *p_upper << ", " << *p_stride << endl;
                 loop_sched->iter_remaining[gtid] = (*p_upper - *p_lower) / *p_stride + 1;
-                return 1;
-            } 
-            loop_sched->unlock();
+            } else {
             //Wait for every thread to at least start the loop before exiting
-            while( loop_sched->num_workers < loop_sched->num_threads &&
-                        !loop_sched->is_done){
-                loop_sched->yield();
+                while( loop_sched->num_workers < loop_sched->num_threads &&
+                            !loop_sched->is_done){
+                    loop_sched->yield();
+                }
             }
-            loop_sched->lock();
+            return !(loop_sched->is_done);
 
         case kmp_sch_guided_chunked:
         case kmp_sch_dynamic_chunked:
