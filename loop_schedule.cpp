@@ -137,10 +137,10 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
         loop_sched->iter_remaining.resize(NT);
 
         if( kmp_ord_lower & loop_sched->schedule ) {
-            loop_sched->ordered == true;
+            loop_sched->ordered = true;
             loop_sched->schedule = (loop_sched->schedule) - (kmp_ord_lower - kmp_sch_lower);
         } else {
-            loop_sched->ordered == true;
+            loop_sched->ordered = true;
         }
     }
 
@@ -211,7 +211,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
 
                 loop_sched->iter_remaining[gtid] = (*p_upper - *p_lower) / *p_stride + 1;
             } else {
-            //Wait for every thread to at least start the loop before exiting
+                //Wait for every thread to at least start the loop before exiting
                 while( loop_sched->num_workers < loop_sched->num_threads &&
                             !loop_sched->is_done){
                     loop_sched->yield();
@@ -226,7 +226,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_sch_runtime:
         case kmp_ord_runtime:
             if((loop_sched->upper - loop_sched->lower) * loop_sched->stride < 0 ) {
-                loop_sched->unlock();
+                //There is no work to be done
                 while( loop_sched->num_workers < loop_sched->num_threads &&
                        !loop_sched->is_done){
                     loop_sched->yield();
@@ -237,11 +237,12 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 loop_sched->unlock();
                 return 0;
             }
-            *p_lower = loop_sched->lower;
             *p_stride = loop_sched->stride;
-            *p_upper = *p_lower + (loop_sched->chunk -1) * (*p_stride);
+            //*p_lower = loop_sched->lower;
+            *p_lower = loop_sched->lower += ( (*p_stride) * loop_sched->chunk);
+            *p_upper = *p_lower + (loop_sched->chunk - 1) * (*p_stride);
             loop_sched->lower = *p_upper + *p_stride;
-            loop_sched->unlock();
+
             loop_sched->local_iter[gtid] = loop_sched->schedule_count;
             loop_sched->iter_remaining[gtid] = loop_sched->chunk;
             loop_sched->schedule_count++;

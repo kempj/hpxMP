@@ -63,7 +63,8 @@ class loop_data {
         void lock(){ loop_mtx.lock(); }
         void unlock(){ loop_mtx.unlock();}
 
-        int lower;
+        //int lower;
+        std::atomic<int> lower{0};
         int upper;
         int stride;
         int chunk;
