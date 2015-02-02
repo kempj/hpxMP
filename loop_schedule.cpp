@@ -203,6 +203,9 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_ord_static_chunked:
 
             loop_id = loop_sched->schedule_count++;
+            loop_sched->lock();
+            cout << "thread " << gtid << "taking work " << loop_id << endl;
+            loop_sched->unlock();
 
             if( loop_id >= loop_sched->num_threads ) {
                 loop_sched->work_remains = false;
