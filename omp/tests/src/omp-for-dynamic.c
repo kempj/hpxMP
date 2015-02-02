@@ -24,14 +24,14 @@ int main() {
         printf("Static2 Hello World %d\n", i);
     }
 
-    printf("Dynamic loop\n");
+    printf("\nDynamic loop\n");
 #pragma omp parallel for schedule(dynamic)
     for(i = 0; i < 9; i++) 
     {
         printf("Thread %d: Dynamic Hello World %d\n", omp_get_thread_num(), i);
     }
 
-    printf("Static Ordered loop\n");
+    printf("\nStatic Ordered loop\n");
 #pragma omp parallel for schedule(static) ordered
     for(i = 0; i < 10; i++) 
     {
@@ -39,7 +39,7 @@ int main() {
         printf("Thread %d: Static Ordered Hello World %d\n", omp_get_thread_num(), i);
     }
 
-    printf("Dynamic Ordered loop\n");
+    printf("\nDynamic Ordered loop\n");
 #pragma omp parallel for schedule(dynamic) ordered
     for(i = 0; i < 16; i++) 
     {
