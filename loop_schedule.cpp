@@ -282,6 +282,7 @@ __kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
 
 
 void __kmpc_dispatch_fini_4( ident_t *loc, kmp_int32 gtid ){
+    cout << "kmpc_dispatch_fini by thread " << gtid << endl;
 }
 
 void __kmpc_dispatch_fini_8( ident_t *loc, kmp_int32 gtid ){
