@@ -184,6 +184,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     int schedule = loop_sched->schedule;
     T init;
+    int loop_id;
 
     switch (schedule) {
         case kmp_sch_static_greedy:
@@ -193,7 +194,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_ord_static:
         case kmp_ord_static_chunked:
 
-            int loop_id = loop_sched->schedule_count++;
+            loop_id = loop_sched->schedule_count++;
 
             if( loop_id == loop_sched->num_threads ) {
                 loop_sched->is_done = true;
