@@ -115,9 +115,17 @@ template<typename T, typename D=T>
 void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chunk) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     // waiting for last loop to finish.
+    loop_sched->lock();
+    cout << " thread " << gtid << " entering scheduler init, " << loop_sched->work_remains
+         << ", " << loop_sched->num_workers << endl;
+    loop_sched->unlock();
+
     while( !loop_sched->work_remains && loop_sched->num_workers > 0 ) {
         loop_sched->yield();
     }
+    loop_sched->lock();
+    cout << "thread " << gtid << " done waiting" << endl;
+    loop_sched->unlock();
     //if(schedtype == kmp_sch_static) schedtype = kmp_sch_static_greedy
     //TODO: look at the Intel code to see what data checks are done here. :738
     int NT = loop_sched->num_threads;
