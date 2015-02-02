@@ -285,6 +285,18 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
     hpx_backend->barrier_wait();
 }
 
+int 
+__kmpc_reduce( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_vars, 
+               size_t reduce_size, void *reduce_data,
+               void (*reduce_func)(void *lhs_data, void *rhs_data),
+               kmp_critical_name *lck )
+{
+}
+
+
+
+
+
 //Library functions:--------------------------------------------------
 int omp_get_thread_num(){
     if(hpx_backend)
