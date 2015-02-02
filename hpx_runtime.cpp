@@ -63,7 +63,6 @@ hpx_runtime::hpx_runtime() {
     //TODO: nthreads_var is a list of ints where the nth item corresponds
     // to the number of threads in nth level parallel regions.
 
-    //FIXME: the implicit region is supposet to have 1 thread.
     implicit_region.reset(new parallel_region(1));
     initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv, initial_num_threads));
     walltime.reset(new high_resolution_timer);
@@ -105,7 +104,8 @@ hpx_runtime::hpx_runtime() {
     argv[0] = const_cast<char*>("hpxMP");
 
 
-    HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
+    //HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
+    hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 
     boost::mutex local_mtx;
