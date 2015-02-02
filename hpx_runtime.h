@@ -59,7 +59,7 @@ class loop_data {
     //TODO: does this need to be changed to work with teams?
     public:
         //loop_data(int NT) : num_threads(NT){}
-        loop_data(int NT) : num_threads(NT), local_iter(NT), iter_remaining(NT){}
+        loop_data(int NT) : num_threads(NT), local_iter(NT,0), iter_remaining(NT,0){}
         void yield(){ hpx::this_thread::yield(); }
         void lock(){ loop_mtx.lock(); }
         void unlock(){ loop_mtx.unlock();}
