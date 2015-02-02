@@ -141,9 +141,15 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
         loop_sched->ordered_count = 0;
         loop_sched->schedule_count = 0;
         loop_sched->num_threads = NT;
-        loop_sched->local_iter.resize(NT);
-        loop_sched->iter_remaining.resize(NT);
-
+        /*
+        //can this happen? If so, I need some synchrnozation:
+        if(loop_sched->local_iter.size() < NT) {
+            loop_sched->local_iter.resize(NT);
+        }
+        if(loop_sched->iter_remaining.size() < NT) {
+            loop_sched->iter_remaining.resize(NT);
+        }
+        */
         if( kmp_ord_lower & loop_sched->schedule ) {
             loop_sched->ordered = true;
             loop_sched->schedule = (loop_sched->schedule) - (kmp_ord_lower - kmp_sch_lower);
@@ -217,7 +223,8 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 *p_upper= loop_sched->upper;
                 *p_stride= loop_sched->stride;
 
-                omp_static_init<T,D>( loop_sched->local_iter[gtid], schedule, p_last,
+                //omp_static_init<T,D>( loop_sched->local_iter[gtid], schedule, p_last,
+                omp_static_init<T,D>( gtid, schedule, p_last,
                                     p_lower, p_upper, p_stride, 
                                     loop_sched->stride, loop_sched->chunk);
 

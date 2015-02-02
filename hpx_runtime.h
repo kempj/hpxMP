@@ -58,7 +58,8 @@ using hpx::threads::get_self_id;
 class loop_data {
     //TODO: does this need to be changed to work with teams?
     public:
-        loop_data(int NT) : num_threads(NT){}//local_iter(NT), iter_remaining(NT){}
+        //loop_data(int NT) : num_threads(NT){}
+        loop_data(int NT) : num_threads(NT), local_iter(NT), iter_remaining(NT){}
         void yield(){ hpx::this_thread::yield(); }
         void lock(){ loop_mtx.lock(); }
         void unlock(){ loop_mtx.unlock();}
@@ -78,7 +79,7 @@ class loop_data {
         std::vector<int> local_iter;
         std::vector<int> iter_remaining;
         mutex_type loop_mtx{};
-        bool ordered = false;
+        bool ordered = false;//do I need this?
 };
 
 //Does this need to keep track of the parallel region it is nested in,
