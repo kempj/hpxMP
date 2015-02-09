@@ -227,7 +227,7 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
     auto *parent_task = get_task_data();
     omp_task_data *child_task = new omp_task_data(parent_task);
     total_num_tasks++;
-    if(total_num_tasks %1000 == 0) {
+    if(total_num_tasks %10000 == 0) {
         cout << "total number of tasks spawned = " << total_num_tasks << endl;
     }
     parent_task->team->num_tasks++;
