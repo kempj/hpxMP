@@ -66,6 +66,9 @@ hpx_runtime::hpx_runtime() {
 
     if(external_hpx)
         return;
+
+
+    //char const* omp_stack_size = getenv("OMP_STACKSIZE");
         
     std::vector<std::string> cfg;
     int argc;
@@ -74,7 +77,7 @@ hpx_runtime::hpx_runtime() {
     cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(initial_num_threads);
     cfg += "hpx.stacks.use_guard_pages=0";
     cfg += "hpx.run_hpx_main!=0";
-    cfg += "hpx.stacks.huge_size=0x2000000";
+    //cfg += "hpx.stacks.huge_size=0x2000000";
 
     char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
 
