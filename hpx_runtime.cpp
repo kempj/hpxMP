@@ -11,7 +11,7 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-//atomic<int> num_tasks{0};
+atomic<int> barrier_counter{0};
 //boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
@@ -174,12 +174,15 @@ void hpx_runtime::barrier_wait(){
     while(get_team()->num_tasks > get_team()->num_threads){
         hpx::this_thread::yield();
     }
+    barrier_counter++;
+    cout << "barrier counter = " << barrier_counter << endl;
     get_team()->globalBarrier.wait();
+    cout << "after barrier " << endl;
+
 }
 
 int hpx_runtime::get_thread_num() {
     auto *data = get_task_data();
-    //cout << "data = " << data << endl;
     return get_task_data()->thread_num;
 }
 
