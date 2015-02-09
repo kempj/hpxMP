@@ -77,6 +77,7 @@ hpx_runtime::hpx_runtime() {
     cfg += "hpx.os_threads=" + boost::lexical_cast<std::string>(initial_num_threads);
     cfg += "hpx.stacks.use_guard_pages=0";
     cfg += "hpx.run_hpx_main!=0";
+    cfg += "hpx.stacks.huge_size=0x2000000";
 
     char const* hpx_args_raw = getenv("OMP_HPX_ARGS");
 
@@ -184,8 +185,6 @@ int hpx_runtime::get_thread_num() {
 }
 
 void hpx_runtime::task_wait() {
-    //TODO:
-    //get_task_data()->task_wait();
     auto *tasks = &(get_task_data()->task_handles);
     hpx::wait_all(*tasks);
     tasks->clear();
@@ -217,8 +216,10 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
+    //FIXME: these explicit tasks do not wait for child tasks
     //kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds];
-    delete task;
+    delete[] (char*)task;//it was allocated as char
+    delete task_data;
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
@@ -288,6 +289,7 @@ void fork_worker( omp_micro thread_func, frame_pointer_t fp,
         team->num_tasks++;
         threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, team, parent));
     }
+    //TODO: does this need to go after the wait_all?
     {
         boost::unique_lock<hpx::lcos::local::spinlock> lock(team->thread_mtx);
         while(team->num_tasks > 0) {

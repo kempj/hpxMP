@@ -250,12 +250,11 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
         start_backend();
     }
     parallel_region *team = hpx_backend->get_team();
-    //int num_threads = team->num_threads;//FIXME: need to allocate the right size
     int num_threads = hpx_backend->get_num_procs();
     if(!(*cache)){
         team->thread_mtx.lock();
         if(!(*cache)){
-            *cache = (void**)calloc( 8, num_threads);
+            *cache = (void**)calloc( 8, num_threads);//FIXME: this is never deallocated.
         }
         team->thread_mtx.unlock();
     }

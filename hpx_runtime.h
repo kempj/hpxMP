@@ -59,7 +59,8 @@ class loop_data {
     //TODO: does this need to be changed to work with teams?
     public:
         //loop_data(int NT) : num_threads(NT){}
-        loop_data(int NT) : num_threads(NT), local_iter(NT,0), iter_remaining(NT,0){}
+        //loop_data(int NT) : num_threads(NT), local_iter(NT,0), iter_remaining(NT,0){}
+        loop_data(int NT) : num_threads(NT), first_iter(NT,0), last_iter(NT,0), iter_count(NT,0){}
         void yield(){ hpx::this_thread::yield(); }
         void lock(){ loop_mtx.lock(); }
         void unlock(){ loop_mtx.unlock();}
@@ -76,8 +77,11 @@ class loop_data {
         std::atomic<int> schedule_count{0};
         int num_threads;
         int schedule;
-        std::vector<int> local_iter;
-        std::vector<int> iter_remaining;
+        int total_iter;
+        std::vector<int> first_iter;
+        std::vector<int> last_iter;
+        std::vector<int> iter_count;
+        int iter_size;
         mutex_type loop_mtx{};
         bool ordered = false;//do I need this?
 };
