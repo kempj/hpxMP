@@ -222,6 +222,7 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     //kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds];
     delete[] (char*)task;//it was allocated as char
     delete task_data;
+    cout << "implicit task " << gtid << " going out of scope" << endl;
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
@@ -231,7 +232,6 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
     parent_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, task_func, gtid, task, child_task,
                                 parent_task->team, parent_task->thread_num));
-    cout << "implicit task " << tid << " going out of scope" << endl;
 }
 
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
