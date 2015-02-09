@@ -11,8 +11,6 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-atomic<int64_t> total_num_tasks{0};
-
 //atomic<int> num_tasks{0};
 //boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
@@ -226,10 +224,6 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
     auto *parent_task = get_task_data();
     omp_task_data *child_task = new omp_task_data(parent_task);
-    total_num_tasks++;
-    if(total_num_tasks %10000 == 0) {
-        cout << "total number of tasks spawned = " << total_num_tasks << endl;
-    }
     parent_task->team->num_tasks++;
     parent_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, task_func, gtid, task, child_task,
@@ -285,6 +279,7 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
+    cout << "implicit task " << tid <M " going out of scope" << endl;
 }
 
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
@@ -325,6 +320,7 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
     omp_task_data *current_task = get_task_data();
     current_task->set_threads_requested( Nthreads );
 
+    //does this always need to be allocated in an hpx thread?
     parallel_region team(current_task->team, current_task->threads_requested);
 
     if( hpx::threads::get_self_ptr() ) {
@@ -344,5 +340,6 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
                 cond.wait(lk);
         }
     }
+    cout << "parallel region going out of scope" << endl;
 }
 
