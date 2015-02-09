@@ -107,11 +107,10 @@ struct parallel_region {
     int depth;
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
-    void *copyprivate_data;
+    //void *copyprivate_data;
 };
 
 
-//TODO: If I keep track of task depth, can I implement a useful cutoff?
 class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
@@ -123,7 +122,7 @@ class omp_task_data {
         };
 
         //should be used for implicit tasks/threads
-        omp_task_data(int tid, parallel_region *T, omp_task_data *P ) : omp_task_data(P) {//: thread_num(tid), team(T), parent(P){
+        omp_task_data(int tid, parallel_region *T, omp_task_data *P ) : omp_task_data(P) {
             //parent task and current task should have different teams, no?
             team = T;
             thread_num = tid;
@@ -134,20 +133,20 @@ class omp_task_data {
         };
 
         //This is for explicit tasks
-        omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), parent(P){
-            icv = parent->icv;
+        omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), icv(P->icv) {//, parent(P){
+            //icv = parent->icv;
             threads_requested = icv.nthreads;
         };
         
         int thread_num;
         int threads_requested;
         parallel_region *team;
-        omp_task_data *parent;
+        //omp_task_data *parent;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
-        atomic<int> blocking_children {0};
-        atomic<bool> is_finished {false};
-        atomic<bool> has_dependents {false};
+        //atomic<int> blocking_children {0};
+        //atomic<bool> is_finished {false};
+        //atomic<bool> has_dependents {false};
         vector<future<void>> task_handles;
         omp_icv icv;
 

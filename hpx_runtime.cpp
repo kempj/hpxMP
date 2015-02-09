@@ -194,6 +194,7 @@ void hpx_runtime::task_wait() {
 // before destroying the stack of the task. If this work is done in task_create
 // the stack of the user's task does not get preserved.
 // Note: in OpenUH this gets called at the end of implicit and explicit tasks
+/*
 void hpx_runtime::task_exit() {
     auto *task_data = get_task_data();
     {
@@ -203,6 +204,7 @@ void hpx_runtime::task_exit() {
         }
     }
 }
+*/
 
 //Maybe have team hand out task id's round robin?
 void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
@@ -230,7 +232,7 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
                     hpx::async( intel_task_setup, task_func, gtid, task, child_task,
                                 parent_task->team, parent_task->thread_num));
 }
-
+/*
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
                  omp_task_data *task_data, omp_task_data *parent_task, int blocks_parent) {
     auto thread_id = get_self_id();
@@ -239,7 +241,7 @@ void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
 
     task_func(firstprivates, fp);
 
-    task_data->is_finished = true;    
+    //task_data->is_finished = true;    
     if(blocks_parent) {
         parent_task->blocking_children--;
         if(parent_task->blocking_children == 0) {
@@ -267,7 +269,7 @@ void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
                     hpx::async( task_setup, taskfunc, frame_pointer, 
                                 firstprivates, child_task, parent, blocks_parent));
 }
-
+*/
 void thread_setup( omp_micro thread_func, void *fp, int tid,
                     parallel_region *team, omp_task_data *parent ) {
 
