@@ -231,6 +231,7 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
     parent_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, task_func, gtid, task, child_task,
                                 parent_task->team, parent_task->thread_num));
+    cout << "implicit task " << tid << " going out of scope" << endl;
 }
 
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
@@ -282,7 +283,6 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
-    cout << "implicit task " << tid << " going out of scope" << endl;
 }
 
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
