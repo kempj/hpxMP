@@ -11,6 +11,7 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
+atomic<int64_t> total_num_tasks{0};
 
 //atomic<int> num_tasks{0};
 //boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
@@ -225,6 +226,10 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
     auto *parent_task = get_task_data();
     omp_task_data *child_task = new omp_task_data(parent_task);
+    total_num_tasks++;
+    if(total_num_tasks %1000 == 0) {
+        cout << "total number of tasks spawned = " << total_num_tasks << endl;
+    }
     parent_task->team->num_tasks++;
     parent_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, task_func, gtid, task, child_task,
