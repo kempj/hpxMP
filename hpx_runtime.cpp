@@ -10,8 +10,6 @@
 #include "hpx_runtime.h"
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
-
-atomic<int> barrier_counter{0};
 //boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
@@ -174,10 +172,7 @@ void hpx_runtime::barrier_wait(){
     while(get_team()->num_tasks > get_team()->num_threads){
         hpx::this_thread::yield();
     }
-    barrier_counter++;
-    cout << "barrier counter = " << barrier_counter << endl;
     get_team()->globalBarrier.wait();
-    cout << "after barrier " << endl;
 
 }
 
@@ -282,7 +277,6 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
-    cout << "implicit task " << tid << " going out of scope" << endl;
 }
 
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
@@ -343,6 +337,5 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
                 cond.wait(lk);
         }
     }
-    cout << "parallel region going out of scope" << endl;
 }
 
