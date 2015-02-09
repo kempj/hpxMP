@@ -279,7 +279,7 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
-    cout << "implicit task " << tid <M " going out of scope" << endl;
+    cout << "implicit task " << tid << " going out of scope" << endl;
 }
 
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
