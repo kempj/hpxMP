@@ -307,19 +307,14 @@ void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid ){
 
 void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    while(loop_sched->ordered_count != loop_sched->local_iter[global_tid]){
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    while( loop_sched->ordered_count < loop_sched->first_iter[global_tid] ||
+            loop_sched->ordered_count > loop_sched->last_iter[global_tid] ) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         loop_sched->yield();
     }
 }
 
 void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    loop_sched->iter_remaining[global_tid]--;
     loop_sched->ordered_count++;
-    loop_sched->local_iter[global_tid]++;
-
-    if(loop_sched->iter_remaining[global_tid] <= 0) {
-        loop_sched->iter_remaining[global_tid]--;
-    }
 }
