@@ -38,7 +38,6 @@ void __kmpc_end(ident_t *loc){
 }
 
 void omp_thread_func(int tid, void *fp) {
-    //cout <<"thread function being called, tid = " << tid << endl;
     task_args *args = (task_args*)fp;
     void **argv = args->argv;
     int argc = args->argc - 1;
@@ -52,13 +51,11 @@ void omp_thread_func(int tid, void *fp) {
         default:
                 args->fork_func(&tid, &tid);
     }
-    //cout <<"thread function returning, tid = " << tid << endl;
 }
 
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 {
-    //cout << "entering the fork\n";
     task_args args;
     if(!hpx_backend) {
         start_backend();
@@ -81,11 +78,10 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     args.fork_func = microtask;
 
     hpx_backend->fork(0, omp_thread_func, (void*)&args);
-
-    //cout << "leaving main fork" << endl;
 }
 
 // ----- Tasks -----
+
 //sizeof_kmp_task_t includes the private variables for the task
 kmp_task_t*
 __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
@@ -201,7 +197,7 @@ int __kmpc_single(ident_t *loc, int tid){
     return 0;
 }
 
-//in intel, only the single thread calls this
+//in the intel runtime, only the single thread calls this
 void __kmpc_end_single(ident_t *loc, int tid){
     if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return;
