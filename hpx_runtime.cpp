@@ -10,7 +10,6 @@
 #include "hpx_runtime.h"
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
-//boost::shared_ptr<hpx::lcos::local::condition_variable> thread_cond;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
@@ -105,7 +104,6 @@ hpx_runtime::hpx_runtime() {
     argv[0] = const_cast<char*>("hpxMP");
 
 
-    //HPX_STD_FUNCTION<int(boost::program_options::variables_map& vm)> f;
     hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 
@@ -159,14 +157,9 @@ int hpx_runtime::get_num_procs() {
 }
 
 void hpx_runtime::set_num_threads(int nthreads) {
-    //if( hpx::threads::get_self_ptr() ){
     if(nthreads > 0) {
         get_task_data()->icv.nthreads = nthreads;
     }
-    //} else {//not an hpx thread
-       //initial_num_threads = nthreads; 
-    //   initial_thread->icv.nthreads = nthreads; 
-    //}
 }
 
 //According to the spec, this should only be called from a "thread", 
@@ -190,24 +183,7 @@ void hpx_runtime::task_wait() {
     tasks->clear();
 }
 
-//This needs to be here to make sure to wait for dependant children finish
-// before destroying the stack of the task. If this work is done in task_create
-// the stack of the user's task does not get preserved.
-// Note: in OpenUH this gets called at the end of implicit and explicit tasks
-/*
-void hpx_runtime::task_exit() {
-    auto *task_data = get_task_data();
-    {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
-        while(task_data->blocking_children > 0) {
-            task_data->thread_cond.wait(lock);
-        }
-    }
-}
-*/
-
 void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
-                       // omp_task_data *task_data, 
                        omp_icv icv_vars,
                        parallel_region *team, int thread_num) {
 
@@ -220,59 +196,17 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
-    //FIXME: these explicit tasks do not wait for child tasks
-    //kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds];
-    delete[] (char*)task;//it was allocated as char
+    delete[] (char*)task;
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
-    auto *parent_task = get_task_data();
-    //omp_task_data *child_task = new omp_task_data(parent_task);
-    parent_task->team->num_tasks++;
-    //need thread_num, team, and icv
-    parent_task->task_handles.push_back( 
-                    //hpx::async( intel_task_setup, task_func, gtid, task, child_task,
-                    hpx::async( intel_task_setup, task_func, gtid, task, parent_task->icv,
-                                parent_task->team, parent_task->thread_num));
-}
-/*
-void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
-                 omp_task_data *task_data, omp_task_data *parent_task, int blocks_parent) {
-    auto thread_id = get_self_id();
-    //omp_task_data task_data(thread_num, team, parent);
-    set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
-
-    task_func(firstprivates, fp);
-
-    //task_data->is_finished = true;    
-    if(blocks_parent) {
-        parent_task->blocking_children--;
-        if(parent_task->blocking_children == 0) {
-            parent_task->thread_cond.notify_one();
-        }
-    }
-    task_data->team->num_tasks--;
-    if(task_data->team->num_tasks == 0) {
-        task_data->team->cond.notify_all();
-    }
+    auto *current_task = get_task_data();
+    current_task->team->num_tasks++;
+    current_task->task_handles.push_back( 
+                    hpx::async( intel_task_setup, task_func, gtid, task, current_task->icv,
+                                current_task->team, current_task->thread_num));
 }
 
-//Tasks get bound to their parent's team, unlike implicit threads
-void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
-                               void *firstprivates, int is_tied, 
-                               int blocks_parent) {
-    auto *parent = get_task_data();
-    omp_task_data *child_task = new omp_task_data(parent);//TODO: when is this de-allocated?
-    parent->team->num_tasks++;
-    if(blocks_parent) {
-        parent->blocking_children += 1;
-        parent->has_dependents = true;
-    }
-    parent->task_handles.push_back( 
-                    hpx::async( task_setup, taskfunc, frame_pointer, 
-                                firstprivates, child_task, parent, blocks_parent));
-}
-*/
 void thread_setup( omp_micro thread_func, void *fp, int tid,
                     parallel_region *team, omp_task_data *parent ) {
 
@@ -326,6 +260,7 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
     current_task->set_threads_requested( Nthreads );
 
     //does this always need to be allocated in an hpx thread?
+    //  if it does, then my global parallel_region isn't gonna work.
     parallel_region team(current_task->team, current_task->threads_requested);
 
     if( hpx::threads::get_self_ptr() ) {
