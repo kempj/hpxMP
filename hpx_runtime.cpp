@@ -206,11 +206,13 @@ void hpx_runtime::task_exit() {
 }
 */
 
-//Maybe have team hand out task id's round robin?
 void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
-                       omp_task_data *task_data, parallel_region *team, int thread_num) {
+                       // omp_task_data *task_data, 
+                       omp_icv icv_vars,
+                       parallel_region *team, int thread_num) {
 
-    set_thread_data( get_self_id(), reinterpret_cast<size_t>(task_data));
+    omp_task_data task_data(gtid, team, icv_vars);
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
     task_func(gtid, task);
 
@@ -221,15 +223,16 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     //FIXME: these explicit tasks do not wait for child tasks
     //kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds];
     delete[] (char*)task;//it was allocated as char
-    delete task_data;
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
     auto *parent_task = get_task_data();
-    omp_task_data *child_task = new omp_task_data(parent_task);
+    //omp_task_data *child_task = new omp_task_data(parent_task);
     parent_task->team->num_tasks++;
+    //need thread_num, team, and icv
     parent_task->task_handles.push_back( 
-                    hpx::async( intel_task_setup, task_func, gtid, task, child_task,
+                    //hpx::async( intel_task_setup, task_func, gtid, task, child_task,
+                    hpx::async( intel_task_setup, task_func, gtid, task, parent_task->icv,
                                 parent_task->team, parent_task->thread_num));
 }
 /*
