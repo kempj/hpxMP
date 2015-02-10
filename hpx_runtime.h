@@ -107,7 +107,7 @@ struct parallel_region {
     int depth;
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
-    //void *copyprivate_data;
+    void *copyprivate_data;
 };
 
 
