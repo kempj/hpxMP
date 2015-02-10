@@ -220,20 +220,19 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
-    //FIXME: these explicit tasks do not wait for child tasks
     //kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds];
     delete[] (char*)task;//it was allocated as char
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
-    auto *parent_task = get_task_data();
-    //omp_task_data *child_task = new omp_task_data(parent_task);
-    parent_task->team->num_tasks++;
+    auto *current_task = get_task_data();
+    //omp_task_data *child_task = new omp_task_data(current_task);
+    current_task->team->num_tasks++;
     //need thread_num, team, and icv
-    parent_task->task_handles.push_back( 
+    current_task->task_handles.push_back( 
                     //hpx::async( intel_task_setup, task_func, gtid, task, child_task,
-                    hpx::async( intel_task_setup, task_func, gtid, task, parent_task->icv,
-                                parent_task->team, parent_task->thread_num));
+                    hpx::async( intel_task_setup, task_func, gtid, task, current_task->icv,
+                                current_task->team, current_task->thread_num));
 }
 /*
 void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
