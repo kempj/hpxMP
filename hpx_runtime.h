@@ -121,11 +121,12 @@ class omp_task_data {
             threads_requested = icv.nthreads;
         };
 
+        //TODO: this doesn't need all these constructors
         //should be used for implicit tasks/threads
-        omp_task_data(int tid, parallel_region *T, omp_task_data *P ) : omp_task_data(P) {
+        omp_task_data(int tid, parallel_region *T, omp_task_data *P ): omp_task_data(tid, T, P->icv) {
             //parent task and current task should have different teams, no?
-            team = T;
-            thread_num = tid;
+            //team = T;
+            //thread_num = tid;
             icv.levels++;
             if(team->num_threads > 1) {
                 icv.active_levels++;
@@ -133,7 +134,8 @@ class omp_task_data {
         };
 
         //This is for explicit tasks
-        omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), icv(P->icv) {//, parent(P){
+        //omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), icv(P->icv) {//, parent(P){
+        omp_task_data(int tid, parallel_region *T, omp_icv icv_vars): thread_num(tid), team(T), icv(icv_vars) {
             //icv = parent->icv;
             threads_requested = icv.nthreads;
         };
