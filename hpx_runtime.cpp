@@ -168,7 +168,8 @@ void hpx_runtime::barrier_wait(){
     while(get_team()->num_tasks > get_team()->num_threads){
         hpx::this_thread::yield();
     }
-    get_team()->globalBarrier.wait();
+    auto *team = get_team();
+    team->globalBarrier.wait();
 
 }
 
