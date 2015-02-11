@@ -234,29 +234,33 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
     }
 }
 
+//This is the only place where I can't call get_thread.
+//That data is not initialized for the new hpx threads yet.
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
-                    parallel_region *team, omp_task_data *parent) {
+                  omp_task_data *parent) {
+
+    parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
-    for(int i = 0; i < parent->threads_requested; i++) {
-        team->num_tasks++;
-        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, team, parent));
+
+    for( int i = 0; i < parent->threads_requested; i++ ) {
+        team.num_tasks++;
+        threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team, parent ) );
     }
-    //TODO: does this need to go after the wait_all?
+
     {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(team->thread_mtx);
-        while(team->num_tasks > 0) {
-            team->cond.wait(lock);
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(team.thread_mtx);
+        while(team.num_tasks > 0) {
+            team.cond.wait(lock);
         }
     }
     hpx::wait_all(threads);
 }
 
-void fork_and_sync( parallel_region *team, omp_micro thread_func,
-                        frame_pointer_t fp, omp_task_data *parent,
-                        boost::mutex& mtx, boost::condition& cond, 
-                        bool& running) {
+void fork_and_sync( omp_micro thread_func, frame_pointer_t fp, 
+                    omp_task_data *parent, boost::mutex& mtx, 
+                    boost::condition& cond, bool& running ) {
 
-    fork_worker(thread_func, fp, team, parent);
+    fork_worker(thread_func, fp, parent);
     {
         boost::mutex::scoped_lock lk(mtx);
         running = true;
@@ -274,10 +278,10 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
 
     //does this always need to be allocated in an hpx thread?
     //  if it does, then my global parallel_region isn't gonna work.
-    parallel_region team(current_task->team, current_task->threads_requested);
+    //parallel_region team(current_task->team, current_task->threads_requested);
 
     if( hpx::threads::get_self_ptr() ) {
-        fork_worker(thread_func, fp, &team, current_task);
+        fork_worker(thread_func, fp, current_task);
     } else {
 
         boost::mutex mtx;
@@ -285,7 +289,8 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
         bool running = false;
     
         hpx::applier::register_thread_nullary(
-                std::bind(&fork_and_sync, &team, thread_func, fp, current_task, boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                //std::bind(&fork_and_sync, &team, thread_func, fp, current_task, boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                std::bind(&fork_and_sync, thread_func, fp, current_task, boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
             boost::mutex::scoped_lock lk(mtx);
