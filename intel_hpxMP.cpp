@@ -89,15 +89,17 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        kmp_routine_entry_t task_entry ){
 
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
-    kmp_task_t *task = (kmp_task_t*)new char[sizeof_kmp_task_t + sizeof_shareds]; 
+    int task_size = sizeof_kmp_task_t + (-sizeof_kmp_task_t%8);
+
+    kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
 
     //This gets deleted at the end of intel_task_setup
     task->routine = task_entry;
-    //task->shareds = (char*)task + sizeof_kmp_task_t;
     if( sizeof_shareds == 0 ) {
         task->shareds = NULL;
     } else {
-        task->shareds = &((char*) task)[sizeof_kmp_task_t];
+        //task->shareds = (char*)task + sizeof_kmp_task_t;
+        task->shareds = &((char*) task)[task_size];
     }
     task->part_id = 0;
 

@@ -190,7 +190,19 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     omp_task_data task_data(gtid, team, icv_vars);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
-    //how does the task_func use task? Am I packing it correctly when I allocate it?
+    /*
+    cout << " task[0]" << ((int**)task)[0] << endl;
+    cout << " task[1]" << ((int**)task)[1] << endl;
+    cout << " task[2]" << ((int**)task)[2] << endl;
+    cout << " &task[3]" << &((int**)task)[3] << endl;
+    cout << " task[3]" << ((int**)task)[3] << endl;
+    cout << " &task[4]" << &((int**)task)[4] << endl;
+    cout << " task[4]" << ((int**)task)[4] << endl;
+    cout << " &task[5]" << &((int**)task)[5] << endl;
+    cout << " task[5]" << ((int**)task)[5] << endl;
+    */
+
+    //TODO: how does the task_func use task? Am I packing it correctly when I allocate it?
     task_func(gtid, task);
 
     team->num_tasks--;
