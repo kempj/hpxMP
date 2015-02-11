@@ -318,7 +318,9 @@ int omp_get_max_threads() {
     if(!hpx_backend) {
         start_backend();
     }                      
-    return hpx_backend->get_num_threads();
+    //FIXME: 
+    return hpx_backend->get_task_data()->icv.nthreads;
+    //return hpx_backend->get_num_threads();
 }
 
 int omp_get_num_procs(){

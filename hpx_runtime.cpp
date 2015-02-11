@@ -190,17 +190,6 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     omp_task_data task_data(gtid, team, icv_vars);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
-    /*
-    cout << " task[0]" << ((int**)task)[0] << endl;
-    cout << " task[1]" << ((int**)task)[1] << endl;
-    cout << " task[2]" << ((int**)task)[2] << endl;
-    cout << " &task[3]" << &((int**)task)[3] << endl;
-    cout << " task[3]" << ((int**)task)[3] << endl;
-    cout << " &task[4]" << &((int**)task)[4] << endl;
-    cout << " task[4]" << ((int**)task)[4] << endl;
-    cout << " &task[5]" << &((int**)task)[5] << endl;
-    cout << " task[5]" << ((int**)task)[5] << endl;
-    */
 
     //TODO: how does the task_func use task? Am I packing it correctly when I allocate it?
     task_func(gtid, task);
@@ -222,6 +211,7 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
 
 void thread_setup( omp_micro thread_func, void *fp, int tid,
                     parallel_region *team, omp_task_data *parent ) {
+    
 
     omp_task_data task_data(tid, team, parent);
     auto thread_id = get_self_id();
@@ -232,12 +222,18 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
+
 }
 
 //This is the only place where I can't call get_thread.
 //That data is not initialized for the new hpx threads yet.
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
                   omp_task_data *parent) {
+
+    //std::string counter_name = "/threads{locality#0/total}/count/cumulative";
+    //cout << "setting up counter for thread " << endl;
+    //hpx::performance_counters::performance_counter counter( counter_name );
+    //counter.start();
 
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
@@ -254,6 +250,9 @@ void fork_worker( omp_micro thread_func, frame_pointer_t fp,
         }
     }
     hpx::wait_all(threads);
+
+    //int count = counter.get_value_sync<int>();
+    //cout << "Total tasks: " << count << endl;
 }
 
 void fork_and_sync( omp_micro thread_func, frame_pointer_t fp, 

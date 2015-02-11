@@ -121,7 +121,6 @@ class omp_task_data {
             threads_requested = icv.nthreads;
         };
 
-        //TODO: this doesn't need all these constructors
         //should be used for implicit tasks/threads
         omp_task_data(int tid, parallel_region *T, omp_task_data *P ): omp_task_data(tid, T, P->icv) {
             //parent task and current task should have different teams, no?
