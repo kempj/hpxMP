@@ -190,6 +190,7 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     omp_task_data task_data(gtid, team, icv_vars);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
+    //how does the task_func use task? Am I packing it correctly when I allocate it?
     task_func(gtid, task);
 
     team->num_tasks--;
