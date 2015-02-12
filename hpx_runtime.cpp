@@ -252,7 +252,6 @@ void fork_worker( omp_micro thread_func, frame_pointer_t fp,
     }
     hpx::wait_all(threads);
 
-    cout << "parallel_region is going out of scope" << endl;
     //int count = counter.get_value_sync<int>();
     //cout << "Total tasks: " << count << endl;
 }
