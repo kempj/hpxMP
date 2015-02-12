@@ -280,14 +280,13 @@ counter_t parTreeSearch(int depth, Node *parent, int numChildren)
 counter_t parTreeSearch(int depth, Node *parent, int numChildren) 
 {
     //JK
-    //Node n[numChildren], *nodePtr;
-    Node *n, *nodePtr;
+    Node n[numChildren], *nodePtr;
+    //Node *n, *nodePtr;
     int i, j;
     counter_t subtreesize = 1;
-    counter_t *partialCount;
+    counter_t partialCount[numChildren];
     
-    n = (Node*)malloc(numChildren * sizeof(Node));
-    partialCount = (counter_t*)malloc(numChildren * sizeof(counter_t));
+    //n = (Node*)malloc(numChildren * sizeof(Node));
 
     // Recurse on the children
     for (i = 0; i < numChildren; i++) {
