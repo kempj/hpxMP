@@ -36,7 +36,9 @@ int main(int argc, char **argv)
 #pragma omp task untied
     total = spawn_children(depth, breadth);
 
-    printf("total spawned = %d\n", total);
+    printf("depth   %d\n", depth);
+    printf("breadth %d\n", breadth);
+    printf("total   %d\n", total);
     return 0;
 }
 
