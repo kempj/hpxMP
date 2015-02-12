@@ -283,15 +283,13 @@ counter_t parTreeSearch(int depth, Node *parent, int numChildren)
     Node n[numChildren], *nodePtr;
     //Node *n, *nodePtr;
     int i, j;
-    counter_t subtreesize = 1;
-    counter_t partialCount[numChildren];
+    counter_t subtreesize = 1, partialCount[numChildren];
     
     //n = (Node*)malloc(numChildren * sizeof(Node));
 
     // Recurse on the children
     for (i = 0; i < numChildren; i++) {
         nodePtr = &n[i];
-
         nodePtr->height = parent->height + 1;
 
         // The following line is the work (one or more SHA-1 ops)
