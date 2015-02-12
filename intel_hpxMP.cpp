@@ -90,16 +90,9 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        kmp_routine_entry_t task_entry ){
 
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
-    print_mtx.lock();
-    cout << "task size changed from " << sizeof_kmp_task_t;
     int task_size = sizeof_kmp_task_t + (-sizeof_kmp_task_t%8);
-    cout << " to " << task_size << endl;
-    print_mtx.unlock();
     //task_size += 64;
 
-    print_mtx.lock();
-    cout << "allocating task, size = " << task_size + sizeof_shareds << endl;
-    print_mtx.unlock();
     kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
 
     //This gets deleted at the end of intel_task_setup
@@ -110,6 +103,12 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
         //task->shareds = (char*)task + sizeof_kmp_task_t;
         task->shareds = &((char*) task)[task_size];
     }
+    print_mtx.lock();
+    cout << "task = " << task << " to " << task + task_size + sizeof_shareds << endl;
+    if(task->shareds) {
+        cout << "task->shareds = " << task->shareds << " to : " << task->shareds + sizeof_shareds << endl;
+    }
+    print_mtx.lock();
     task->part_id = 0;
 
     return task;
