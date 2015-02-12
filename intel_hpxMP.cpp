@@ -108,7 +108,7 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
     if(task->shareds) {
         cout << "task->shareds = " << task->shareds << " to : " << task->shareds + sizeof_shareds << endl;
     }
-    print_mtx.lock();
+    print_mtx.unlock();
     task->part_id = 0;
 
     return task;
