@@ -105,6 +105,9 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
     }
     task->part_id = 0;
 
+    //cout << "task allocation: " << task_size + sizeof_shareds << " allocated for "
+    //     << sizeof_kmp_task_t << " + " << sizeof_shareds << endl;
+
     return task;
 }
 
