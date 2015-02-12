@@ -311,8 +311,8 @@ counter_t parTreeSearch(int depth, Node *parent, int numChildren)
         subtreesize += partialCount[i];
     }
 
-    free(n);
-    free(partialCount);
+    //free(n);
+    //free(partialCount);
     return subtreesize;
 }
 #endif
