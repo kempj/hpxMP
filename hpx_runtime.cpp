@@ -108,7 +108,7 @@ hpx_runtime::hpx_runtime() {
     boost::program_options::options_description desc_cmdline; 
 
     boost::mutex local_mtx;
-    boost::condition cond;
+    boost::condition cond;//TODO: replace this with something that can be checked later, once hpx is needed.
     bool running = false;
 
     hpx::start(f, desc_cmdline, argc, argv, cfg,
