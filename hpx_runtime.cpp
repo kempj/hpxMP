@@ -165,11 +165,13 @@ void hpx_runtime::set_num_threads(int nthreads) {
 //According to the spec, this should only be called from a "thread", 
 // and never from inside an openmp tasks.
 void hpx_runtime::barrier_wait(){
-    while(get_team()->num_tasks > get_team()->num_threads){
+    auto *team = get_team();
+    while(team->num_tasks > team->num_threads){
         hpx::this_thread::yield();
     }
-    auto *team = get_team();
-    team->globalBarrier.wait();
+    if(team->num_threads > 1) {
+        team->globalBarrier.wait();
+    }
 
 }
 
@@ -254,6 +256,7 @@ void fork_worker( omp_micro thread_func, frame_pointer_t fp,
 
     //int count = counter.get_value_sync<int>();
     //cout << "Total tasks: " << count << endl;
+    cout << "parallel region exiting" << endl;
 }
 
 void fork_and_sync( omp_micro thread_func, frame_pointer_t fp, 
