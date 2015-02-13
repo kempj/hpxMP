@@ -26,3 +26,8 @@ os_count: os_count_test.cpp
 
 fib: fibonacci.cpp
 	g++ -g fibonacci.cpp -o hpx-fib `pkg-config --cflags --libs hpx_application`
+
+
+barrier: barrier_test.cpp
+	g++ -g barrier_test.cpp -o hpx-barrier `pkg-config --cflags --libs hpx_application`
+
