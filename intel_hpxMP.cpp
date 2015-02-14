@@ -41,13 +41,16 @@ void __kmpc_end(ident_t *loc){
 void omp_thread_func(int tid, void *fp) {
     task_args *args = (task_args*)fp;
     void **argv = args->argv;
-    int argc = args->argc - 1;
+    int argc = args->argc;
+    //int argc = args->argc - 1;
 
-    assert(argc < 2);
+    assert(argc < 3);
     switch(argc) {
         case 0: args->fork_func(&tid, &tid);
                 break;
         case 1: args->fork_func(&tid, &tid, argv[0]);
+                break;
+        case 2: args->fork_func(&tid, &tid, argv[0], argv[1]);
                 break;
         default:
                 args->fork_func(&tid, &tid);
@@ -90,9 +93,12 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        kmp_routine_entry_t task_entry ){
 
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
+    //TODO: do I need to do something with these flags?
+    
     int task_size = sizeof_kmp_task_t + (-sizeof_kmp_task_t%8);
 
     kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
+    //kmp_task_t *task = (kmp_task_t*)calloc(1,task_size + sizeof_shareds); 
 
 
     //This gets deleted at the end of intel_task_setup
@@ -104,9 +110,6 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
         task->shareds = &((char*) task)[task_size];
     }
     task->part_id = 0;
-
-    //cout << "task allocation: " << task_size + sizeof_shareds << " allocated for "
-    //     << sizeof_kmp_task_t << " + " << sizeof_shareds << endl;
 
     return task;
 }
