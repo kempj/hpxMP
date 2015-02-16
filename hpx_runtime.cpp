@@ -256,7 +256,7 @@ void fork_worker( omp_micro thread_func, frame_pointer_t fp,
 
     //int count = counter.get_value_sync<int>();
     //cout << "Total tasks: " << count << endl;
-    cout << "parallel region exiting" << endl;
+    //cout << "parallel region exiting" << endl;
 }
 
 void fork_and_sync( omp_micro thread_func, frame_pointer_t fp, 
