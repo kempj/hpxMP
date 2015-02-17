@@ -371,6 +371,7 @@ void omp_init_lock(omp_lock_t **lock){
     }
     *lock = new omp_lock_t;
 }
+
 void omp_init_nest_lock(omp_lock_t **lock){
     if(!hpx_backend) {
         start_backend();

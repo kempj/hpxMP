@@ -85,8 +85,9 @@ boost::uint64_t barrier_test(int num_threads, int delay_length) {
     B.wait();
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
     B.wait();
+    uint64_t total = hpx::util::high_resolution_clock::now() - start;
     hpx::wait_all(threads);
-    return hpx::util::high_resolution_clock::now() - start;
+    return total;
 }
 
 //single
