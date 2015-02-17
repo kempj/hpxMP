@@ -31,3 +31,5 @@ fib: fibonacci.cpp
 barrier: barrier_test.cpp
 	g++ -g barrier_test.cpp -o hpx-barrier `pkg-config --cflags --libs hpx_application`
 
+micro: micro-bench.cpp
+	g++  micro-bench.cpp -o micro `pkg-config --cflags --libs hpx_application`
