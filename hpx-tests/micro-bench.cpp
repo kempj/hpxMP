@@ -26,27 +26,23 @@ void delay(int delaylength) {
         printf("%f \n", a);
 }
 
-int getdelaylengthfromtime(double delaytime) {
-    int delaylength;
-    int i, reps;
-    double lapsedtime, starttime; // seconds
-    reps = 1000;
-    lapsedtime = 0.0;
+int getdelaylengthfromtime(uint64_t delaytime) {
+    int delaylength = 0;
+    int reps = 1000;
+    boost::uint64_t starttime, lapsedtime = 0;
     delaytime = delaytime/1.0E6; // convert from microseconds to seconds
-    delaylength = 0;
     delay(delaylength);
 
-    while (lapsedtime < delaytime) {
+    while(lapsedtime < delaytime) {
         delaylength = delaylength * 1.1 + 1;
-        starttime = getclock();
-        for (i = 0; i < reps; i++) {
+        starttime = hpx::util::high_resolution_clock::now();
+        for(int i = 0; i < reps; i++) {
             delay(delaylength);
         }
-        lapsedtime = (getclock() - starttime) / (double) reps;
+        lapsedtime = (hpx::util::high_resolution_clock::now() - starttime) / (double) reps;
     }
     return delaylength;
 }
-
 
 //parallel spawn
 boost::uint64_t par_region(int num_threads, int delay_length) {
@@ -70,19 +66,36 @@ boost::uint64_t par_region(int num_threads, int delay_length) {
 //task wait
 //more complex task creation
 
+
+void print_time(std::vector<uint64_t> time, std::string name){
+    uint64_t total = 0, min = time[0], max = 0;
+    for(int i = 0; i < time.size(); i++) {
+        total += time[i];
+        if(time[i] > max) {
+            max = time[i];
+        }
+        if(time[i] < min) {
+            min = time[i];
+        }
+    }
+    cout << "test " << name << ", average = " << total / time.size()
+         << "ns, min = " << min << ", max = " << max << endl;
+}
+
 int hpx_main(boost::program_options::variables_map& vm) {
     std::string test = vm["test"].as<std::string>();
     int reps = vm["reps"].as<int>();
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
-    int sched_delay   = getdelaylengthfromtime(15.0);//in microseconds. from EPCC
-    int default_delay = getdelaylengthfromtime(.1);
+    //int sched_delay   = getdelaylengthfromtime(15000);//15 microseconds. from EPCC
+    int default_delay = getdelaylengthfromtime(100);//.1 microseconds
 
 
     if(test == "all" or test == "0") {
         for(int i = 0; i < reps; i++) {
-            par_region(
+            time[i] = par_region(num_threads, default_delay);
         }
+        print_time(time, "parallel region");
     }
 
 
