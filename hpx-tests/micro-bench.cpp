@@ -71,17 +71,20 @@ boost::uint64_t par_region(int num_threads, int delay_length) {
 }
 
 void barrier_func(int delay_length, barrier *B) {
+    B->wait();
     delay(delay_length);
     B->wait();
 }
 //barrier
 boost::uint64_t barrier_test(int num_threads, int delay_length) {
-    boost::uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     barrier B(num_threads);
-    for(int i = 0; i < num_threads; i++) {
+    for(int i = 0; i < num_threads - 1; i++) {
         threads.push_back(hpx::async(barrier_func, delay_length, &B));
     }
+    B.wait();
+    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    B.wait();
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
 }
