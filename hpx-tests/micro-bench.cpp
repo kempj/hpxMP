@@ -1,7 +1,7 @@
 #include <hpx/hpx_init.hpp>
 //#include <hpx/include/lcos.hpp>
 //#include <hpx/include/async.hpp>
-//#include <hpx/lcos/local/barrier.hpp>
+#include <hpx/lcos/local/barrier.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/include/util.hpp>
 
@@ -17,6 +17,21 @@ using std::vector;
 using std::cout;
 using std::endl;
 
+
+void print_time(std::vector<uint64_t> time, std::string name) {
+    uint64_t total = 0, min = time[0], max = 0;
+    for(int i = 0; i < time.size(); i++) {
+        total += time[i];
+        if(time[i] > max) {
+            max = time[i];
+        }
+        if(time[i] < min) {
+            min = time[i];
+        }
+    }
+    cout << "\ntest " << name << ", average = " << total / time.size()
+         << "ns, min = " << min << ", max = " << max << endl;
+}
 
 void delay(int delaylength) {
     float a = 0.;
@@ -55,7 +70,22 @@ boost::uint64_t par_region(int num_threads, int delay_length) {
     return hpx::util::high_resolution_clock::now() - start;
 }
 
+void barrier_func(int delay_length, barrier *B) {
+    delay(delay_length);
+    B->wait();
+}
 //barrier
+boost::uint64_t barrier_test(int num_threads, int delay_length) {
+    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    vector<future<void>> threads;
+    barrier B(num_threads);
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(hpx::async(barrier_func, delay_length, &B));
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
+}
+
 //single
 //master
 //lock/unlock
@@ -67,27 +97,11 @@ boost::uint64_t par_region(int num_threads, int delay_length) {
 //more complex task creation
 
 
-void print_time(std::vector<uint64_t> time, std::string name){
-    uint64_t total = 0, min = time[0], max = 0;
-    for(int i = 0; i < time.size(); i++) {
-        total += time[i];
-        if(time[i] > max) {
-            max = time[i];
-        }
-        if(time[i] < min) {
-            min = time[i];
-        }
-    }
-    cout << "test " << name << ", average = " << total / time.size()
-         << "ns, min = " << min << ", max = " << max << endl;
-}
-
 int hpx_main(boost::program_options::variables_map& vm) {
     std::string test = vm["test"].as<std::string>();
     int reps = vm["reps"].as<int>();
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
-    //int sched_delay   = getdelaylengthfromtime(15000);//15 microseconds. from EPCC
     int default_delay = getdelaylengthfromtime(100);//.1 microseconds
 
 
@@ -96,6 +110,12 @@ int hpx_main(boost::program_options::variables_map& vm) {
             time[i] = par_region(num_threads, default_delay);
         }
         print_time(time, "parallel region");
+    }
+    if(test == "all" or test == "1") {
+        for(int i = 0; i < reps; i++) {
+            time[i] = barrier_test(num_threads, default_delay);
+        }
+        print_time(time, "Barrier");
     }
 
 
