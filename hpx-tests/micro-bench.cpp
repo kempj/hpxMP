@@ -90,12 +90,13 @@ boost::uint64_t barrier_test(int num_threads, int delay_length) {
     return total;
 }
 
-//single
+//single doesn't really translate to hpx
 //master
 //lock/unlock
 //par for
 //for static
 //for dynamic
+
 //simple task creation
 //task wait
 //more complex task creation

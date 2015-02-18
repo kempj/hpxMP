@@ -5,7 +5,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 
-#define  HPX_LIMIT 7
+#define  HPX_LIMIT 8
 
 #include "hpx_runtime.h"
 
@@ -119,11 +119,66 @@ hpx_runtime::hpx_runtime() {
         if (!running)
             cond.wait(lk);
     }
+    
     atexit(fini_runtime);
 
     delete[] argv;
 }
 
+
+#ifdef BUILD_UH
+//This needs to be here to make sure to wait for dependant children
+// finish before destroying the stack of the task. If this work is 
+// done in task_create the stack of the user's task does not get
+// preserved get Note: in OpenUH this gets called at the end of 
+// implicit and explicit tasks 
+
+void hpx_runtime::task_exit() {
+    auto *task_data = get_task_data();
+    {
+        boost::unique_lock<hpx::lcos::local::spinlock> lock(task_data->thread_mutex);
+        while(task_data->blocking_children > 0) {
+            task_data->thread_cond.wait(lock);
+        }
+    }
+}
+
+void task_setup( omp_task_func task_func, void *fp, void *firstprivates,
+                 omp_task_data *parent, int blocks_parent, omp_icv icv_vars, 
+                 parallel_region *team, int thread_num ) {
+
+    omp_task_data task_data(thread_num, team, icv_vars);
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+
+    task_func(firstprivates, fp);
+
+    if(blocks_parent) {
+        parent->blocking_children--;
+        if(parent->blocking_children == 0) {
+            parent->thread_cond.notify_one();
+        }
+    }
+    task_data.team->num_tasks--;
+    if(task_data.team->num_tasks == 0) {
+        task_data.team->cond.notify_all();
+    }
+}
+
+void hpx_runtime::create_task( omp_task_func taskfunc, void *frame_pointer,
+                               void *firstprivates, int is_tied,
+                               int blocks_parent ) {
+    auto *parent = get_task_data();
+    parent->team->num_tasks++;
+    if(blocks_parent) {
+        parent->blocking_children += 1;
+        parent->has_dependents = true;
+    }
+    parent->task_handles.push_back(
+            hpx::async( task_setup, taskfunc, frame_pointer, firstprivates, parent, 
+                        blocks_parent, parent->icv, parent->team, parent->thread_num));
+}
+
+#endif
 //This isn't really a thread team, it's a region. I think.
 parallel_region* hpx_runtime::get_team(){
     auto task_data = get_task_data();
@@ -193,8 +248,6 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     omp_task_data task_data(gtid, team, icv_vars);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
-
-    //TODO: how does the task_func use task? Am I packing it correctly when I allocate it?
     task_func(gtid, task);
 
     team->num_tasks--;
@@ -221,22 +274,17 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
     thread_func(tid, fp);
+
     team->num_tasks--;
     if(team->num_tasks == 0) {
         team->cond.notify_all();
     }
-
 }
 
 //This is the only place where I can't call get_thread.
 //That data is not initialized for the new hpx threads yet.
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
                   omp_task_data *parent) {
-
-    //std::string counter_name = "/threads{locality#0/total}/count/cumulative";
-    //cout << "setting up counter for thread " << endl;
-    //hpx::performance_counters::performance_counter counter( counter_name );
-    //counter.start();
 
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
@@ -254,9 +302,6 @@ void fork_worker( omp_micro thread_func, frame_pointer_t fp,
     }
     hpx::wait_all(threads);
 
-    //int count = counter.get_value_sync<int>();
-    //cout << "Total tasks: " << count << endl;
-    //cout << "parallel region exiting" << endl;
 }
 
 void fork_and_sync( omp_micro thread_func, frame_pointer_t fp, 

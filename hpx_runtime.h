@@ -81,6 +81,10 @@ class loop_data {
         std::vector<int> first_iter;
         std::vector<int> last_iter;
         std::vector<int> iter_count;
+#ifdef BUILD_UH
+        std::vector<int> local_iter;
+        std::vector<int> iter_remaining;
+#endif
         int iter_size;
         mutex_type loop_mtx{};
         bool ordered = false;//do I need this?
@@ -142,12 +146,14 @@ class omp_task_data {
         int thread_num;
         int threads_requested;
         parallel_region *team;
-        //omp_task_data *parent;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
-        //atomic<int> blocking_children {0};
-        //atomic<bool> is_finished {false};
-        //atomic<bool> has_dependents {false};
+#ifdef BUILD_UH
+        omp_task_data *parent;
+        atomic<int> blocking_children {0};
+        atomic<bool> is_finished {false};
+        atomic<bool> has_dependents {false};
+#endif
         vector<future<void>> task_handles;
         omp_icv icv;
 

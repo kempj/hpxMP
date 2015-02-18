@@ -1,5 +1,6 @@
 CC=g++-4.8
 HPX_BUILD_TYPE=hpx_application
+FLAGS=
 
 all: libiomp5.so
 	
@@ -10,14 +11,15 @@ libiomp5.so: intel_rt.o hpx_runtime.o loop_schedule.o
 intel_rt.o: intel_hpxMP.cpp intel_hpxMP.h
 	$(CC) -g -fPIC -c intel_hpxMP.cpp -o intel_rt.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
+libopenmp.so.1: FLAGS += -DBUILD_UH
 libopenmp.so.1: hpxMP.o hpx_runtime.o 
 	$(CC) -g -shared -Wl,-x -Wl,-soname=libopenmp.so.1,--version-script=libopenmp.vs -o libopenmp.so.1 hpxMP.o hpx_runtime.o -L. `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
 hpx_runtime.o: hpx_runtime.cpp hpx_runtime.h 
-	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
+	$(CC) -g $(FLAGS) -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
 hpxMP.o: hpxMP.cpp hpxMP.h
-	$(CC) -g -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
+	$(CC) -g $(FLAGS) -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
 loop_schedule.o: loop_schedule.cpp loop_schedule.h
 	$(CC) -g -fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
