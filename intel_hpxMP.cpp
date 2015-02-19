@@ -302,9 +302,6 @@ __kmpc_reduce( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_vars,
 }
 
 
-
-
-
 //Library functions:--------------------------------------------------
 int omp_get_thread_num(){
     if(hpx_backend)
@@ -319,6 +316,13 @@ int omp_get_num_threads(){
         start_backend();
     }                      
     return hpx_backend->get_num_threads();
+}
+
+void omp_get_num_threads(int num_threads){
+    if(!hpx_backend) {
+        start_backend();
+    }                      
+    hpx_backend->set_num_threads(num_threads);
 }
 
 int omp_get_max_threads() {

@@ -214,6 +214,7 @@ int hpx_runtime::get_num_procs() {
 void hpx_runtime::set_num_threads(int nthreads) {
     if(nthreads > 0) {
         get_task_data()->icv.nthreads = nthreads;
+        get_task_data()->threads_requested = nthreads;
     }
 }
 
@@ -268,7 +269,6 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
 void thread_setup( omp_micro thread_func, void *fp, int tid,
                     parallel_region *team, omp_task_data *parent ) {
     
-
     omp_task_data task_data(tid, team, parent);
     auto thread_id = get_self_id();
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
@@ -322,11 +322,9 @@ void fork_and_sync( omp_micro thread_func, frame_pointer_t fp,
 void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
 { 
     omp_task_data *current_task = get_task_data();
+#ifdef BUILD_UH
     current_task->set_threads_requested( Nthreads );
-
-    //does this always need to be allocated in an hpx thread?
-    //  if it does, then my global parallel_region isn't gonna work.
-    //parallel_region team(current_task->team, current_task->threads_requested);
+#endif
 
     if( hpx::threads::get_self_ptr() ) {
         fork_worker(thread_func, fp, current_task);
@@ -346,5 +344,6 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
                 cond.wait(lk);
         }
     }
+    current_task->set_threads_requested(current_task->icv.nthreads );
 }
 
