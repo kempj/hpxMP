@@ -97,9 +97,6 @@ __kmpc_for_static_fini( ident_t *loc, int32_t gtid ){
 template<typename T, typename D=T>
 void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chunk) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    //loop_sched->lock();
-    //cout << "\tThread " << gtid << " entering init" << endl;
-    //loop_sched->unlock();
     // waiting for last loop to finish.
     while( !loop_sched->work_remains && loop_sched->num_workers > 0 ) {
         loop_sched->yield();

@@ -226,7 +226,7 @@ template<typename T>
 void scheduler_init( int global_tid, omp_sched_t schedtype, 
                      T lower, T upper, T stride, T chunk, loop_data *loop_sched) {
     // waiting for last loop to finish.
-    while(loop_sched->work_remains && loop_sched->num_workers > 0 ) {
+    while(!loop_sched->work_remains && loop_sched->num_workers > 0 ) {
         loop_sched->yield();
     }
     int NT = loop_sched->num_threads;
