@@ -15,7 +15,7 @@ void func1( int x, int y, int z) {
 
 int main() {
     int x=1, y=2, z=3;
-    func1(z,y,z);
+    func1(x,y,z);
 
     return 0;
 }
