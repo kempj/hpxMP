@@ -141,6 +141,7 @@ class omp_task_data {
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars): thread_num(tid), team(T), icv(icv_vars) {
             //icv = parent->icv;
             threads_requested = icv.nthreads;
+            icv_vars.device = icv.device;
         };
         
         int thread_num;
