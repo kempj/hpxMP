@@ -284,6 +284,7 @@ int omp_next(int global_tid, T *p_lower, T *p_upper, T *p_stride, loop_data *loo
         case OMP_SCHED_STATIC: //STATIC_EVEN can have user specified chunking.
         case OMP_SCHED_ORDERED_STATIC_EVEN:
         case OMP_SCHED_ORDERED_STATIC:
+            //FIXME: static ordered does not work. Each thread takes only one chunk and no more.
             loop_sched->lock();
             if(loop_sched->schedule_count < loop_sched->num_threads && loop_sched->work_remains) {
                 loop_sched->local_iter[global_tid] = loop_sched->schedule_count;
@@ -532,6 +533,9 @@ int omp_test_nest_lock(omp_nest_lock_t *lock) {
 
 //OpenMP 3.1 spec, section 3.4.1
 double omp_get_wtime() {
+    if(!hpx_backend) {
+        start_backend();
+    }
     return hpx_backend->get_time();
 }
 
