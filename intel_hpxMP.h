@@ -6,8 +6,8 @@ typedef long long kmp_int64;
 
 typedef mutex_type omp_lock_t;
 
-typedef void                (*microtask_t)( int *gtid, int *npr, ... );
-typedef int                 (*launch_t)( int gtid );
+typedef void (*microtask_t)( int *gtid, int *npr, ... );
+typedef int  (*launch_t)( int gtid );
 
 typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
 
@@ -71,8 +71,6 @@ enum sched_type {
         kmp_sch_default = kmp_sch_static  /**< default scheduling algorithm */
 };
 
-
-
 typedef struct ident {
     kmp_int32 reserved_1;   /**<  m ght be used in Fortran; see above  */
     kmp_int32 flags;        /**<  also f.flags; KMP_IDENT_xxx flags; KMP_IDENT_KMPC identifies this union member  */
@@ -80,37 +78,6 @@ typedef struct ident {
     kmp_int32 reserved_3;   /**< source[4] in Fortran, do not use for C++  */
     char const *psource;    /**< String describing the source location.*/
 } ident_t;
-
-/*
-struct kmp_taskdata {                                 // aligned during dynamic allocation       
-    kmp_int32               td_task_id;               // id, assigned by debugger                
-    kmp_tasking_flags_t     td_flags;                 // task flags                              
-    kmp_team_t *            td_team;                  // team for this task                      
-    kmp_info_p *            td_alloc_thread;          // thread that allocated data structures   
-                                                      // Currently not used except for perhaps IDB
-    kmp_taskdata_t *        td_parent;                // parent task                             
-    kmp_int32               td_level;                 // task nesting level                      
-    ident_t *               td_ident;                 // task identifier                         
-    // Taskwait data.
-    
-    tydent_t *              td_taskwait_ident;
-    kmp_uint32              td_taskwait_counter;
-    kmp_int32               td_taskwait_thread;       // gtid + 1 of thread encountered taskwait 
-    kmp_internal_control_t  td_icvs;                  // Internal control variables for the task 
-    volatile kmp_uint32     td_allocated_child_tasks;  // Child tasks (+ current task) not yet deallocated 
-    volatile kmp_uint32     td_incomplete_child_tasks; // Child tasks not yet complete 
-#if OMP_40_ENABLED
-    kmp_taskgroup_t *       td_taskgroup;         // Each task keeps pointer to its current taskgroup
-    kmp_dephash_t *         td_dephash;           // Dependencies for children tasks are tracked from here
-    kmp_depnode_t *         td_depnode;           // Pointer to graph node if this task has dependencies
-#endif
-#if KMP_HAVE_QUAD
-    _Quad                   td_dummy;             // Align structure 16-byte size since allocated just before kmp_task_t
-#else
-    kmp_uint32              td_dummy[2];
-#endif
-};
-*/
 
 typedef struct kmp_tasking_flags {          /* Total struct must be exactly 32 bits */
     /* Compiler flags */                    /* Total compiler flags must be 16 bits */
@@ -153,37 +120,33 @@ typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned so
     //private variables are also tacked on here
 } kmp_task_t;
 
-extern "C" 
-kmp_task_t*
+extern "C" kmp_task_t*
 __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
                        size_t sizeof_kmp_task_t, size_t sizeof_shareds,
                        kmp_routine_entry_t task_entry );
-
-extern "C" int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task);
-    
-extern "C"
-kmp_int32 
+extern "C" int 
+__kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task);
+extern "C" int
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
-
-extern "C" kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part );
-
-extern "C" kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid );
-
+extern "C" int
+__kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part );
+extern "C" int
+__kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid );
 extern "C" void 
 __kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps, 
                       kmp_depend_info_t *dep_list, kmp_int32 ndeps_noalias, 
                       kmp_depend_info_t *noalias_dep_list );
-
+extern "C" int 
+__kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task);
 extern "C" void 
 __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * task );
-
 extern "C" void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task );
 
 
-extern "C" int __kmpc_ok_to_fork(ident_t *loc);//used in icc
+extern "C" int  __kmpc_ok_to_fork(ident_t *loc);//used in icc
 extern "C" void __kmpc_begin( ident_t *, kmp_int32 flags );//used in icc
 extern "C" void __kmpc_end(ident_t *loc);//used in icc
 
@@ -194,10 +157,10 @@ extern "C" int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid);
 
 extern "C" void __kmpc_barrier(ident_t *loc, kmp_int32 global_tid);
 
-extern "C" int __kmpc_single(ident_t *loc, int tid);
+extern "C" int  __kmpc_single(ident_t *loc, int tid);
 extern "C" void __kmpc_end_single(ident_t *loc, int tid);
 
-extern "C" int __kmpc_master(ident_t *loc, int global_tid);
+extern "C" int  __kmpc_master(ident_t *loc, int global_tid);
 extern "C" void __kmpc_end_master(ident_t *loc, int global_tid);
 
 
@@ -207,24 +170,26 @@ extern "C" void __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_crit
 extern "C" void __kmpc_flush(ident_t *loc, ...);
 
 
-extern "C" void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache);
+extern "C" void* 
+__kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache);
 
 extern "C" void
 __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, 
                     void *cpy_data, void(*cpy_func)(void*,void*), kmp_int32 didit);
 
 
-extern "C" int __kmpc_reduce( ident_t *loc, kmp_int32 global_tid,
-                              kmp_int32 num_vars, size_t reduce_size,
-                              void *reduce_data, void (*reduce_func)(void *lhs_data, void *rhs_data),
-                              kmp_critical_name *lck );
+extern "C" int 
+__kmpc_reduce( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_vars, size_t size,
+               void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck );
 
+extern "C" void
+__kmpc_end_reduce( ident_t *loc, kmp_int32 global_tid, kmp_critical_name *lck );
 
-extern "C" int omp_get_thread_num();
-extern "C" int omp_get_num_threads();
+extern "C" int  omp_get_thread_num();
+extern "C" int  omp_get_num_threads();
 extern "C" void omp_set_num_threads(int);
-extern "C" int omp_get_max_threads();
-extern "C" int omp_get_num_procs();
+extern "C" int  omp_get_max_threads();
+extern "C" int  omp_get_num_procs();
 
 extern "C" double omp_get_wtime();
 extern "C" double omp_get_wtick();

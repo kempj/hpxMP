@@ -176,6 +176,12 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     return 1;
 }
 
+int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task) {
+    hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+    return 1;
+}
+
+
 kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
     hpx_backend->task_wait();
     return 0;
@@ -337,15 +343,30 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
     hpx_backend->barrier_wait();
 }
 
+/*!
+ * A blocking reduce that includes an implicit barrier.
+ *
+ * num_vars number of items (variables) to be reduced
+ * reduce_size size of data in bytes to be reduced
+ * reduce_data pointer to data to be reduced
+ * reduce_func callback function providing reduction operation on two operands and returning
+ * result of reduction in lhs_data
+ * param lck pointer to the unique lock data structure
+ * @result 1 for the master thread, 0 for all other team threads, 2 for all team threads if atomic
+ * reduction needed
+ * */
 int 
-__kmpc_reduce( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_vars, 
-               size_t reduce_size, void *reduce_data,
-               void (*reduce_func)(void *lhs_data, void *rhs_data),
-               kmp_critical_name *lck )
-{
-    return 0;
+__kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size, 
+               void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck ) {
+    //FIXME: this is almost certainly incorrect.
+    return __kmpc_single(loc, gtid);
 }
 
+void
+__kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
+    //FIXME: this is also most certainly incorrect.
+    __kmpc_end_single(loc, gtid);
+}
 
 //Library functions:--------------------------------------------------
 int omp_get_thread_num(){
