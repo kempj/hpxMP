@@ -67,13 +67,53 @@ typedef unsigned long kmp_uintptr_t;
 #define FALSE false
 #define TRUE true
 
+#define KMP_COMPILER_ICC 0
+#define KMP_COMPILER_GCC 0
+#define KMP_COMPILER_CLANG 0
+#define KMP_COMPILER_MSVC 0
+
+#if defined( __INTEL_COMPILER )
+# undef KMP_COMPILER_ICC
+# define KMP_COMPILER_ICC 1
+#elif defined( __clang__ )
+# undef KMP_COMPILER_CLANG
+# define KMP_COMPILER_CLANG 1
+#elif defined( __GNUC__ )
+# undef KMP_COMPILER_GCC
+# define KMP_COMPILER_GCC 1
+#elif defined( _MSC_VER )
+# undef KMP_COMPILER_MSVC
+# define KMP_COMPILER_MSVC 1
+#else
+# error Unknown compiler
+#endif
+
+#define KMP_HAVE_QUAD 0
+#if KMP_COMPILER_ICC
+   /* _Quad is already defined for icc */
+#  undef  KMP_HAVE_QUAD
+#  define KMP_HAVE_QUAD 1
+#elif KMP_COMPILER_CLANG
+   /* Clang doesn't support a software-implemented
+      128-bit extended precision type yet */
+   typedef long double _Quad;
+#elif KMP_COMPILER_GCC
+   typedef __float128 _Quad;
+#  undef  KMP_HAVE_QUAD
+#  define KMP_HAVE_QUAD 1
+#elif KMP_COMPILER_MSVC
+   typedef long double _Quad;
+#endif
+
 # define KMP_ARCH_X86 0
 
+//Is not set. When/why would I need it?
 #ifdef USE_VOLATILE_CAST
 # define VOLATILE_CAST(x)        (volatile x)
 #else
 # define VOLATILE_CAST(x)        (x)
 #endif
+
 
 //TODO: This might be a useful place to put a yield in
 # define KMP_CPU_PAUSE()
@@ -120,200 +160,24 @@ typedef unsigned long kmp_uintptr_t;
 #define KMP_XCHG_FIXED64(p, v)                  __sync_lock_test_and_set( (volatile kmp_uint64 *)(p), (kmp_uint64)(v) )
 
 
-inline kmp_real32 KMP_XCHG_REAL32( volatile kmp_real32 *p, kmp_real32 v)
-{
+inline kmp_real32 KMP_XCHG_REAL32( volatile kmp_real32 *p, kmp_real32 v) {
     kmp_int32 tmp = __sync_lock_test_and_set( (kmp_int32*)p, *(kmp_int32*)&v);
     return *(kmp_real32*)&tmp;
 }
 
-inline kmp_real64 KMP_XCHG_REAL64( volatile kmp_real64 *p, kmp_real64 v)
-{
+inline kmp_real64 KMP_XCHG_REAL64( volatile kmp_real64 *p, kmp_real64 v) {
     kmp_int64 tmp = __sync_lock_test_and_set( (kmp_int64*)p, *(kmp_int64*)&v);
     return *(kmp_real64*)&tmp;
 }
 
 struct ident_t;
 
-// C++ build port.
-// Intel compiler does not support _Complex datatype on win.
-// Intel compiler supports _Complex datatype on lin and mac.
-// On the other side, there is a problem of stack alignment on lin_32 and mac_32
-// if the rhs is cmplx80 or cmplx128 typedef'ed datatype.
-// The decision is: to use compiler supported _Complex type on lin and mac,
-//                  to use typedef'ed types on win.
-// Condition for WIN64 was modified in anticipation of 10.1 build compiler.
-
-#if defined( __cplusplus ) && ( KMP_OS_WINDOWS )
-// create shortcuts for c99 complex types
-
-#if (_MSC_VER < 1600) && defined(_DEBUG)
-// Workaround for the problem of _DebugHeapTag unresolved external.
-// This problem prevented to use our static debug library for C tests
-// compiled with /MDd option (the library itself built with /MTd),
-#undef _DEBUG
-#define _DEBUG_TEMPORARILY_UNSET_
-#endif
-
-#include <complex>
-
-template< typename type_lhs, typename type_rhs >
-std::complex< type_lhs > __kmp_lhs_div_rhs(
-        const std::complex< type_lhs >& lhs,
-        const std::complex< type_rhs >& rhs ) {
-    type_lhs a = lhs.real();
-    type_lhs b = lhs.imag();
-    type_rhs c = rhs.real();
-    type_rhs d = rhs.imag();
-    type_rhs den = c*c + d*d;
-    type_rhs r = ( a*c + b*d );
-    type_rhs i = ( b*c - a*d );
-    std::complex< type_lhs > ret( r/den, i/den );
-    return ret;
-}
-
-// complex8
-struct __kmp_cmplx64_t : std::complex< double > {
-    __kmp_cmplx64_t() : std::complex< double > () {}
-    __kmp_cmplx64_t( const std::complex< double >& cd ) 
-        : std::complex< double > ( cd ) {
-        }
-    void operator /= ( const __kmp_cmplx64_t& rhs ) {
-        std::complex< double > lhs = *this;
-        *this = __kmp_lhs_div_rhs( lhs, rhs );
-    }
-    __kmp_cmplx64_t operator / ( const __kmp_cmplx64_t& rhs ) {
-        std::complex< double > lhs = *this;
-        return __kmp_lhs_div_rhs( lhs, rhs );
-    }
-};
-typedef struct __kmp_cmplx64_t kmp_cmplx64;
-
-// complex4
-struct __kmp_cmplx32_t : std::complex< float > {
-
-    __kmp_cmplx32_t() : std::complex< float > () {}
-
-    __kmp_cmplx32_t( const std::complex<float>& cf )
-        : std::complex< float > ( cf ) {}
-
-    __kmp_cmplx32_t operator + ( const __kmp_cmplx32_t& b ) {
-        std::complex< float > lhs = *this;
-        std::complex< float > rhs = b;
-        return ( lhs + rhs );
-    }
-    __kmp_cmplx32_t operator - ( const __kmp_cmplx32_t& b ) {
-        std::complex< float > lhs = *this;
-        std::complex< float > rhs = b;
-        return ( lhs - rhs );
-    }
-    __kmp_cmplx32_t operator * ( const __kmp_cmplx32_t& b ) {
-        std::complex< float > lhs = *this;
-        std::complex< float > rhs = b;
-        return ( lhs * rhs );
-    }
-
-    __kmp_cmplx32_t operator + ( const kmp_cmplx64& b ) {
-        kmp_cmplx64 t = kmp_cmplx64( *this ) + b;
-        std::complex< double > d( t );
-        std::complex< float > f( d );
-        __kmp_cmplx32_t r( f );
-        return r;
-    }
-    __kmp_cmplx32_t operator - ( const kmp_cmplx64& b ) {
-        kmp_cmplx64 t = kmp_cmplx64( *this ) - b;
-        std::complex< double > d( t );
-        std::complex< float > f( d );
-        __kmp_cmplx32_t r( f );
-        return r;
-    }
-    __kmp_cmplx32_t operator * ( const kmp_cmplx64& b ) {
-        kmp_cmplx64 t = kmp_cmplx64( *this ) * b;
-        std::complex< double > d( t );
-        std::complex< float > f( d );
-        __kmp_cmplx32_t r( f );
-        return r;
-    }
-
-    void operator /= ( const __kmp_cmplx32_t& rhs ) {
-        std::complex< float > lhs = *this;
-        *this = __kmp_lhs_div_rhs( lhs, rhs );
-    }
-
-    __kmp_cmplx32_t operator / ( const __kmp_cmplx32_t& rhs ) {
-        std::complex< float > lhs = *this;
-        return __kmp_lhs_div_rhs( lhs, rhs );
-    }
-
-    void operator /= ( const kmp_cmplx64& rhs ) {
-        std::complex< float > lhs = *this;
-        *this = __kmp_lhs_div_rhs( lhs, rhs );
-    }
-
-    __kmp_cmplx32_t operator / ( const kmp_cmplx64& rhs ) {
-        std::complex< float > lhs = *this;
-        return __kmp_lhs_div_rhs( lhs, rhs );
-    }
-};
-typedef struct __kmp_cmplx32_t kmp_cmplx32;
-
-// complex10
-struct KMP_DO_ALIGN( 16 )  __kmp_cmplx80_t : std::complex< long double > {
-
-    __kmp_cmplx80_t() : std::complex< long double > () {}
-
-    __kmp_cmplx80_t( const std::complex< long double >& cld )
-        : std::complex< long double > ( cld ) {}
-
-    void operator /= ( const __kmp_cmplx80_t& rhs ) {
-        std::complex< long double > lhs = *this;
-        *this = __kmp_lhs_div_rhs( lhs, rhs );
-    }
-
-    __kmp_cmplx80_t operator / ( const __kmp_cmplx80_t& rhs ) {
-        std::complex< long double > lhs = *this;
-        return __kmp_lhs_div_rhs( lhs, rhs );
-    }
-
-};
-typedef KMP_DO_ALIGN( 16 )  struct __kmp_cmplx80_t kmp_cmplx80;
-
-// complex16
-#if KMP_HAVE_QUAD
-struct __kmp_cmplx128_t : std::complex< _Quad > {
-
-    __kmp_cmplx128_t() : std::complex< _Quad > () {}
-
-    __kmp_cmplx128_t( const std::complex< _Quad >& cq )
-        : std::complex< _Quad > ( cq ) {}
-
-    void operator /= ( const __kmp_cmplx128_t& rhs ) {
-        std::complex< _Quad > lhs = *this;
-        *this = __kmp_lhs_div_rhs( lhs, rhs );
-    }
-
-    __kmp_cmplx128_t operator / ( const __kmp_cmplx128_t& rhs ) {
-        std::complex< _Quad > lhs = *this;
-        return __kmp_lhs_div_rhs( lhs, rhs );
-    }
-
-};
-typedef struct __kmp_cmplx128_t kmp_cmplx128;
-#endif /* KMP_HAVE_QUAD */
-
-#ifdef _DEBUG_TEMPORARILY_UNSET_
-#undef _DEBUG_TEMPORARILY_UNSET_
-// Set it back now
-#define _DEBUG 1
-#endif
-
-#else
 // create shortcuts for c99 complex types
 typedef float _Complex       kmp_cmplx32;
 typedef double _Complex      kmp_cmplx64;
 typedef long double _Complex kmp_cmplx80;
 #if KMP_HAVE_QUAD
 typedef _Quad _Complex       kmp_cmplx128;
-#endif
 #endif
 
 #define QUAD_LEGACY _Quad
