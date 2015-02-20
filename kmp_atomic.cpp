@@ -754,7 +754,6 @@ RET_TYPE __kmpc_atomic_##TYPE_ID##_##OP_ID( ident_t *id_ref, int gtid, TYPE * lh
 // end of the first part of the workaround for C78287
 #endif // USE_CMPXCHG_FIX
 
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
 
 // ------------------------------------------------------------------------
 // X86 or X86_64: no alignment problems ====================================
@@ -780,48 +779,6 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                           
 }
 // end of the second part of the workaround for C78287
 #endif
-
-#else
-// -------------------------------------------------------------------------
-// Code for other architectures that don't handle unaligned accesses.
-#define ATOMIC_FIXED_ADD(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG) \
-ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                      \
-    OP_GOMP_CRITICAL(OP##=,GOMP_FLAG)                                      \
-    if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                           \
-        /* OP used as a sign for subtraction: (lhs-rhs) --> (lhs+-rhs) */  \
-        KMP_TEST_THEN_ADD##BITS( lhs, OP rhs );                            \
-    } else {                                                               \
-        KMP_CHECK_GTID;                                                    \
-        OP_CRITICAL(OP##=,LCK_ID)  /* unaligned address - use critical */  \
-    }                                                                      \
-}
-// -------------------------------------------------------------------------
-#define ATOMIC_CMPXCHG(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG)   \
-ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                      \
-    OP_GOMP_CRITICAL(OP##=,GOMP_FLAG)                                      \
-    if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                           \
-        OP_CMPXCHG(TYPE,BITS,OP)     /* aligned address */                 \
-    } else {                                                               \
-        KMP_CHECK_GTID;                                                    \
-        OP_CRITICAL(OP##=,LCK_ID)  /* unaligned address - use critical */  \
-    }                                                                      \
-}
-#if USE_CMPXCHG_FIX
-// -------------------------------------------------------------------------
-// workaround for C78287 (complex(kind=4) data type)
-#define ATOMIC_CMPXCHG_WORKAROUND(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG)   \
-ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                                 \
-    OP_GOMP_CRITICAL(OP##=,GOMP_FLAG)                                                 \
-    if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                                      \
-        OP_CMPXCHG(TYPE,BITS,OP)             /* aligned address */                    \
-    } else {                                                                          \
-        KMP_CHECK_GTID;                                                               \
-        OP_CRITICAL(OP##=,LCK_ID)  /* unaligned address - use critical */             \
-    }                                                                                 \
-}
-// end of the second part of the workaround for C78287
-#endif // USE_CMPXCHG_FIX
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 // Routines for ATOMIC 4-byte operands addition and subtraction
 ATOMIC_FIXED_ADD( fixed4, add, kmp_int32,  32, +, 4i, 3, 0            )  // __kmpc_atomic_fixed4_add
@@ -912,8 +869,6 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
     OP_CRITICAL( = *lhs OP, LCK_ID )                                      \
 }
 
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-
 // ------------------------------------------------------------------------
 // X86 or X86_64: no alignment problems ===================================
 #define ATOMIC_CMPX_L(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG)   \
@@ -921,21 +876,6 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
     OP_GOMP_CRITICAL( = *lhs OP, GOMP_FLAG )                              \
     OP_CMPXCHG(TYPE,BITS,OP)                                              \
 }
-
-#else
-// ------------------------------------------------------------------------
-// Code for other architectures that don't handle unaligned accesses.
-#define ATOMIC_CMPX_L(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG)   \
-ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
-    OP_GOMP_CRITICAL(= *lhs OP,GOMP_FLAG)                                 \
-    if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                          \
-        OP_CMPXCHG(TYPE,BITS,OP)       /* aligned address */              \
-    } else {                                                              \
-        KMP_CHECK_GTID;                                                   \
-        OP_CRITICAL(= *lhs OP,LCK_ID)  /* unaligned - use critical */     \
-    }                                                                     \
-}
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 ATOMIC_CMPX_L( fixed1, andl, char,       8, &&, 1i, 0, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_andl
 ATOMIC_CMPX_L( fixed1,  orl, char,       8, ||, 1i, 0, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_orl
@@ -1005,10 +945,6 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                      \
     }                                                                      \
 }
 
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-
-// -------------------------------------------------------------------------
-// X86 or X86_64: no alignment problems ====================================
 #define MIN_MAX_COMPXCHG(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG) \
 ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                      \
     if ( *lhs OP rhs ) {                                                   \
@@ -1016,23 +952,6 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                      \
         MIN_MAX_CMPXCHG(TYPE,BITS,OP)                                      \
     }                                                                      \
 }
-
-#else
-// -------------------------------------------------------------------------
-// Code for other architectures that don't handle unaligned accesses.
-#define MIN_MAX_COMPXCHG(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG) \
-ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                      \
-    if ( *lhs OP rhs ) {                                                   \
-        GOMP_MIN_MAX_CRITSECT(OP,GOMP_FLAG)                                \
-        if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                       \
-            MIN_MAX_CMPXCHG(TYPE,BITS,OP) /* aligned address */            \
-        } else {                                                           \
-            KMP_CHECK_GTID;                                                \
-            MIN_MAX_CRITSECT(OP,LCK_ID)   /* unaligned address */          \
-        }                                                                  \
-    }                                                                      \
-}
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 MIN_MAX_COMPXCHG( fixed1,  max, char,        8, <, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_max
 MIN_MAX_COMPXCHG( fixed1,  min, char,        8, >, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_min
@@ -1049,10 +968,7 @@ MIN_MAX_COMPXCHG( float8,  min, kmp_real64, 64, >, 8r, 7, KMP_ARCH_X86 ) // __km
 #if KMP_HAVE_QUAD
 MIN_MAX_CRITICAL( float16, max,     QUAD_LEGACY,      <, 16r,   1 )            // __kmpc_atomic_float16_max
 MIN_MAX_CRITICAL( float16, min,     QUAD_LEGACY,      >, 16r,   1 )            // __kmpc_atomic_float16_min
-#if ( KMP_ARCH_X86 )
-    MIN_MAX_CRITICAL( float16, max_a16, Quad_a16_t,     <, 16r,   1 )            // __kmpc_atomic_float16_max_a16
-    MIN_MAX_CRITICAL( float16, min_a16, Quad_a16_t,     >, 16r,   1 )            // __kmpc_atomic_float16_min_a16
-#endif
+
 #endif
 // ------------------------------------------------------------------------
 // Need separate macros for .EQV. because of the need of complement (~)
@@ -1064,29 +980,12 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
 }
 
 // ------------------------------------------------------------------------
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-// ------------------------------------------------------------------------
-// X86 or X86_64: no alignment problems ===================================
 #define ATOMIC_CMPX_EQV(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG) \
 ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
     OP_GOMP_CRITICAL(^=~,GOMP_FLAG)  /* send assignment */                \
     OP_CMPXCHG(TYPE,BITS,OP)                                              \
 }
 // ------------------------------------------------------------------------
-#else
-// ------------------------------------------------------------------------
-// Code for other architectures that don't handle unaligned accesses.
-#define ATOMIC_CMPX_EQV(TYPE_ID,OP_ID,TYPE,BITS,OP,LCK_ID,MASK,GOMP_FLAG) \
-ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
-    OP_GOMP_CRITICAL(^=~,GOMP_FLAG)                                       \
-    if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                          \
-        OP_CMPXCHG(TYPE,BITS,OP)   /* aligned address */                  \
-    } else {                                                              \
-        KMP_CHECK_GTID;                                                   \
-        OP_CRITICAL(^=~,LCK_ID)    /* unaligned address - use critical */ \
-    }                                                                     \
-}
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 ATOMIC_CMPXCHG(  fixed1, neqv, kmp_int8,   8,   ^, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_neqv
 ATOMIC_CMPXCHG(  fixed2, neqv, kmp_int16, 16,   ^, 2i, 1, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_neqv
@@ -1121,12 +1020,6 @@ ATOMIC_CRITICAL( float16, add, QUAD_LEGACY,     +, 16r,   1 )            // __km
 ATOMIC_CRITICAL( float16, sub, QUAD_LEGACY,     -, 16r,   1 )            // __kmpc_atomic_float16_sub
 ATOMIC_CRITICAL( float16, mul, QUAD_LEGACY,     *, 16r,   1 )            // __kmpc_atomic_float16_mul
 ATOMIC_CRITICAL( float16, div, QUAD_LEGACY,     /, 16r,   1 )            // __kmpc_atomic_float16_div
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL( float16, add_a16, Quad_a16_t, +, 16r, 1 )           // __kmpc_atomic_float16_add_a16
-    ATOMIC_CRITICAL( float16, sub_a16, Quad_a16_t, -, 16r, 1 )           // __kmpc_atomic_float16_sub_a16
-    ATOMIC_CRITICAL( float16, mul_a16, Quad_a16_t, *, 16r, 1 )           // __kmpc_atomic_float16_mul_a16
-    ATOMIC_CRITICAL( float16, div_a16, Quad_a16_t, /, 16r, 1 )           // __kmpc_atomic_float16_div_a16
-#endif
 #endif
 // routines for complex types
 
@@ -1157,19 +1050,12 @@ ATOMIC_CRITICAL( cmplx16, add, CPLX128_LEG,     +, 32c,   1 )            // __km
 ATOMIC_CRITICAL( cmplx16, sub, CPLX128_LEG,     -, 32c,   1 )            // __kmpc_atomic_cmplx16_sub
 ATOMIC_CRITICAL( cmplx16, mul, CPLX128_LEG,     *, 32c,   1 )            // __kmpc_atomic_cmplx16_mul
 ATOMIC_CRITICAL( cmplx16, div, CPLX128_LEG,     /, 32c,   1 )            // __kmpc_atomic_cmplx16_div
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL( cmplx16, add_a16, kmp_cmplx128_a16_t, +, 32c, 1 )   // __kmpc_atomic_cmplx16_add_a16
-    ATOMIC_CRITICAL( cmplx16, sub_a16, kmp_cmplx128_a16_t, -, 32c, 1 )   // __kmpc_atomic_cmplx16_sub_a16
-    ATOMIC_CRITICAL( cmplx16, mul_a16, kmp_cmplx128_a16_t, *, 32c, 1 )   // __kmpc_atomic_cmplx16_mul_a16
-    ATOMIC_CRITICAL( cmplx16, div_a16, kmp_cmplx128_a16_t, /, 32c, 1 )   // __kmpc_atomic_cmplx16_div_a16
-#endif
 #endif
 
 #if OMP_40_ENABLED
 
 // OpenMP 4.0: x = expr binop x for non-commutative operations.
 // Supported only on IA-32 architecture and Intel(R) 64
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
 
 // ------------------------------------------------------------------------
 // Operation on *lhs, rhs bound by critical section
@@ -1305,10 +1191,6 @@ ATOMIC_CRITICAL_REV( float10, div, long double,     /, 10r,   1 )            // 
 // routines for _Quad type
 ATOMIC_CRITICAL_REV( float16, sub, QUAD_LEGACY,     -, 16r,   1 )            // __kmpc_atomic_float16_sub_rev
 ATOMIC_CRITICAL_REV( float16, div, QUAD_LEGACY,     /, 16r,   1 )            // __kmpc_atomic_float16_div_rev
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_REV( float16, sub_a16, Quad_a16_t, -, 16r, 1 )           // __kmpc_atomic_float16_sub_a16_rev
-    ATOMIC_CRITICAL_REV( float16, div_a16, Quad_a16_t, /, 16r, 1 )           // __kmpc_atomic_float16_div_a16_rev
-#endif
 #endif
 
 // routines for complex types
@@ -1321,14 +1203,8 @@ ATOMIC_CRITICAL_REV( cmplx10, div, kmp_cmplx80,     /, 20c,   1 )            // 
 #if KMP_HAVE_QUAD
 ATOMIC_CRITICAL_REV( cmplx16, sub, CPLX128_LEG,     -, 32c,   1 )            // __kmpc_atomic_cmplx16_sub_rev
 ATOMIC_CRITICAL_REV( cmplx16, div, CPLX128_LEG,     /, 32c,   1 )            // __kmpc_atomic_cmplx16_div_rev
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_REV( cmplx16, sub_a16, kmp_cmplx128_a16_t, -, 32c, 1 )   // __kmpc_atomic_cmplx16_sub_a16_rev
-    ATOMIC_CRITICAL_REV( cmplx16, div_a16, kmp_cmplx128_a16_t, /, 32c, 1 )   // __kmpc_atomic_cmplx16_div_a16_rev
-#endif
 #endif
 
-
-#endif //KMP_ARCH_X86 || KMP_ARCH_X86_64
 // End of OpenMP 4.0: x = expr binop x for non-commutative operations.
 
 #endif //OMP_40_ENABLED
@@ -1357,29 +1233,12 @@ ATOMIC_BEGIN_MIX(TYPE_ID,TYPE,OP_ID,RTYPE_ID,RTYPE)                             
 }
 
 // -------------------------------------------------------------------------
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-// -------------------------------------------------------------------------
-// X86 or X86_64: no alignment problems ====================================
 #define ATOMIC_CMPXCHG_MIX(TYPE_ID,TYPE,OP_ID,BITS,OP,RTYPE_ID,RTYPE,LCK_ID,MASK,GOMP_FLAG) \
 ATOMIC_BEGIN_MIX(TYPE_ID,TYPE,OP_ID,RTYPE_ID,RTYPE)                                         \
     OP_GOMP_CRITICAL(OP##=,GOMP_FLAG)                                                       \
     OP_CMPXCHG(TYPE,BITS,OP)                                                                \
 }
 // -------------------------------------------------------------------------
-#else
-// ------------------------------------------------------------------------
-// Code for other architectures that don't handle unaligned accesses.
-#define ATOMIC_CMPXCHG_MIX(TYPE_ID,TYPE,OP_ID,BITS,OP,RTYPE_ID,RTYPE,LCK_ID,MASK,GOMP_FLAG) \
-ATOMIC_BEGIN_MIX(TYPE_ID,TYPE,OP_ID,RTYPE_ID,RTYPE)                                         \
-    OP_GOMP_CRITICAL(OP##=,GOMP_FLAG)                                                       \
-    if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                                            \
-        OP_CMPXCHG(TYPE,BITS,OP)     /* aligned address */                                  \
-    } else {                                                                                \
-        KMP_CHECK_GTID;                                                                     \
-        OP_CRITICAL(OP##=,LCK_ID)  /* unaligned address - use critical */                   \
-    }                                                                                       \
-}
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 // RHS=float8
 ATOMIC_CMPXCHG_MIX( fixed1, char,       mul,  8, *, float8, kmp_real64, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_mul_float8
@@ -1437,9 +1296,6 @@ ATOMIC_CRITICAL_FP( float10, long double,    mul, *, fp, _Quad, 10r,   1 )      
 ATOMIC_CRITICAL_FP( float10, long double,    div, /, fp, _Quad, 10r,   1 )            // __kmpc_atomic_float10_div_fp
 #endif
 
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-// ------------------------------------------------------------------------
-// X86 or X86_64: no alignment problems ====================================
 #if USE_CMPXCHG_FIX
 // workaround for C78287 (complex(kind=4) data type)
 #define ATOMIC_CMPXCHG_CMPLX(TYPE_ID,TYPE,OP_ID,BITS,OP,RTYPE_ID,RTYPE,LCK_ID,MASK,GOMP_FLAG) \
@@ -1455,20 +1311,6 @@ ATOMIC_BEGIN_MIX(TYPE_ID,TYPE,OP_ID,RTYPE_ID,RTYPE)                             
     OP_CMPXCHG(TYPE,BITS,OP)                                                                  \
 }
 #endif // USE_CMPXCHG_FIX
-#else
-// ------------------------------------------------------------------------
-// Code for other architectures that don't handle unaligned accesses.
-#define ATOMIC_CMPXCHG_CMPLX(TYPE_ID,TYPE,OP_ID,BITS,OP,RTYPE_ID,RTYPE,LCK_ID,MASK,GOMP_FLAG) \
-ATOMIC_BEGIN_MIX(TYPE_ID,TYPE,OP_ID,RTYPE_ID,RTYPE)                                           \
-    OP_GOMP_CRITICAL(OP##=,GOMP_FLAG)                                                         \
-    if ( ! ( (kmp_uintptr_t) lhs & 0x##MASK) ) {                                              \
-        OP_CMPXCHG(TYPE,BITS,OP)     /* aligned address */                                    \
-    } else {                                                                                  \
-        KMP_CHECK_GTID;                                                                       \
-        OP_CRITICAL(OP##=,LCK_ID)  /* unaligned address - use critical */                     \
-    }                                                                                         \
-}
-#endif /* KMP_ARCH_X86 || KMP_ARCH_X86_64 */
 
 ATOMIC_CMPXCHG_CMPLX( cmplx4, kmp_cmplx32, add, 64, +, cmplx8,  kmp_cmplx64,  8c, 7, KMP_ARCH_X86 ) // __kmpc_atomic_cmplx4_add_cmplx8
 ATOMIC_CMPXCHG_CMPLX( cmplx4, kmp_cmplx32, sub, 64, -, cmplx8,  kmp_cmplx64,  8c, 7, KMP_ARCH_X86 ) // __kmpc_atomic_cmplx4_sub_cmplx8
@@ -1476,7 +1318,6 @@ ATOMIC_CMPXCHG_CMPLX( cmplx4, kmp_cmplx32, mul, 64, *, cmplx8,  kmp_cmplx64,  8c
 ATOMIC_CMPXCHG_CMPLX( cmplx4, kmp_cmplx32, div, 64, /, cmplx8,  kmp_cmplx64,  8c, 7, KMP_ARCH_X86 ) // __kmpc_atomic_cmplx4_div_cmplx8
 
 // READ, WRITE, CAPTURE are supported only on IA-32 architecture and Intel(R) 64
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------
@@ -1634,10 +1475,6 @@ ATOMIC_CRITICAL_READ( cmplx8,  rd, kmp_cmplx64, +, 16c, 1 )           // __kmpc_
 ATOMIC_CRITICAL_READ( cmplx10, rd, kmp_cmplx80, +, 20c, 1 )           // __kmpc_atomic_cmplx10_rd
 #if KMP_HAVE_QUAD
 ATOMIC_CRITICAL_READ( cmplx16, rd, CPLX128_LEG, +, 32c, 1 )           // __kmpc_atomic_cmplx16_rd
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_READ( float16, a16_rd, Quad_a16_t, +, 16r, 1 )         // __kmpc_atomic_float16_a16_rd
-    ATOMIC_CRITICAL_READ( cmplx16, a16_rd, kmp_cmplx128_a16_t, +, 32c, 1 ) // __kmpc_atomic_cmplx16_a16_rd
-#endif
 #endif
 
 
@@ -1728,10 +1565,6 @@ ATOMIC_CRITICAL_WR( cmplx8,  wr, kmp_cmplx64, =, 16c,   1 )         // __kmpc_at
 ATOMIC_CRITICAL_WR( cmplx10, wr, kmp_cmplx80, =, 20c,   1 )         // __kmpc_atomic_cmplx10_wr
 #if KMP_HAVE_QUAD
 ATOMIC_CRITICAL_WR( cmplx16, wr, CPLX128_LEG, =, 32c,   1 )         // __kmpc_atomic_cmplx16_wr
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_WR( float16, a16_wr, Quad_a16_t,         =, 16r, 1 ) // __kmpc_atomic_float16_a16_wr
-    ATOMIC_CRITICAL_WR( cmplx16, a16_wr, kmp_cmplx128_a16_t, =, 32c, 1 ) // __kmpc_atomic_cmplx16_a16_wr
-#endif
 #endif
 
 
@@ -2044,10 +1877,6 @@ MIN_MAX_COMPXCHG_CPT( float8,  min_cpt, kmp_real64, 64, >, KMP_ARCH_X86 ) // __k
 #if KMP_HAVE_QUAD
 MIN_MAX_CRITICAL_CPT( float16, max_cpt, QUAD_LEGACY,    <, 16r,   1 )     // __kmpc_atomic_float16_max_cpt
 MIN_MAX_CRITICAL_CPT( float16, min_cpt, QUAD_LEGACY,    >, 16r,   1 )     // __kmpc_atomic_float16_min_cpt
-#if ( KMP_ARCH_X86 )
-    MIN_MAX_CRITICAL_CPT( float16, max_a16_cpt, Quad_a16_t, <, 16r,  1 )  // __kmpc_atomic_float16_max_a16_cpt
-    MIN_MAX_CRITICAL_CPT( float16, min_a16_cpt, Quad_a16_t, >, 16r,  1 )  // __kmpc_atomic_float16_mix_a16_cpt
-#endif
 #endif
 
 // ------------------------------------------------------------------------
@@ -2145,12 +1974,6 @@ ATOMIC_CRITICAL_CPT( float16, add_cpt, QUAD_LEGACY,     +, 16r,   1 )           
 ATOMIC_CRITICAL_CPT( float16, sub_cpt, QUAD_LEGACY,     -, 16r,   1 )            // __kmpc_atomic_float16_sub_cpt
 ATOMIC_CRITICAL_CPT( float16, mul_cpt, QUAD_LEGACY,     *, 16r,   1 )            // __kmpc_atomic_float16_mul_cpt
 ATOMIC_CRITICAL_CPT( float16, div_cpt, QUAD_LEGACY,     /, 16r,   1 )            // __kmpc_atomic_float16_div_cpt
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_CPT( float16, add_a16_cpt, Quad_a16_t, +, 16r,  1 )          // __kmpc_atomic_float16_add_a16_cpt
-    ATOMIC_CRITICAL_CPT( float16, sub_a16_cpt, Quad_a16_t, -, 16r,  1 )          // __kmpc_atomic_float16_sub_a16_cpt
-    ATOMIC_CRITICAL_CPT( float16, mul_a16_cpt, Quad_a16_t, *, 16r,  1 )          // __kmpc_atomic_float16_mul_a16_cpt
-    ATOMIC_CRITICAL_CPT( float16, div_a16_cpt, Quad_a16_t, /, 16r,  1 )          // __kmpc_atomic_float16_div_a16_cpt
-#endif
 #endif
 
 // routines for complex types
@@ -2174,12 +1997,6 @@ ATOMIC_CRITICAL_CPT( cmplx16, add_cpt, CPLX128_LEG, +, 32c,   1 )            // 
 ATOMIC_CRITICAL_CPT( cmplx16, sub_cpt, CPLX128_LEG, -, 32c,   1 )            // __kmpc_atomic_cmplx16_sub_cpt
 ATOMIC_CRITICAL_CPT( cmplx16, mul_cpt, CPLX128_LEG, *, 32c,   1 )            // __kmpc_atomic_cmplx16_mul_cpt
 ATOMIC_CRITICAL_CPT( cmplx16, div_cpt, CPLX128_LEG, /, 32c,   1 )            // __kmpc_atomic_cmplx16_div_cpt
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_CPT( cmplx16, add_a16_cpt, kmp_cmplx128_a16_t, +, 32c,   1 )   // __kmpc_atomic_cmplx16_add_a16_cpt
-    ATOMIC_CRITICAL_CPT( cmplx16, sub_a16_cpt, kmp_cmplx128_a16_t, -, 32c,   1 )   // __kmpc_atomic_cmplx16_sub_a16_cpt
-    ATOMIC_CRITICAL_CPT( cmplx16, mul_a16_cpt, kmp_cmplx128_a16_t, *, 32c,   1 )   // __kmpc_atomic_cmplx16_mul_a16_cpt
-    ATOMIC_CRITICAL_CPT( cmplx16, div_a16_cpt, kmp_cmplx128_a16_t, /, 32c,   1 )   // __kmpc_atomic_cmplx16_div_a16_cpt
-#endif
 #endif
 
 #if OMP_40_ENABLED
@@ -2312,10 +2129,6 @@ ATOMIC_CRITICAL_CPT_REV( float10, div_cpt_rev, long double,     /, 10r,   1 )   
 // routines for _Quad type
 ATOMIC_CRITICAL_CPT_REV( float16, sub_cpt_rev, QUAD_LEGACY,     -, 16r,   1 )            // __kmpc_atomic_float16_sub_cpt_rev
 ATOMIC_CRITICAL_CPT_REV( float16, div_cpt_rev, QUAD_LEGACY,     /, 16r,   1 )            // __kmpc_atomic_float16_div_cpt_rev
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_CPT_REV( float16, sub_a16_cpt_rev, Quad_a16_t, -, 16r,  1 )          // __kmpc_atomic_float16_sub_a16_cpt_rev
-    ATOMIC_CRITICAL_CPT_REV( float16, div_a16_cpt_rev, Quad_a16_t, /, 16r,  1 )          // __kmpc_atomic_float16_div_a16_cpt_rev
-#endif
 #endif
 
 // routines for complex types
@@ -2370,10 +2183,6 @@ ATOMIC_CRITICAL_CPT_REV( cmplx10, div_cpt_rev, kmp_cmplx80, /, 20c,   1 )       
 #if KMP_HAVE_QUAD
 ATOMIC_CRITICAL_CPT_REV( cmplx16, sub_cpt_rev, CPLX128_LEG, -, 32c,   1 )            // __kmpc_atomic_cmplx16_sub_cpt_rev
 ATOMIC_CRITICAL_CPT_REV( cmplx16, div_cpt_rev, CPLX128_LEG, /, 32c,   1 )            // __kmpc_atomic_cmplx16_div_cpt_rev
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_CPT_REV( cmplx16, sub_a16_cpt_rev, kmp_cmplx128_a16_t, -, 32c,   1 )   // __kmpc_atomic_cmplx16_sub_a16_cpt_rev
-    ATOMIC_CRITICAL_CPT_REV( cmplx16, div_a16_cpt_rev, kmp_cmplx128_a16_t, /, 32c,   1 )   // __kmpc_atomic_cmplx16_div_a16_cpt_rev
-#endif
 #endif
 
 //   OpenMP 4.0 Capture-write (swap): {v = x; x = expr;}
@@ -2454,13 +2263,8 @@ ATOMIC_XCHG_SWP( fixed4, kmp_int32,  32, KMP_ARCH_X86 )  // __kmpc_atomic_fixed4
 
 ATOMIC_XCHG_FLOAT_SWP( float4, kmp_real32, 32, KMP_ARCH_X86 )      // __kmpc_atomic_float4_swp
 
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CMPXCHG_SWP( fixed8, kmp_int64, 64, KMP_ARCH_X86 )      // __kmpc_atomic_fixed8_swp
-    ATOMIC_CMPXCHG_SWP( float8, kmp_real64, 64, KMP_ARCH_X86 )     // __kmpc_atomic_float8_swp
-#else
-    ATOMIC_XCHG_SWP(       fixed8, kmp_int64, 64, KMP_ARCH_X86 )   // __kmpc_atomic_fixed8_swp
-    ATOMIC_XCHG_FLOAT_SWP( float8, kmp_real64, 64, KMP_ARCH_X86 )  // __kmpc_atomic_float8_swp
-#endif
+ATOMIC_XCHG_SWP(       fixed8, kmp_int64, 64, KMP_ARCH_X86 )   // __kmpc_atomic_fixed8_swp
+ATOMIC_XCHG_FLOAT_SWP( float8, kmp_real64, 64, KMP_ARCH_X86 )  // __kmpc_atomic_float8_swp
 
 // ------------------------------------------------------------------------
 // Routines for Extended types: long double, _Quad, complex flavours (use critical section)
@@ -2527,10 +2331,6 @@ ATOMIC_CRITICAL_SWP( cmplx8,  kmp_cmplx64, 16c,   1 )              // __kmpc_ato
 ATOMIC_CRITICAL_SWP( cmplx10, kmp_cmplx80, 20c,   1 )              // __kmpc_atomic_cmplx10_swp
 #if KMP_HAVE_QUAD
 ATOMIC_CRITICAL_SWP( cmplx16, CPLX128_LEG, 32c,   1 )              // __kmpc_atomic_cmplx16_swp
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CRITICAL_SWP( float16_a16, Quad_a16_t,         16r, 1 )  // __kmpc_atomic_float16_a16_swp
-    ATOMIC_CRITICAL_SWP( cmplx16_a16, kmp_cmplx128_a16_t, 32c, 1 )  // __kmpc_atomic_cmplx16_a16_swp
-#endif
 #endif
 
 
@@ -2538,7 +2338,6 @@ ATOMIC_CRITICAL_SWP( cmplx16, CPLX128_LEG, 32c,   1 )              // __kmpc_ato
 
 #endif //OMP_40_ENABLED
 
-#endif //KMP_ARCH_X86 || KMP_ARCH_X86_64
 
 
 #undef OP_CRITICAL
@@ -2550,15 +2349,6 @@ ATOMIC_CRITICAL_SWP( cmplx16, CPLX128_LEG, 32c,   1 )              // __kmpc_ato
 void
 __kmpc_atomic_1( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( void *, void *, void * ) )
 {
-
-    if (
-#if KMP_ARCH_X86 && defined(KMP_GOMP_COMPAT)
-        FALSE                                   /* must use lock */
-#else
-        TRUE
-#endif
-	)
-    {
 	kmp_int8 old_value, new_value;
 
 	old_value = *(kmp_int8 *) lhs;
@@ -2575,45 +2365,11 @@ __kmpc_atomic_1( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
 	}
 
 	return;
-    }
-    else {
-        //
-        // All 1-byte data is of integer data type.
-        //
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_acquire_atomic_lock( & __kmp_atomic_lock_1i, gtid );
-
-	(*f)( lhs, lhs, rhs );
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_release_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_release_atomic_lock( & __kmp_atomic_lock_1i, gtid );
-    }
 }
 
 void
 __kmpc_atomic_2( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( void *, void *, void * ) )
 {
-    if (
-#if KMP_ARCH_X86 && defined(KMP_GOMP_COMPAT)
-        FALSE                                   /* must use lock */
-#elif KMP_ARCH_X86 || KMP_ARCH_X86_64
-	TRUE					/* no alignment problems */
-#else
-	! ( (kmp_uintptr_t) lhs & 0x1)		/* make sure address is 2-byte aligned */
-#endif
-	)
-    {
 	kmp_int16 old_value, new_value;
 
 	old_value = *(kmp_int16 *) lhs;
@@ -2630,48 +2386,11 @@ __kmpc_atomic_2( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
 	}
 
 	return;
-    }
-    else {
-        //
-        // All 2-byte data is of integer data type.
-        //
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_acquire_atomic_lock( & __kmp_atomic_lock_2i, gtid );
-
-	(*f)( lhs, lhs, rhs );
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_release_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_release_atomic_lock( & __kmp_atomic_lock_2i, gtid );
-    }
 }
 
 void
 __kmpc_atomic_4( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( void *, void *, void * ) )
 {
-
-    if (
-        //
-        // FIXME: On IA-32 architecture, gcc uses cmpxchg only for 4-byte ints.
-        // Gomp compatibility is broken if this routine is called for floats.
-        //
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-	TRUE					/* no alignment problems */
-#else
-	! ( (kmp_uintptr_t) lhs & 0x3)		/* make sure address is 4-byte aligned */
-#endif
-	)
-    {
 	kmp_int32 old_value, new_value;
 
 	old_value = *(kmp_int32 *) lhs;
@@ -2688,47 +2407,11 @@ __kmpc_atomic_4( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
 	}
 
 	return;
-    }
-    else {
-        //
-        // Use __kmp_atomic_lock_4i for all 4-byte data,
-        // even if it isn't of integer data type.
-        //
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_acquire_atomic_lock( & __kmp_atomic_lock_4i, gtid );
-
-	(*f)( lhs, lhs, rhs );
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_release_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_release_atomic_lock( & __kmp_atomic_lock_4i, gtid );
-    }
 }
 
 void
 __kmpc_atomic_8( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( void *, void *, void * ) )
 {
-    if (
-
-#if KMP_ARCH_X86 && defined(KMP_GOMP_COMPAT)
-        FALSE                                   /* must use lock */
-#elif KMP_ARCH_X86 || KMP_ARCH_X86_64
-	TRUE					/* no alignment problems */
-#else
-	! ( (kmp_uintptr_t) lhs & 0x7)		/* make sure address is 8-byte aligned */
-#endif
-	)
-    {
 	kmp_int64 old_value, new_value;
 
 	old_value = *(kmp_int64 *) lhs;
@@ -2745,30 +2428,6 @@ __kmpc_atomic_8( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( voi
 	}
 
 	return;
-    } else {
-        //
-        // Use __kmp_atomic_lock_8i for all 8-byte data,
-        // even if it isn't of integer data type.
-        //
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_acquire_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_acquire_atomic_lock( & __kmp_atomic_lock_8i, gtid );
-
-	(*f)( lhs, lhs, rhs );
-
-#ifdef KMP_GOMP_COMPAT
-        if ( __kmp_atomic_mode == 2 ) {
-            __kmp_release_atomic_lock( & __kmp_atomic_lock, gtid );
-        }
-        else
-#endif /* KMP_GOMP_COMPAT */
-	__kmp_release_atomic_lock( & __kmp_atomic_lock_8i, gtid );
-    }
 }
 
 void
@@ -2873,7 +2532,6 @@ __kmpc_atomic_start(void)
     __kmp_acquire_atomic_lock(&__kmp_atomic_lock, gtid);
 }
 
-
 void
 __kmpc_atomic_end(void)
 {
@@ -2881,10 +2539,3 @@ __kmpc_atomic_end(void)
     __kmp_release_atomic_lock(&__kmp_atomic_lock, gtid);
 }
 
-/* ------------------------------------------------------------------------ */
-/* ------------------------------------------------------------------------ */
-/*!
-@}
-*/
-
-// end of file

@@ -67,7 +67,7 @@ typedef unsigned long kmp_uintptr_t;
 #define FALSE false
 #define TRUE true
 
-#  define KMP_ARCH_X86 1
+# define KMP_ARCH_X86 0
 
 #ifdef USE_VOLATILE_CAST
 # define VOLATILE_CAST(x)        (volatile x)
@@ -75,6 +75,7 @@ typedef unsigned long kmp_uintptr_t;
 # define VOLATILE_CAST(x)        (x)
 #endif
 
+//TODO: This might be a useful place to put a yield in
 # define KMP_CPU_PAUSE()
 
 
@@ -315,155 +316,10 @@ typedef _Quad _Complex       kmp_cmplx128;
 #endif
 #endif
 
-// Compiler 12.0 changed alignment of 16 and 32-byte arguments (like _Quad
-// and kmp_cmplx128) on IA-32 architecture. The following aligned structures
-// are implemented to support the old alignment in 10.1, 11.0, 11.1 and 
-// introduce the new alignment in 12.0. See CQ88405.
-#if KMP_ARCH_X86 && KMP_HAVE_QUAD
-
-// 4-byte aligned structures for backward compatibility.
-
-#pragma pack( push, 4 )
-
-
-struct KMP_DO_ALIGN( 4 ) Quad_a4_t {
-    _Quad q;
-
-    Quad_a4_t(  ) : q(  ) {}
-    Quad_a4_t( const _Quad & cq ) : q ( cq ) {}
-
-    Quad_a4_t operator + ( const Quad_a4_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a4_t)( lhs + rhs );
-    }
-
-    Quad_a4_t operator - ( const Quad_a4_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a4_t)( lhs - rhs );
-    }
-    Quad_a4_t operator * ( const Quad_a4_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a4_t)( lhs * rhs );
-    }
-
-    Quad_a4_t operator / ( const Quad_a4_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a4_t)( lhs / rhs );
-    }
-
-};
-
-struct KMP_DO_ALIGN( 4 ) kmp_cmplx128_a4_t {
-    kmp_cmplx128 q;
-
-    kmp_cmplx128_a4_t() : q () {}
-
-    kmp_cmplx128_a4_t( const kmp_cmplx128 & c128 ) : q ( c128 ) {}
-
-    kmp_cmplx128_a4_t operator + ( const kmp_cmplx128_a4_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a4_t)( lhs + rhs );
-    }
-    kmp_cmplx128_a4_t operator - ( const kmp_cmplx128_a4_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a4_t)( lhs - rhs );
-    }
-    kmp_cmplx128_a4_t operator * ( const kmp_cmplx128_a4_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a4_t)( lhs * rhs );
-    }
-
-    kmp_cmplx128_a4_t operator / ( const kmp_cmplx128_a4_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a4_t)( lhs / rhs );
-    }
-
-};
-
-#pragma pack( pop )
-
-// New 16-byte aligned structures for 12.0 compiler.
-struct KMP_DO_ALIGN( 16 ) Quad_a16_t {
-    _Quad q;
-
-    Quad_a16_t(  ) : q(  ) {}
-    Quad_a16_t( const _Quad & cq ) : q ( cq ) {}
-
-    Quad_a16_t operator + ( const Quad_a16_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a16_t)( lhs + rhs );
-    }
-
-    Quad_a16_t operator - ( const Quad_a16_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a16_t)( lhs - rhs );
-    }
-    Quad_a16_t operator * ( const Quad_a16_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a16_t)( lhs * rhs );
-    }
-
-    Quad_a16_t operator / ( const Quad_a16_t& b ) {
-        _Quad lhs = (*this).q;
-        _Quad rhs = b.q;
-        return (Quad_a16_t)( lhs / rhs );
-    }
-};
-
-struct KMP_DO_ALIGN( 16 ) kmp_cmplx128_a16_t {
-    kmp_cmplx128 q;
-
-    kmp_cmplx128_a16_t() : q () {}
-
-    kmp_cmplx128_a16_t( const kmp_cmplx128 & c128 ) : q ( c128 ) {}
-
-    kmp_cmplx128_a16_t operator + ( const kmp_cmplx128_a16_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a16_t)( lhs + rhs );
-    }
-    kmp_cmplx128_a16_t operator - ( const kmp_cmplx128_a16_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a16_t)( lhs - rhs );
-    }
-    kmp_cmplx128_a16_t operator * ( const kmp_cmplx128_a16_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a16_t)( lhs * rhs );
-    }
-
-    kmp_cmplx128_a16_t operator / ( const kmp_cmplx128_a16_t& b ) {
-        kmp_cmplx128 lhs = (*this).q;
-        kmp_cmplx128 rhs = b.q;
-        return (kmp_cmplx128_a16_t)( lhs / rhs );
-    }
-};
-
-#endif
-
-#if ( KMP_ARCH_X86 )
-#define QUAD_LEGACY Quad_a4_t
-#define CPLX128_LEG kmp_cmplx128_a4_t
-#else
 #define QUAD_LEGACY _Quad
 #define CPLX128_LEG kmp_cmplx128
-#endif
 
-#ifdef __cplusplus
 extern "C" {
-#endif
 
     extern int __kmp_atomic_mode;
     // Atomic locks can easily become contended, so we use queuing locks for them.
@@ -617,11 +473,6 @@ extern "C" {
 #if KMP_HAVE_QUAD
     void __kmpc_atomic_float16_max( ident_t *id_ref, int gtid, QUAD_LEGACY * lhs, QUAD_LEGACY rhs );
     void __kmpc_atomic_float16_min( ident_t *id_ref, int gtid, QUAD_LEGACY * lhs, QUAD_LEGACY rhs );
-#if ( KMP_ARCH_X86 )
-    // Routines with 16-byte arguments aligned to 16-byte boundary; IA-32 architecture only
-    void __kmpc_atomic_float16_max_a16( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-    void __kmpc_atomic_float16_min_a16( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-#endif
 #endif
     // .NEQV. (same as xor)
     void __kmpc_atomic_fixed1_neqv( ident_t *id_ref, int gtid, char * lhs, char rhs );
@@ -644,13 +495,6 @@ extern "C" {
     void __kmpc_atomic_float16_sub( ident_t *id_ref, int gtid, QUAD_LEGACY * lhs, QUAD_LEGACY rhs );
     void __kmpc_atomic_float16_mul( ident_t *id_ref, int gtid, QUAD_LEGACY * lhs, QUAD_LEGACY rhs );
     void __kmpc_atomic_float16_div( ident_t *id_ref, int gtid, QUAD_LEGACY * lhs, QUAD_LEGACY rhs );
-#if ( KMP_ARCH_X86 )
-    // Routines with 16-byte arguments aligned to 16-byte boundary
-    void __kmpc_atomic_float16_add_a16( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-    void __kmpc_atomic_float16_sub_a16( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-    void __kmpc_atomic_float16_mul_a16( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-    void __kmpc_atomic_float16_div_a16( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-#endif
 #endif
     // routines for complex types
     void __kmpc_atomic_cmplx4_add(  ident_t *id_ref, int gtid, kmp_cmplx32 * lhs, kmp_cmplx32 rhs );
@@ -670,21 +514,11 @@ extern "C" {
     void __kmpc_atomic_cmplx16_sub( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs );
     void __kmpc_atomic_cmplx16_mul( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs );
     void __kmpc_atomic_cmplx16_div( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs );
-#if ( KMP_ARCH_X86 )
-    // Routines with 16-byte arguments aligned to 16-byte boundary
-    void __kmpc_atomic_cmplx16_add_a16( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-    void __kmpc_atomic_cmplx16_sub_a16( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-    void __kmpc_atomic_cmplx16_mul_a16( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-    void __kmpc_atomic_cmplx16_div_a16( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-#endif
 #endif
 
 #if OMP_40_ENABLED
-
     // OpenMP 4.0: x = expr binop x for non-commutative operations.
     // Supported only on IA-32 architecture and Intel(R) 64
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-
     void __kmpc_atomic_fixed1_sub_rev(  ident_t *id_ref, int gtid, char * lhs, char rhs );
     void __kmpc_atomic_fixed1_div_rev(  ident_t *id_ref, int gtid, char * lhs, char rhs );
     void __kmpc_atomic_fixed1u_div_rev( ident_t *id_ref, int gtid, unsigned char * lhs, unsigned char rhs );
@@ -728,16 +562,7 @@ extern "C" {
 #if KMP_HAVE_QUAD
     void __kmpc_atomic_cmplx16_sub_rev( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs );
     void __kmpc_atomic_cmplx16_div_rev( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs );
-#if ( KMP_ARCH_X86 )
-    // Routines with 16-byte arguments aligned to 16-byte boundary
-    void __kmpc_atomic_float16_sub_a16_rev( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-    void __kmpc_atomic_float16_div_a16_rev( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-    void __kmpc_atomic_cmplx16_sub_a16_rev( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-    void __kmpc_atomic_cmplx16_div_a16_rev( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-#endif
 #endif // KMP_HAVE_QUAD
-
-#endif //KMP_ARCH_X86 || KMP_ARCH_X86_64
 
 #endif //OMP_40_ENABLED
 
@@ -816,11 +641,7 @@ extern "C" {
     void __kmpc_atomic_32( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( void *, void *, void * ) );
 
     // READ, WRITE, CAPTURE are supported only on IA-32 architecture and Intel(R) 64
-#if KMP_ARCH_X86 || KMP_ARCH_X86_64
-
-    //
     //  Below routines for atomic READ are listed
-    //
 
     char         __kmpc_atomic_fixed1_rd(  ident_t *id_ref, int gtid, char        * loc );
     short        __kmpc_atomic_fixed2_rd(  ident_t *id_ref, int gtid, short       * loc );
@@ -843,17 +664,9 @@ extern "C" {
     kmp_cmplx80  __kmpc_atomic_cmplx10_rd( ident_t *id_ref, int gtid, kmp_cmplx80 * loc );
 #if KMP_HAVE_QUAD
     CPLX128_LEG  __kmpc_atomic_cmplx16_rd( ident_t *id_ref, int gtid, CPLX128_LEG * loc );
-#if ( KMP_ARCH_X86 )
-    // Routines with 16-byte arguments aligned to 16-byte boundary
-    Quad_a16_t         __kmpc_atomic_float16_a16_rd( ident_t * id_ref, int gtid, Quad_a16_t         * loc );
-    kmp_cmplx128_a16_t __kmpc_atomic_cmplx16_a16_rd( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * loc );
-#endif
 #endif
 
-
-    //
     //  Below routines for atomic WRITE are listed
-    //
 
     void __kmpc_atomic_fixed1_wr(  ident_t *id_ref, int gtid, char        * lhs, char        rhs );
     void __kmpc_atomic_fixed2_wr(  ident_t *id_ref, int gtid, short       * lhs, short       rhs );
@@ -870,16 +683,9 @@ extern "C" {
     void __kmpc_atomic_cmplx10_wr( ident_t *id_ref, int gtid, kmp_cmplx80 * lhs, kmp_cmplx80 rhs );
 #if KMP_HAVE_QUAD
     void __kmpc_atomic_cmplx16_wr( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs );
-#if ( KMP_ARCH_X86 )
-    // Routines with 16-byte arguments aligned to 16-byte boundary
-    void __kmpc_atomic_float16_a16_wr( ident_t * id_ref, int gtid, Quad_a16_t         * lhs, Quad_a16_t         rhs );
-    void __kmpc_atomic_cmplx16_a16_wr( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-#endif
 #endif
 
-    //
     //  Below routines for atomic CAPTURE are listed
-    //
 
     // 1-byte
     char __kmpc_atomic_fixed1_add_cpt(  ident_t *id_ref, int gtid, char * lhs, char rhs, int flag);
@@ -1011,19 +817,6 @@ extern "C" {
     CPLX128_LEG __kmpc_atomic_cmplx16_sub_cpt( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs, int flag);
     CPLX128_LEG __kmpc_atomic_cmplx16_mul_cpt( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs, int flag);
     CPLX128_LEG __kmpc_atomic_cmplx16_div_cpt( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs, int flag);
-#if ( KMP_ARCH_X86 )
-    // Routines with 16-byte arguments aligned to 16-byte boundary
-    Quad_a16_t __kmpc_atomic_float16_add_a16_cpt( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag);
-    Quad_a16_t __kmpc_atomic_float16_sub_a16_cpt( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag);
-    Quad_a16_t __kmpc_atomic_float16_mul_a16_cpt( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag);
-    Quad_a16_t __kmpc_atomic_float16_div_a16_cpt( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag);
-    Quad_a16_t __kmpc_atomic_float16_max_a16_cpt( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag);
-    Quad_a16_t __kmpc_atomic_float16_min_a16_cpt( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag);
-    kmp_cmplx128_a16_t __kmpc_atomic_cmplx16_add_a16_cpt( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs, int flag);
-    kmp_cmplx128_a16_t __kmpc_atomic_cmplx16_sub_a16_cpt( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs, int flag);
-    kmp_cmplx128_a16_t __kmpc_atomic_cmplx16_mul_a16_cpt( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs, int flag);
-    kmp_cmplx128_a16_t __kmpc_atomic_cmplx16_div_a16_cpt( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs, int flag);
-#endif
 #endif
 
     void __kmpc_atomic_start(void);
@@ -1077,12 +870,6 @@ extern "C" {
 #if KMP_HAVE_QUAD
     CPLX128_LEG  	__kmpc_atomic_cmplx16_sub_cpt_rev( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs, int flag );
     CPLX128_LEG  	__kmpc_atomic_cmplx16_div_cpt_rev( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs, int flag );
-#if ( KMP_ARCH_X86 )
-    Quad_a16_t 		__kmpc_atomic_float16_sub_a16_cpt_rev( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag );
-    Quad_a16_t		__kmpc_atomic_float16_div_a16_cpt_rev( ident_t * id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs, int flag );
-    kmp_cmplx128_a16_t 	__kmpc_atomic_cmplx16_sub_a16_cpt_rev( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs, int flag );
-    kmp_cmplx128_a16_t 	__kmpc_atomic_cmplx16_div_a16_cpt_rev( ident_t * id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs, int flag );
-#endif
 #endif
 
     //   OpenMP 4.0 Capture-write (swap): {v = x; x = expr;}
@@ -1104,25 +891,13 @@ extern "C" {
     kmp_cmplx80	__kmpc_atomic_cmplx10_swp( ident_t *id_ref, int gtid, kmp_cmplx80 * lhs, kmp_cmplx80 rhs );
 #if KMP_HAVE_QUAD
     CPLX128_LEG 	__kmpc_atomic_cmplx16_swp( ident_t *id_ref, int gtid, CPLX128_LEG * lhs, CPLX128_LEG rhs );
-#if ( KMP_ARCH_X86 )
-    Quad_a16_t		__kmpc_atomic_float16_a16_swp( ident_t *id_ref, int gtid, Quad_a16_t * lhs, Quad_a16_t rhs );
-    kmp_cmplx128_a16_t 	__kmpc_atomic_cmplx16_a16_swp( ident_t *id_ref, int gtid, kmp_cmplx128_a16_t * lhs, kmp_cmplx128_a16_t rhs );
-#endif
 #endif
 
     // End of OpenMP 4.0 capture
 
 #endif //OMP_40_ENABLED
 
-#endif //KMP_ARCH_X86 || KMP_ARCH_X86_64
-
-    /* ------------------------------------------------------------------------ */
-    /* ------------------------------------------------------------------------ */
-
-#ifdef __cplusplus
 } // extern "C"
-#endif
 
 #endif /* KMP_ATOMIC_H */
 
-// end of file
