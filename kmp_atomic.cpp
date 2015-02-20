@@ -584,34 +584,6 @@ kmp_atomic_lock_t __kmp_atomic_lock_32c; /* Control access to all user coded ato
 */
 #define KMP_ATOMIC_VOLATILE volatile
 
-#if ( KMP_ARCH_X86 ) && KMP_HAVE_QUAD
-
-    static inline void operator +=( Quad_a4_t & lhs, Quad_a4_t & rhs ) { lhs.q += rhs.q; };
-    static inline void operator -=( Quad_a4_t & lhs, Quad_a4_t & rhs ) { lhs.q -= rhs.q; };
-    static inline void operator *=( Quad_a4_t & lhs, Quad_a4_t & rhs ) { lhs.q *= rhs.q; };
-    static inline void operator /=( Quad_a4_t & lhs, Quad_a4_t & rhs ) { lhs.q /= rhs.q; };
-    static inline bool operator < ( Quad_a4_t & lhs, Quad_a4_t & rhs ) { return lhs.q < rhs.q; }
-    static inline bool operator > ( Quad_a4_t & lhs, Quad_a4_t & rhs ) { return lhs.q > rhs.q; }
-
-    static inline void operator +=( Quad_a16_t & lhs, Quad_a16_t & rhs ) { lhs.q += rhs.q; };
-    static inline void operator -=( Quad_a16_t & lhs, Quad_a16_t & rhs ) { lhs.q -= rhs.q; };
-    static inline void operator *=( Quad_a16_t & lhs, Quad_a16_t & rhs ) { lhs.q *= rhs.q; };
-    static inline void operator /=( Quad_a16_t & lhs, Quad_a16_t & rhs ) { lhs.q /= rhs.q; };
-    static inline bool operator < ( Quad_a16_t & lhs, Quad_a16_t & rhs ) { return lhs.q < rhs.q; }
-    static inline bool operator > ( Quad_a16_t & lhs, Quad_a16_t & rhs ) { return lhs.q > rhs.q; }
-
-    static inline void operator +=( kmp_cmplx128_a4_t & lhs, kmp_cmplx128_a4_t & rhs ) { lhs.q += rhs.q; };
-    static inline void operator -=( kmp_cmplx128_a4_t & lhs, kmp_cmplx128_a4_t & rhs ) { lhs.q -= rhs.q; };
-    static inline void operator *=( kmp_cmplx128_a4_t & lhs, kmp_cmplx128_a4_t & rhs ) { lhs.q *= rhs.q; };
-    static inline void operator /=( kmp_cmplx128_a4_t & lhs, kmp_cmplx128_a4_t & rhs ) { lhs.q /= rhs.q; };
-
-    static inline void operator +=( kmp_cmplx128_a16_t & lhs, kmp_cmplx128_a16_t & rhs ) { lhs.q += rhs.q; };
-    static inline void operator -=( kmp_cmplx128_a16_t & lhs, kmp_cmplx128_a16_t & rhs ) { lhs.q -= rhs.q; };
-    static inline void operator *=( kmp_cmplx128_a16_t & lhs, kmp_cmplx128_a16_t & rhs ) { lhs.q *= rhs.q; };
-    static inline void operator /=( kmp_cmplx128_a16_t & lhs, kmp_cmplx128_a16_t & rhs ) { lhs.q /= rhs.q; };
-
-#endif
-
 /* ------------------------------------------------------------------------ */
 /* ATOMIC implementation routines                                           */
 /* one routine for each operation and operand type                          */
@@ -1543,18 +1515,10 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
 ATOMIC_XCHG_WR( fixed1,  wr, kmp_int8,    8, =,  KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_wr
 ATOMIC_XCHG_WR( fixed2,  wr, kmp_int16,  16, =,  KMP_ARCH_X86 )  // __kmpc_atomic_fixed2_wr
 ATOMIC_XCHG_WR( fixed4,  wr, kmp_int32,  32, =,  KMP_ARCH_X86 )  // __kmpc_atomic_fixed4_wr
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CMPXCHG_WR( fixed8,  wr, kmp_int64,  64, =,  KMP_ARCH_X86 )      // __kmpc_atomic_fixed8_wr
-#else
-    ATOMIC_XCHG_WR( fixed8,  wr, kmp_int64,  64, =,  KMP_ARCH_X86 )         // __kmpc_atomic_fixed8_wr
-#endif
+ATOMIC_XCHG_WR( fixed8,  wr, kmp_int64,  64, =,  KMP_ARCH_X86 )      // __kmpc_atomic_fixed8_wr
 
-ATOMIC_XCHG_FLOAT_WR( float4, wr, kmp_real32, 32, =, KMP_ARCH_X86 )         // __kmpc_atomic_float4_wr
-#if ( KMP_ARCH_X86 )
-    ATOMIC_CMPXCHG_WR( float8,  wr, kmp_real64,  64, =,  KMP_ARCH_X86 )     // __kmpc_atomic_float8_wr
-#else
-    ATOMIC_XCHG_FLOAT_WR( float8,  wr, kmp_real64,  64, =,  KMP_ARCH_X86 )  // __kmpc_atomic_float8_wr
-#endif
+ATOMIC_XCHG_FLOAT_WR( float4, wr, kmp_real32, 32, =, KMP_ARCH_X86 )  // __kmpc_atomic_float4_wr
+ATOMIC_XCHG_FLOAT_WR( float8, wr, kmp_real64, 64, =, KMP_ARCH_X86 )  // __kmpc_atomic_float8_wr
 
 ATOMIC_CRITICAL_WR( float10, wr, long double, =, 10r,   1 )         // __kmpc_atomic_float10_wr
 #if KMP_HAVE_QUAD
