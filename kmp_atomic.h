@@ -41,8 +41,81 @@
 
 #include <hpx/include/lcos.hpp>
 
+typedef size_t kmp_size_t;
+
+typedef float kmp_real32;
+typedef double kmp_real64;
+
+typedef int8_t kmp_int8;
+typedef uint8_t kmp_uint8;
+
+typedef int16_t kmp_int16;
+typedef uint16_t kmp_uint16;
+
 typedef int kmp_int32;
+typedef uint32_t kmp_uint32;
+
 typedef long long kmp_int64;
+typedef uint64_t kmp_uint64;
+
+
+//according to the RT; not sure why these arent long long/int64_t
+typedef long kmp_intptr_t;
+typedef unsigned long kmp_uintptr_t;
+
+#  define KMP_ARCH_X86 1
+
+#ifdef USE_VOLATILE_CAST
+# define VOLATILE_CAST(x)        (volatile x)
+#else
+# define VOLATILE_CAST(x)        (x)
+#endif
+
+# define KMP_CPU_PAUSE()
+
+
+# define KMP_TEST_THEN_INC32(p)                 __sync_fetch_and_add( (kmp_int32 *)(p), 1 )
+# define KMP_TEST_THEN_INC_ACQ32(p)             __sync_fetch_and_add( (kmp_int32 *)(p), 1 )
+# define KMP_TEST_THEN_INC64(p)                 __sync_fetch_and_add( (kmp_int64 *)(p), 1LL )
+# define KMP_TEST_THEN_INC_ACQ64(p)             __sync_fetch_and_add( (kmp_int64 *)(p), 1LL )
+# define KMP_TEST_THEN_ADD4_32(p)               __sync_fetch_and_add( (kmp_int32 *)(p), 4 )
+# define KMP_TEST_THEN_ADD4_ACQ32(p)            __sync_fetch_and_add( (kmp_int32 *)(p), 4 )
+# define KMP_TEST_THEN_ADD4_64(p)               __sync_fetch_and_add( (kmp_int64 *)(p), 4LL )
+# define KMP_TEST_THEN_ADD4_ACQ64(p)            __sync_fetch_and_add( (kmp_int64 *)(p), 4LL )
+# define KMP_TEST_THEN_DEC32(p)                 __sync_fetch_and_sub( (kmp_int32 *)(p), 1 )
+# define KMP_TEST_THEN_DEC_ACQ32(p)             __sync_fetch_and_sub( (kmp_int32 *)(p), 1 )
+# define KMP_TEST_THEN_DEC64(p)                 __sync_fetch_and_sub( (kmp_int64 *)(p), 1LL )
+# define KMP_TEST_THEN_DEC_ACQ64(p)             __sync_fetch_and_sub( (kmp_int64 *)(p), 1LL )
+# define KMP_TEST_THEN_ADD32(p, v)              __sync_fetch_and_add( (kmp_int32 *)(p), (v) )
+# define KMP_TEST_THEN_ADD64(p, v)              __sync_fetch_and_add( (kmp_int64 *)(p), (v) )
+
+# define KMP_TEST_THEN_OR32(p, v)               __sync_fetch_and_or( (kmp_int32 *)(p), (v) )
+# define KMP_TEST_THEN_AND32(p, v)              __sync_fetch_and_and( (kmp_int32 *)(p), (v) )
+# define KMP_TEST_THEN_OR64(p, v)               __sync_fetch_and_or( (kmp_int64 *)(p), (v) )
+# define KMP_TEST_THEN_AND64(p, v)              __sync_fetch_and_and( (kmp_int64 *)(p), (v) )
+
+# define KMP_COMPARE_AND_STORE_ACQ8(p, cv, sv)  __sync_bool_compare_and_swap( (volatile kmp_uint8 *)(p),(kmp_uint8)(cv),(kmp_uint8)(sv) )
+# define KMP_COMPARE_AND_STORE_REL8(p, cv, sv)  __sync_bool_compare_and_swap( (volatile kmp_uint8 *)(p),(kmp_uint8)(cv),(kmp_uint8)(sv) )
+# define KMP_COMPARE_AND_STORE_ACQ16(p, cv, sv) __sync_bool_compare_and_swap( (volatile kmp_uint16 *)(p),(kmp_uint16)(cv),(kmp_uint16)(sv) )
+# define KMP_COMPARE_AND_STORE_REL16(p, cv, sv) __sync_bool_compare_and_swap( (volatile kmp_uint16 *)(p),(kmp_uint16)(cv),(kmp_uint16)(sv) )
+# define KMP_COMPARE_AND_STORE_ACQ32(p, cv, sv) __sync_bool_compare_and_swap( (volatile kmp_uint32 *)(p),(kmp_uint32)(cv),(kmp_uint32)(sv) )
+# define KMP_COMPARE_AND_STORE_REL32(p, cv, sv) __sync_bool_compare_and_swap( (volatile kmp_uint32 *)(p),(kmp_uint32)(cv),(kmp_uint32)(sv) )
+# define KMP_COMPARE_AND_STORE_ACQ64(p, cv, sv) __sync_bool_compare_and_swap( (volatile kmp_uint64 *)(p),(kmp_uint64)(cv),(kmp_uint64)(sv) )
+# define KMP_COMPARE_AND_STORE_REL64(p, cv, sv) __sync_bool_compare_and_swap( (volatile kmp_uint64 *)(p),(kmp_uint64)(cv),(kmp_uint64)(sv) )
+# define KMP_COMPARE_AND_STORE_PTR(p, cv, sv)   __sync_bool_compare_and_swap( (volatile void **)(p),(void *)(cv),(void *)(sv) )
+
+# define KMP_COMPARE_AND_STORE_RET8(p, cv, sv)  __sync_val_compare_and_swap( (volatile kmp_uint8 *)(p),(kmp_uint8)(cv),(kmp_uint8)(sv) )
+# define KMP_COMPARE_AND_STORE_RET16(p, cv, sv) __sync_val_compare_and_swap( (volatile kmp_uint16 *)(p),(kmp_uint16)(cv),(kmp_uint16)(sv) )
+# define KMP_COMPARE_AND_STORE_RET32(p, cv, sv) __sync_val_compare_and_swap( (volatile kmp_uint32 *)(p),(kmp_uint32)(cv),(kmp_uint32)(sv) )
+# define KMP_COMPARE_AND_STORE_RET64(p, cv, sv) __sync_val_compare_and_swap( (volatile kmp_uint64 *)(p),(kmp_uint64)(cv),(kmp_uint64)(sv) )
+
+#define KMP_XCHG_FIXED8(p, v)                   __sync_lock_test_and_set( (volatile kmp_uint8 *)(p), (kmp_uint8)(v) )
+#define KMP_XCHG_FIXED16(p, v)                  __sync_lock_test_and_set( (volatile kmp_uint16 *)(p), (kmp_uint16)(v) )
+#define KMP_XCHG_FIXED32(p, v)                  __sync_lock_test_and_set( (volatile kmp_uint32 *)(p), (kmp_uint32)(v) )
+#define KMP_XCHG_FIXED64(p, v)                  __sync_lock_test_and_set( (volatile kmp_uint64 *)(p), (kmp_uint64)(v) )
+
+
+struct ident_t;
 
 // C++ build port.
 // Intel compiler does not support _Complex datatype on win.
@@ -377,14 +450,13 @@ extern "C" {
 #endif
 
     extern int __kmp_atomic_mode;
-
-    //
     // Atomic locks can easily become contended, so we use queuing locks for them.
-    //
-
+     
     //typedef kmp_queuing_lock_t kmp_atomic_lock_t;
     typedef hpx::lcos::local::spinlock kmp_atomic_lock_t;
 
+    //typedef boost::shared_ptr<mutex_type> mtx_ptr;
+    
     static inline void
         __kmp_acquire_atomic_lock( kmp_atomic_lock_t *lck, kmp_int32 gtid )
         {
@@ -409,6 +481,7 @@ extern "C" {
     static inline void
         __kmp_init_atomic_lock( kmp_atomic_lock_t *lck )
         {
+            //FIXME: not sure if this is correct/works.
             lck = new kmp_atomic_lock_t;
 
             //__kmp_init_queuing_lock( lck );
