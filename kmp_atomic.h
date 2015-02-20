@@ -39,7 +39,8 @@
 //#include "kmp_lock.h"
 
 
-#include <hpx/include/lcos.hpp>
+//#include <hpx/include/lcos.hpp>
+#include <hpx_runtime.h>
 
 typedef size_t kmp_size_t;
 
@@ -62,6 +63,9 @@ typedef uint64_t kmp_uint64;
 //according to the RT; not sure why these arent long long/int64_t
 typedef long kmp_intptr_t;
 typedef unsigned long kmp_uintptr_t;
+
+#define FALSE false
+#define TRUE true
 
 #  define KMP_ARCH_X86 1
 
@@ -114,6 +118,18 @@ typedef unsigned long kmp_uintptr_t;
 #define KMP_XCHG_FIXED32(p, v)                  __sync_lock_test_and_set( (volatile kmp_uint32 *)(p), (kmp_uint32)(v) )
 #define KMP_XCHG_FIXED64(p, v)                  __sync_lock_test_and_set( (volatile kmp_uint64 *)(p), (kmp_uint64)(v) )
 
+
+inline kmp_real32 KMP_XCHG_REAL32( volatile kmp_real32 *p, kmp_real32 v)
+{
+    kmp_int32 tmp = __sync_lock_test_and_set( (kmp_int32*)p, *(kmp_int32*)&v);
+    return *(kmp_real32*)&tmp;
+}
+
+inline kmp_real64 KMP_XCHG_REAL64( volatile kmp_real64 *p, kmp_real64 v)
+{
+    kmp_int64 tmp = __sync_lock_test_and_set( (kmp_int64*)p, *(kmp_int64*)&v);
+    return *(kmp_real64*)&tmp;
+}
 
 struct ident_t;
 

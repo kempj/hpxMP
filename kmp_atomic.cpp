@@ -38,6 +38,7 @@
 typedef unsigned char uchar;
 typedef unsigned short ushort;
 
+extern boost::shared_ptr<hpx_runtime> hpx_backend;
 /*!
 @defgroup ATOMIC_OPS Atomic Operations
 These functions are used for implementing the many different varieties of atomic operations.
@@ -2868,8 +2869,7 @@ __kmpc_atomic_32( ident_t *id_ref, int gtid, void* lhs, void* rhs, void (*f)( vo
 void
 __kmpc_atomic_start(void)
 {
-    int gtid = __kmp_entry_gtid();
-    KA_TRACE(20, ("__kmpc_atomic_start: T#%d\n", gtid));
+    int gtid = hpx_backend->get_thread_num();
     __kmp_acquire_atomic_lock(&__kmp_atomic_lock, gtid);
 }
 
@@ -2877,8 +2877,7 @@ __kmpc_atomic_start(void)
 void
 __kmpc_atomic_end(void)
 {
-    int gtid = __kmp_get_gtid();
-    KA_TRACE(20, ("__kmpc_atomic_end: T#%d\n", gtid));
+    int gtid = hpx_backend->get_thread_num();
     __kmp_release_atomic_lock(&__kmp_atomic_lock, gtid);
 }
 
