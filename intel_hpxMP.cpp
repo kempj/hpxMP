@@ -303,8 +303,8 @@ void __kmpc_flush(ident_t *loc, ...){
     __sync_synchronize();
 }
 
-void __kmpc_ordered( ident_t *, kmp_int32 global_tid ) {
-}
+//void __kmpc_ordered( ident_t *, kmp_int32 global_tid ) {
+//}
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
 void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){

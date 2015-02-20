@@ -703,7 +703,7 @@ RET_TYPE __kmpc_atomic_##TYPE_ID##_##OP_ID( ident_t *id_ref, int gtid, TYPE * lh
 // I verified the asm of the workaround.
 #define OP_CMPXCHG_WORKAROUND(TYPE,BITS,OP)                               \
     {                                                                     \
-	char anonym[ ( sizeof( TYPE ) == sizeof( kmp_int##BITS ) ) ? ( 1 ) : ( 0 ) ] = { 1 }; \
+	kmp_int8 anonym[ ( sizeof( TYPE ) == sizeof( kmp_int##BITS ) ) ? ( 1 ) : ( 0 ) ] = { 1 }; \
 	struct _sss {                                                     \
 	    TYPE            cmp;                                          \
 	    kmp_int##BITS   *vvv;                                         \
@@ -849,8 +849,8 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                     \
     OP_CMPXCHG(TYPE,BITS,OP)                                              \
 }
 
-ATOMIC_CMPX_L( fixed1, andl, char,       8, &&, 1i, 0, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_andl
-ATOMIC_CMPX_L( fixed1,  orl, char,       8, ||, 1i, 0, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_orl
+ATOMIC_CMPX_L( fixed1, andl, kmp_int8,       8, &&, 1i, 0, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_andl
+ATOMIC_CMPX_L( fixed1,  orl, kmp_int8,       8, ||, 1i, 0, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_orl
 ATOMIC_CMPX_L( fixed2, andl, short,     16, &&, 2i, 1, KMP_ARCH_X86 )  // __kmpc_atomic_fixed2_andl
 ATOMIC_CMPX_L( fixed2,  orl, short,     16, ||, 2i, 1, KMP_ARCH_X86 )  // __kmpc_atomic_fixed2_orl
 ATOMIC_CMPX_L( fixed4, andl, kmp_int32, 32, &&, 4i, 3, 0 )             // __kmpc_atomic_fixed4_andl
@@ -925,8 +925,8 @@ ATOMIC_BEGIN(TYPE_ID,OP_ID,TYPE,void)                                      \
     }                                                                      \
 }
 
-MIN_MAX_COMPXCHG( fixed1,  max, char,        8, <, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_max
-MIN_MAX_COMPXCHG( fixed1,  min, char,        8, >, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_min
+MIN_MAX_COMPXCHG( fixed1,  max, kmp_int8,        8, <, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_max
+MIN_MAX_COMPXCHG( fixed1,  min, kmp_int8,        8, >, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_min
 MIN_MAX_COMPXCHG( fixed2,  max, short,      16, <, 2i, 1, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_max
 MIN_MAX_COMPXCHG( fixed2,  min, short,      16, >, 2i, 1, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_min
 MIN_MAX_COMPXCHG( fixed4,  max, kmp_int32,  32, <, 4i, 3, 0 )            // __kmpc_atomic_fixed4_max
@@ -1213,8 +1213,8 @@ ATOMIC_BEGIN_MIX(TYPE_ID,TYPE,OP_ID,RTYPE_ID,RTYPE)                             
 // -------------------------------------------------------------------------
 
 // RHS=float8
-ATOMIC_CMPXCHG_MIX( fixed1, char,       mul,  8, *, float8, kmp_real64, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_mul_float8
-ATOMIC_CMPXCHG_MIX( fixed1, char,       div,  8, /, float8, kmp_real64, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_div_float8
+ATOMIC_CMPXCHG_MIX( fixed1, kmp_int8,       mul,  8, *, float8, kmp_real64, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_mul_float8
+ATOMIC_CMPXCHG_MIX( fixed1, kmp_int8,       div,  8, /, float8, kmp_real64, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_div_float8
 ATOMIC_CMPXCHG_MIX( fixed2, short,      mul, 16, *, float8, kmp_real64, 2i, 1, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_mul_float8
 ATOMIC_CMPXCHG_MIX( fixed2, short,      div, 16, /, float8, kmp_real64, 2i, 1, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_div_float8
 ATOMIC_CMPXCHG_MIX( fixed4, kmp_int32,  mul, 32, *, float8, kmp_real64, 4i, 3, 0 )            // __kmpc_atomic_fixed4_mul_float8
@@ -1228,11 +1228,11 @@ ATOMIC_CMPXCHG_MIX( float4, kmp_real32, div, 32, /, float8, kmp_real64, 4r, 3, K
 
 // RHS=float16 (deprecated, to be removed when we are sure the compiler does not use them)
 #if KMP_HAVE_QUAD
-ATOMIC_CMPXCHG_MIX( fixed1,  char,       add,  8, +, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_add_fp
-ATOMIC_CMPXCHG_MIX( fixed1,  char,       sub,  8, -, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_sub_fp
-ATOMIC_CMPXCHG_MIX( fixed1,  char,       mul,  8, *, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_mul_fp
-ATOMIC_CMPXCHG_MIX( fixed1,  char,       div,  8, /, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_div_fp
-ATOMIC_CMPXCHG_MIX( fixed1u, uchar,      div,  8, /, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1u_div_fp
+ATOMIC_CMPXCHG_MIX( fixed1,  kmp_int8,       add,  8, +, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_add_fp
+ATOMIC_CMPXCHG_MIX( fixed1,  kmp_int8,       sub,  8, -, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_sub_fp
+ATOMIC_CMPXCHG_MIX( fixed1,  kmp_int8,       mul,  8, *, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_mul_fp
+ATOMIC_CMPXCHG_MIX( fixed1,  kmp_int8,       div,  8, /, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_div_fp
+ATOMIC_CMPXCHG_MIX( fixed1u, kmp_uint8,      div,  8, /, fp, _Quad, 1i, 0, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1u_div_fp
 
 ATOMIC_CMPXCHG_MIX( fixed2,  short,      add, 16, +, fp, _Quad, 2i, 1, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_add_fp
 ATOMIC_CMPXCHG_MIX( fixed2,  short,      sub, 16, -, fp, _Quad, 2i, 1, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_sub_fp
@@ -1736,8 +1736,8 @@ ATOMIC_BEGIN_CPT(TYPE_ID,OP_ID,TYPE,TYPE)                                 \
     OP_CMPXCHG_CPT(TYPE,BITS,OP)                                          \
 }
 
-ATOMIC_CMPX_L_CPT( fixed1, andl_cpt, char,       8, &&, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_andl_cpt
-ATOMIC_CMPX_L_CPT( fixed1,  orl_cpt, char,       8, ||, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_orl_cpt
+ATOMIC_CMPX_L_CPT( fixed1, andl_cpt, kmp_int8,       8, &&, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_andl_cpt
+ATOMIC_CMPX_L_CPT( fixed1,  orl_cpt, kmp_int8,       8, ||, KMP_ARCH_X86 )  // __kmpc_atomic_fixed1_orl_cpt
 ATOMIC_CMPX_L_CPT( fixed2, andl_cpt, short,     16, &&, KMP_ARCH_X86 )  // __kmpc_atomic_fixed2_andl_cpt
 ATOMIC_CMPX_L_CPT( fixed2,  orl_cpt, short,     16, ||, KMP_ARCH_X86 )  // __kmpc_atomic_fixed2_orl_cpt
 ATOMIC_CMPX_L_CPT( fixed4, andl_cpt, kmp_int32, 32, &&, 0 )             // __kmpc_atomic_fixed4_andl_cpt
@@ -1826,8 +1826,8 @@ ATOMIC_BEGIN_CPT(TYPE_ID,OP_ID,TYPE,TYPE)                                  \
 }
 
 
-MIN_MAX_COMPXCHG_CPT( fixed1,  max_cpt, char,        8, <, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_max_cpt
-MIN_MAX_COMPXCHG_CPT( fixed1,  min_cpt, char,        8, >, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_min_cpt
+MIN_MAX_COMPXCHG_CPT( fixed1,  max_cpt, kmp_int8,        8, <, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_max_cpt
+MIN_MAX_COMPXCHG_CPT( fixed1,  min_cpt, kmp_int8,        8, >, KMP_ARCH_X86 ) // __kmpc_atomic_fixed1_min_cpt
 MIN_MAX_COMPXCHG_CPT( fixed2,  max_cpt, short,      16, <, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_max_cpt
 MIN_MAX_COMPXCHG_CPT( fixed2,  min_cpt, short,      16, >, KMP_ARCH_X86 ) // __kmpc_atomic_fixed2_min_cpt
 MIN_MAX_COMPXCHG_CPT( fixed4,  max_cpt, kmp_int32,  32, <, 0 )            // __kmpc_atomic_fixed4_max_cpt
