@@ -346,11 +346,11 @@ int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size
     //return __kmpc_reduce(loc, gtid, num_vars, size, data, reduce, lck);
 }
 
-void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_name *lck ) {
+void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
+    __kmpc_end_reduce( loc, gtid, lck );
 }
 
-/*!
- * A blocking reduce that includes an implicit barrier.
+/* A blocking reduce that includes an implicit barrier.
  *
  * num_vars number of items (variables) to be reduced
  * reduce_size size of data in bytes to be reduced
@@ -360,7 +360,7 @@ void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_
  * param lck pointer to the unique lock data structure
  * @result 1 for the master thread, 0 for all other team threads, 2 for all team threads if atomic
  * reduction needed
- * */
+ */
 int 
 __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size, 
                void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck ) {
@@ -389,8 +389,6 @@ __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
 
 void
 __kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
-    //FIXME: this is also most certainly incorrect.
-    __kmpc_end_single(loc, gtid);
 }
 
 //Library functions:--------------------------------------------------
