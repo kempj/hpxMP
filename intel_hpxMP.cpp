@@ -303,9 +303,6 @@ void __kmpc_flush(ident_t *loc, ...){
     __sync_synchronize();
 }
 
-//void __kmpc_ordered( ident_t *, kmp_int32 global_tid ) {
-//}
-
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
 void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){
     if(!hpx_backend) {
@@ -343,6 +340,14 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
     hpx_backend->barrier_wait();
 }
 
+int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
+                      void *data,  void (*reduce)(void *lhs, void *rhs), kmp_critical_name *lck ) {
+    return __kmpc_single(loc, gtid);
+}
+
+void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_name *lck ) {
+}
+
 /*!
  * A blocking reduce that includes an implicit barrier.
  *
@@ -358,8 +363,33 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
 int 
 __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size, 
                void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck ) {
-    //FIXME: this is almost certainly incorrect.
-    return __kmpc_single(loc, gtid);
+    /*
+    int is_master = __kmpc_single(loc, gtid);
+    auto *team = hpx_backend->get_team();
+    int num_threads = team->num_threads;
+
+    if(is_master) {
+        //team->reduce_data = calloc(size, num_threads);
+        cout << "thread" << gtid << " is master" << endl;
+    }
+    //hpx_backend->barrier_wait();
+
+    //void **team_data = (void**)team->reduce_data;
+    team->reduce_data[gtid] = data;
+
+    hpx_backend->barrier_wait();
+
+    if(is_master) {
+        for( int i = 0; i < num_threads; i++ ) {
+            if(i != gtid) {
+                func(data, team->reduce_data[i]);
+            }
+        }
+    }
+    hpx_backend->barrier_wait();
+    return is_master;
+    */
+    return 2;
 }
 
 void

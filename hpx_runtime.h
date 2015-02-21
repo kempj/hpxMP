@@ -95,7 +95,8 @@ class loop_data {
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N), 
-                               loop_sched(N), depth(0) {};
+                               loop_sched(N), depth(0),
+                               reduce_data(N, 0) {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
         depth = parent->depth + 1; 
@@ -112,6 +113,7 @@ struct parallel_region {
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
+    vector<void*> reduce_data;
 };
 
 
