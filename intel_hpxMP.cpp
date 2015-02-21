@@ -342,7 +342,8 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
 
 int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
                       void *data,  void (*reduce)(void *lhs, void *rhs), kmp_critical_name *lck ) {
-    return __kmpc_single(loc, gtid);
+    return 2;
+    //return __kmpc_reduce(loc, gtid, num_vars, size, data, reduce, lck);
 }
 
 void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_name *lck ) {
@@ -363,18 +364,13 @@ void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_
 int 
 __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size, 
                void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck ) {
+    hpx_backend->barrier_wait();
+    return 2;
     /*
     int is_master = __kmpc_single(loc, gtid);
     auto *team = hpx_backend->get_team();
     int num_threads = team->num_threads;
 
-    if(is_master) {
-        //team->reduce_data = calloc(size, num_threads);
-        cout << "thread" << gtid << " is master" << endl;
-    }
-    //hpx_backend->barrier_wait();
-
-    //void **team_data = (void**)team->reduce_data;
     team->reduce_data[gtid] = data;
 
     hpx_backend->barrier_wait();
@@ -389,7 +385,6 @@ __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
     hpx_backend->barrier_wait();
     return is_master;
     */
-    return 2;
 }
 
 void
