@@ -176,10 +176,18 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     return 1;
 }
 
+// __kmpc_omp_task_parts: Schedule a thread-switchable task for execution
+// loc_ref: location of original task pragma (ignored)
+// gtid: Global Thread ID of encountering thread
+// new_task: task thunk allocated by __kmp_omp_task_alloc() for the ''new task''
+// Returns:
+//    TASK_CURRENT_NOT_QUEUED (0) if did not suspend and queue current task to be resumed later.
+//    TASK_CURRENT_QUEUED (1) if suspended and queued the current task to be resumed later.
 int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * task) {
-    task->part_id++;
     //hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
-    return task->part_id;
+    ////task->part_id++;// what do I need to do with part_id?
+    //return 1;
+    return 0;
 }
 
 
@@ -343,6 +351,8 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
 
 int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
                       void *data,  void (*reduce)(void *lhs, void *rhs), kmp_critical_name *lck ) {
+    //This is 2 because the compiler generates a version where the runtime does the work(0/1 are
+    //returned) and a version with calls to atomic operations that is used when 2 is returned.
     return 2;
     //return __kmpc_reduce(loc, gtid, num_vars, size, data, reduce, lck);
 }
