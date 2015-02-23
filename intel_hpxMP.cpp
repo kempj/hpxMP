@@ -183,10 +183,8 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
 // Returns:
 //    TASK_CURRENT_NOT_QUEUED (0) if did not suspend and queue current task to be resumed later.
 //    TASK_CURRENT_QUEUED (1) if suspended and queued the current task to be resumed later.
-int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * task) {
-    //hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
-    ////task->part_id++;// what do I need to do with part_id?
-    //return 1;
+int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task) {
+    hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
     return 0;
 }
 
