@@ -176,9 +176,10 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     return 1;
 }
 
-int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task) {
-    hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
-    return 1;
+int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * task) {
+    task->part_id++;
+    //hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+    return task->part_id;
 }
 
 
@@ -364,17 +365,12 @@ void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_critical_name *
 int 
 __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size, 
                void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck ) {
-    hpx_backend->barrier_wait();
-    return 2;
     /*
     int is_master = __kmpc_single(loc, gtid);
     auto *team = hpx_backend->get_team();
     int num_threads = team->num_threads;
-
     team->reduce_data[gtid] = data;
-
     hpx_backend->barrier_wait();
-
     if(is_master) {
         for( int i = 0; i < num_threads; i++ ) {
             if(i != gtid) {
@@ -385,6 +381,8 @@ __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
     hpx_backend->barrier_wait();
     return is_master;
     */
+    hpx_backend->barrier_wait();
+    return 2;
 }
 
 void
