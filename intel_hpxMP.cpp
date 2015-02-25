@@ -44,7 +44,7 @@ void omp_thread_func(int tid, void *fp) {
     int argc = args->argc;
     //int argc = args->argc - 1;
 
-    assert(argc < 16);
+    assert(argc <= 16);
     switch(argc) {
         case 0: args->fork_func( &tid, &tid );
                 break;
@@ -52,46 +52,48 @@ void omp_thread_func(int tid, void *fp) {
                 break;
         case 2: args->fork_func( &tid, &tid, argv[0], argv[1] );
                 break;
-        case 3: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3] );
+        case 3: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2] );
                 break;
-        case 4: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4] );
+        case 4: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3] );
                 break;
-        case 5: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                 argv[5] );
+        case 5: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4] );
                 break;
         case 6: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
+                                 argv[5] );
+                break;
+        case 7: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
                                  argv[5], argv[6] );
                 break;
-        case 7: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
+        case 8: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
                                  argv[5], argv[6], argv[7] );
                 break;
-        case 8: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
+        case 9: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
                                  argv[5], argv[6], argv[7], argv[8] );
                 break;
-        case 9: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
+        case 10: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
                                  argv[5], argv[6], argv[7], argv[8], argv[9] );
                 break;
-        case 10: args->fork_func (&tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
+        case 11: args->fork_func (&tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
                                  argv[5], argv[6], argv[7], argv[8], argv[9], 
                                  argv[10] );
                 break;
-        case 11: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
+        case 12: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
                                   argv[5], argv[6], argv[7], argv[8], argv[9], 
                                   argv[10], argv[11] );
                 break;
-        case 12: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
+        case 13: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
                                   argv[5], argv[6], argv[7], argv[8], argv[9], 
                                   argv[10], argv[11], argv[12] );
                 break;
-        case 13: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
+        case 14: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
                                   argv[5], argv[6], argv[7], argv[8], argv[9], 
                                   argv[10], argv[11], argv[12], argv[13] );
                 break;
-        case 14: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
+        case 15: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
                                   argv[5], argv[6], argv[7], argv[8], argv[9], 
                                   argv[10], argv[11], argv[12], argv[13], argv[14] );
                 break;
-        case 15: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
+        case 16: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
                                   argv[5], argv[6], argv[7], argv[8], argv[9], 
                                   argv[10], argv[11], argv[12], argv[13], argv[14],
                                   argv[15] );
@@ -114,7 +116,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     if(argc >= 16) {
         cout << "argc = " << argc << endl;
     }
-    assert(argc < 16);
+    assert(argc <= 16);
 
     va_list     ap;
     va_start(   ap, microtask );
