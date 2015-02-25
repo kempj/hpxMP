@@ -428,6 +428,8 @@ int omp_get_max_threads() {
 }
 
 int omp_get_num_procs(){
+    if(!hpx_backend)
+        start_backend();
     return hpx_backend->get_num_procs();
 }
 
