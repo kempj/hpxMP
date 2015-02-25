@@ -20,9 +20,9 @@ do
     retval=$?
     if [ $retval -eq 124 ]
     then 
-        echo "\tERROR: test ran for longer than 30 seconds" | tee -a $logfile
+        echo "ERROR: test ran for longer than 30 seconds" | tee -a $logfile
     elif [ $retval -ne 0 ]
-    then echo "\tError: test returned ($retval)" | tee -a $logfile
+    then echo "Error: test returned ($retval)" | tee -a $logfile
     fi
     test_num=$((test_num+1))
 done
