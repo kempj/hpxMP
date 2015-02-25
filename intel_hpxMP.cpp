@@ -433,6 +433,13 @@ int omp_get_num_procs(){
     return hpx_backend->get_num_procs();
 }
 
+void omp_set_num_threads(int num_threads) {
+    if(!hpx_backend) {
+        start_backend();
+    }
+    hpx_backend->get_task_data()->set_threads_requested(num_threads);
+}
+
 double omp_get_wtime(){
     if(!hpx_backend)
         start_backend();
