@@ -28,6 +28,9 @@
 #include "icv-vars.h"
 
 
+typedef void (*microtask_t)( int *gtid, int *npr, ... );
+typedef void (*invoke_func)( microtask_t , int , int , int , void**);
+
 typedef void *frame_pointer_t;
 typedef int omp_tid;
 typedef void (*omp_micro)(int , frame_pointer_t);
@@ -180,7 +183,11 @@ class omp_task_data {
 class hpx_runtime {
     public:
         hpx_runtime();
+#ifdef BUILD_UH
         void fork(int num_threads, omp_micro thread_func, frame_pointer_t fp);
+#else
+        void fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv);
+#endif
         parallel_region* get_team();
         omp_task_data* get_task_data();
         int get_thread_num();

@@ -266,14 +266,24 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
                                 current_task->team, current_task->thread_num));
 }
 
+#ifdef BUILD_UH
 void thread_setup( omp_micro thread_func, void *fp, int tid,
-                    parallel_region *team, omp_task_data *parent ) {
+                   parallel_region *team, omp_task_data *parent ) {
+#else
+void thread_setup( invoke_func kmp_invoke, microtask_t thread_func, 
+                   int argc, void **argv, int tid,
+                   parallel_region *team, omp_task_data *parent ) {
+#endif
     
     omp_task_data task_data(tid, team, parent);
     auto thread_id = get_self_id();
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
 
+#ifdef BUILD_UH
     thread_func(tid, fp);
+#else
+    kmp_invoke(thread_func, tid, tid, argc, argv);
+#endif
 
     team->num_tasks--;
     if(team->num_tasks == 0) {
@@ -283,15 +293,25 @@ void thread_setup( omp_micro thread_func, void *fp, int tid,
 
 //This is the only place where I can't call get_thread.
 //That data is not initialized for the new hpx threads yet.
+#ifdef BUILD_UH
 void fork_worker( omp_micro thread_func, frame_pointer_t fp,
                   omp_task_data *parent) {
+#else
+void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
+                  int argc, void **argv,
+                  omp_task_data *parent) {
+#endif
 
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         team.num_tasks++;
+#ifdef BUILD_UH
         threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team, parent ) );
+#else
+        threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
+#endif
     }
 
     {
@@ -304,11 +324,19 @@ void fork_worker( omp_micro thread_func, frame_pointer_t fp,
 
 }
 
+#ifdef BUILD_UH
 void fork_and_sync( omp_micro thread_func, frame_pointer_t fp, 
                     omp_task_data *parent, boost::mutex& mtx, 
                     boost::condition& cond, bool& running ) {
-
     fork_worker(thread_func, fp, parent);
+#else
+void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 
+                    int argc, void **argv,
+                    omp_task_data *parent, boost::mutex& mtx, 
+                    boost::condition& cond, bool& running ) {
+    fork_worker(kmp_invoke, thread_func, argc, argv, parent);
+#endif
+
     {
         boost::mutex::scoped_lock lk(mtx);
         running = true;
@@ -319,7 +347,11 @@ void fork_and_sync( omp_micro thread_func, frame_pointer_t fp,
 //For Intel, the Nthreads isn't passed in, another function sets Nthreads, so Nthreads should be 0;
 // Also for Intel, fp is not a frame pointer, but a pointer to a struct,
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
+#ifdef BUILD_UH
 void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
+#else
+void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
+#endif
 { 
     omp_task_data *current_task = get_task_data();
 #ifdef BUILD_UH
@@ -327,7 +359,11 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
 #endif
 
     if( hpx::threads::get_self_ptr() ) {
+#ifdef BUILD_UH
         fork_worker(thread_func, fp, current_task);
+#else
+        fork_worker(kmp_invoke, thread_func, argc, argv, current_task);
+#endif
     } else {
 
         boost::mutex mtx;
@@ -335,8 +371,13 @@ void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
         bool running = false;
     
         hpx::applier::register_thread_nullary(
-                //std::bind(&fork_and_sync, &team, thread_func, fp, current_task, boost::ref(mtx), boost::ref(cond), boost::ref(running))
-                std::bind(&fork_and_sync, thread_func, fp, current_task, boost::ref(mtx), boost::ref(cond), boost::ref(running))
+                std::bind(&fork_and_sync,
+#ifdef BUILD_UH
+                    thread_func, fp, 
+#else
+                    kmp_invoke, thread_func, argc, argv,
+#endif
+                    current_task, boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
             boost::mutex::scoped_lock lk(mtx);

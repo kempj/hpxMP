@@ -4,6 +4,8 @@
 #include <iostream>
 #include <assert.h>
 
+#include <ffi.h>
+
 using std::cout;
 using std::endl;
 
@@ -42,8 +44,6 @@ void omp_thread_func(int tid, void *fp) {
     task_args *args = (task_args*)fp;
     void **argv = args->argv;
     int argc = args->argc;
-    //int argc = args->argc - 1;
-
     //assert(argc <= 16);
     switch(argc) {
         case 0: args->fork_func( &tid, &tid );
@@ -103,20 +103,44 @@ void omp_thread_func(int tid, void *fp) {
     }
 }
 
+//int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void *p_argv[]) {
+void __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void **p_argv) {
+    int argc_full = argc + 2;
+    int i;
+    ffi_cif cif;
+    ffi_type *types[argc_full];
+    void *args[argc_full];
+    void *idp[2];
+
+    /* We're only passing pointers to the target. */
+    for (i = 0; i < argc_full; i++)
+        types[i] = &ffi_type_pointer;
+
+    /* Ugly double-indirection, but that's how it goes... */
+    idp[0] = &gtid;
+    idp[1] = &tid;
+    args[0] = &idp[0];
+    args[1] = &idp[1];
+
+    for(i = 0; i < argc; i++) {
+        args[2 + i] = &p_argv[i];
+    }
+
+    if( ffi_prep_cif( &cif, FFI_DEFAULT_ABI, argc_full, &ffi_type_void, types) != FFI_OK)
+        abort();
+
+    ffi_call(&cif, (void (*)(void))pkfn, NULL, args);
+}
+
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 {
-    task_args args;
+    //task_args args;
     if(!hpx_backend) {
         start_backend();
     }
 
-    void *argv[16] = {0};// {0,0};
-
-    if(argc >= 16) {
-        cout << "argc = " << argc << endl;
-    }
-    //assert(argc <= 16);
+    vector<void*> argv(argc);
 
     va_list     ap;
     va_start(   ap, microtask );
@@ -125,12 +149,12 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
         argv[i] = va_arg( ap, void * );
     }
     va_end( ap );
-    args.argc = argc;
-    args.argv = argv;
+    //args.argc = argc;
+    //args.argv = argv;
 
-    args.fork_func = microtask;
-
-    hpx_backend->fork(0, omp_thread_func, (void*)&args);
+    //args.fork_func = microtask;
+    //hpx_backend->fork(0, omp_thread_func, (void*)&args);
+    hpx_backend->fork(__kmp_invoke_microtask, microtask, argc,  argv.data());
 }
 
 // ----- Tasks -----
