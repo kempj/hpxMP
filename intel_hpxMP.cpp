@@ -111,6 +111,9 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     void *argv[16] = {0};// {0,0};
 
+    if(argc >= 16) {
+        cout << "argc = " << argc << endl;
+    }
     assert(argc < 16);
 
     va_list     ap;
