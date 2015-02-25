@@ -44,7 +44,7 @@ void omp_thread_func(int tid, void *fp) {
     int argc = args->argc;
     //int argc = args->argc - 1;
 
-    assert(argc <= 16);
+    //assert(argc <= 16);
     switch(argc) {
         case 0: args->fork_func( &tid, &tid );
                 break;
@@ -116,7 +116,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     if(argc >= 16) {
         cout << "argc = " << argc << endl;
     }
-    assert(argc <= 16);
+    //assert(argc <= 16);
 
     va_list     ap;
     va_start(   ap, microtask );
