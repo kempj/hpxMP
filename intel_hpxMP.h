@@ -6,12 +6,15 @@ typedef long long kmp_int64;
 
 typedef mutex_type omp_lock_t;
 
-typedef void (*microtask_t)( int *gtid, int *npr, ... );
+typedef void (*microtask_t)( int *gtid, int *tid, ... );
+
 typedef int  (*launch_t)( int gtid );
 
 typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
 
 typedef kmp_int32 kmp_critical_name[8];
+
+extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void **argv );
 
 enum sched_type {
         kmp_sch_lower                     = 32,   /**< lower bound for unordered values */

@@ -39,7 +39,7 @@ void __kmpc_begin( ident_t *, kmp_int32 flags ){
 
 void __kmpc_end(ident_t *loc){
 }
-
+/*
 void omp_thread_func(int tid, void *fp) {
     task_args *args = (task_args*)fp;
     void **argv = args->argv;
@@ -112,11 +112,11 @@ void __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void
     void *args[argc_full];
     void *idp[2];
 
-    /* We're only passing pointers to the target. */
+    //We're only passing pointers to the target. 
     for (i = 0; i < argc_full; i++)
         types[i] = &ffi_type_pointer;
 
-    /* Ugly double-indirection, but that's how it goes... */
+    // Ugly double-indirection, but that's how it goes... 
     idp[0] = &gtid;
     idp[1] = &tid;
     args[0] = &idp[0];
@@ -131,7 +131,7 @@ void __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void
 
     ffi_call(&cif, (void (*)(void))pkfn, NULL, args);
 }
-
+*/
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 {

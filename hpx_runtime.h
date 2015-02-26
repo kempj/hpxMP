@@ -29,7 +29,7 @@
 
 
 typedef void (*microtask_t)( int *gtid, int *npr, ... );
-typedef void (*invoke_func)( microtask_t , int , int , int , void**);
+typedef int (*invoke_func)( microtask_t , int , int , int , void**);
 
 typedef void *frame_pointer_t;
 typedef int omp_tid;
