@@ -1,5 +1,4 @@
 #include "intel_hpxMP.h"
-//#include "loop_schedule.h"
 #include <boost/shared_ptr.hpp>
 #include <iostream>
 #include <assert.h>
@@ -9,17 +8,7 @@ using std::endl;
 
 boost::shared_ptr<hpx_runtime> hpx_backend;
 
-mutex_type print_mtx{};
-//typedef void (*omp_micro)(int , frame_pointer_t);
-//typedef void (*microtask_t)( int *gtid, int *npr, ... );
-//typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
-
-
-struct task_args {
-    kmpc_micro fork_func;
-    int argc;
-    void **argv;
-};
+//mutex_type print_mtx{};
 
 void start_backend(){
     if(!hpx_backend) {
@@ -31,109 +20,15 @@ int __kmpc_ok_to_fork(ident_t *loc){
     return 1;
 }
 
-void __kmpc_begin( ident_t *, kmp_int32 flags ){
+void __kmpc_begin( ident_t *, kmp_int32 flags ) {
     start_backend();
 }
 
-void __kmpc_end(ident_t *loc){
-}
-/*
-void omp_thread_func(int tid, void *fp) {
-    task_args *args = (task_args*)fp;
-    void **argv = args->argv;
-    int argc = args->argc;
-    //assert(argc <= 16);
-    switch(argc) {
-        case 0: args->fork_func( &tid, &tid );
-                break;
-        case 1: args->fork_func( &tid, &tid, argv[0] );
-                break;
-        case 2: args->fork_func( &tid, &tid, argv[0], argv[1] );
-                break;
-        case 3: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2] );
-                break;
-        case 4: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3] );
-                break;
-        case 5: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4] );
-                break;
-        case 6: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                 argv[5] );
-                break;
-        case 7: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                 argv[5], argv[6] );
-                break;
-        case 8: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
-                                 argv[5], argv[6], argv[7] );
-                break;
-        case 9: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                 argv[5], argv[6], argv[7], argv[8] );
-                break;
-        case 10: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
-                                 argv[5], argv[6], argv[7], argv[8], argv[9] );
-                break;
-        case 11: args->fork_func (&tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                 argv[5], argv[6], argv[7], argv[8], argv[9], 
-                                 argv[10] );
-                break;
-        case 12: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4], 
-                                  argv[5], argv[6], argv[7], argv[8], argv[9], 
-                                  argv[10], argv[11] );
-                break;
-        case 13: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                  argv[5], argv[6], argv[7], argv[8], argv[9], 
-                                  argv[10], argv[11], argv[12] );
-                break;
-        case 14: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                  argv[5], argv[6], argv[7], argv[8], argv[9], 
-                                  argv[10], argv[11], argv[12], argv[13] );
-                break;
-        case 15: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                  argv[5], argv[6], argv[7], argv[8], argv[9], 
-                                  argv[10], argv[11], argv[12], argv[13], argv[14] );
-                break;
-        case 16: args->fork_func( &tid, &tid, argv[0], argv[1], argv[2], argv[3], argv[4],
-                                  argv[5], argv[6], argv[7], argv[8], argv[9], 
-                                  argv[10], argv[11], argv[12], argv[13], argv[14],
-                                  argv[15] );
-                break;
-        default:
-                args->fork_func(&tid, &tid);
-    }
+void __kmpc_end(ident_t *loc) {
 }
 
-//int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void *p_argv[]) {
-void __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void **p_argv) {
-    int argc_full = argc + 2;
-    int i;
-    ffi_cif cif;
-    ffi_type *types[argc_full];
-    void *args[argc_full];
-    void *idp[2];
-
-    //We're only passing pointers to the target. 
-    for (i = 0; i < argc_full; i++)
-        types[i] = &ffi_type_pointer;
-
-    // Ugly double-indirection, but that's how it goes... 
-    idp[0] = &gtid;
-    idp[1] = &tid;
-    args[0] = &idp[0];
-    args[1] = &idp[1];
-
-    for(i = 0; i < argc; i++) {
-        args[2 + i] = &p_argv[i];
-    }
-
-    if( ffi_prep_cif( &cif, FFI_DEFAULT_ABI, argc_full, &ffi_type_void, types) != FFI_OK)
-        abort();
-
-    ffi_call(&cif, (void (*)(void))pkfn, NULL, args);
-}
-*/
 void
-__kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
-{
-    //task_args args;
+__kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
     if(!hpx_backend) {
         start_backend();
     }
@@ -147,12 +42,8 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
         argv[i] = va_arg( ap, void * );
     }
     va_end( ap );
-    //args.argc = argc;
-    //args.argv = argv;
 
-    //args.fork_func = microtask;
-    //hpx_backend->fork(0, omp_thread_func, (void*)&args);
-    hpx_backend->fork(__kmp_invoke_microtask, microtask, argc,  argv.data());
+    hpx_backend->fork(__kmp_invoke_microtask, microtask, argc, argv.data());
 }
 
 // ----- Tasks -----

@@ -226,8 +226,3 @@ extern "C" void omp_unset_nest_lock(omp_lock_t **lock);
 extern "C" int omp_test_lock(omp_lock_t **lock);
 extern "C" int omp_test_nest_lock(omp_lock_t **lock);
 
-/*
-extern "C" void __kmpc_atomic_fixed4_add(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs );
-extern "C" void __kmpc_atomic_fixed4_sub(  ident_t *id_ref, int gtid, kmp_int32 * lhs, kmp_int32 rhs );
-extern "C" void __kmpc_atomic_float8_add(  ident_t *id_ref, int gtid, double * lhs, double rhs);
-*/

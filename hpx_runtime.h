@@ -61,14 +61,11 @@ using hpx::threads::get_self_id;
 class loop_data {
     //TODO: does this need to be changed to work with teams?
     public:
-        //loop_data(int NT) : num_threads(NT){}
-        //loop_data(int NT) : num_threads(NT), local_iter(NT,0), iter_remaining(NT,0){}
         loop_data(int NT) : num_threads(NT), first_iter(NT,0), last_iter(NT,0), iter_count(NT,0){}
         void yield(){ hpx::this_thread::yield(); }
         void lock(){ loop_mtx.lock(); }
         void unlock(){ loop_mtx.unlock();}
 
-        //int lower;
         std::atomic<int> lower{0};
         int upper;
         int stride;
@@ -132,9 +129,6 @@ class omp_task_data {
 
         //should be used for implicit tasks/threads
         omp_task_data(int tid, parallel_region *T, omp_task_data *P ): omp_task_data(tid, T, P->icv) {
-            //parent task and current task should have different teams, no?
-            //team = T;
-            //thread_num = tid;
             icv.levels++;
             if(team->num_threads > 1) {
                 icv.active_levels++;
@@ -144,7 +138,6 @@ class omp_task_data {
         //This is for explicit tasks
         //omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), icv(P->icv) {//, parent(P){
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars): thread_num(tid), team(T), icv(icv_vars) {
-            //icv = parent->icv;
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
         };
