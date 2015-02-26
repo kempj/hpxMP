@@ -4,8 +4,6 @@
 #include <iostream>
 #include <assert.h>
 
-#include <ffi.h>
-
 using std::cout;
 using std::endl;
 
