@@ -282,7 +282,12 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 #ifdef BUILD_UH
     thread_func(tid, fp);
 #else
-    kmp_invoke(thread_func, tid, tid, argc, argv);
+    //Not sure why I need to do this, but the asm segfaults if I don't
+    if(argc == 0) {
+        thread_func(&tid, &tid);
+    } else {
+        kmp_invoke(thread_func, tid, tid, argc, argv);
+    }
 #endif
 
     team->num_tasks--;
@@ -349,27 +354,22 @@ void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
 #ifdef BUILD_UH
 void hpx_runtime::fork(int Nthreads, omp_micro thread_func, frame_pointer_t fp)
-#else
-void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
-#endif
 { 
     omp_task_data *current_task = get_task_data();
-#ifdef BUILD_UH
     current_task->set_threads_requested( Nthreads );
-#endif
-
     if( hpx::threads::get_self_ptr() ) {
-#ifdef BUILD_UH
         fork_worker(thread_func, fp, current_task);
 #else
+void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
+{ 
+    omp_task_data *current_task = get_task_data();
+    if( hpx::threads::get_self_ptr() ) {
         fork_worker(kmp_invoke, thread_func, argc, argv, current_task);
 #endif
     } else {
-
         boost::mutex mtx;
         boost::condition cond;
         bool running = false;
-    
         hpx::applier::register_thread_nullary(
                 std::bind(&fork_and_sync,
 #ifdef BUILD_UH

@@ -29,11 +29,10 @@ void __kmpc_end(ident_t *loc) {
 
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
+    vector<void*> argv(argc);
     if(!hpx_backend) {
         start_backend();
     }
-
-    vector<void*> argv(argc);
 
     va_list     ap;
     va_start(   ap, microtask );
