@@ -8,7 +8,7 @@ all: libiomp5.so
 	
 
 libiomp5.so: intel_rt.o hpx_runtime.o loop_schedule.o kmp_atomic.o asm_functions.o
-	$(CC) -shared -Wl,-x -Wl,-soname=libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o loop_schedule.o kmp_atomic.o hpx_runtime.o -L. `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`# -lffi
+	$(CC) -shared -Wl,-x -Wl,-soname=libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o loop_schedule.o kmp_atomic.o hpx_runtime.o asm_functions.o -L. `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
 intel_rt.o: intel_hpxMP.cpp intel_hpxMP.h
 	$(CC) -fPIC -c intel_hpxMP.cpp -o intel_rt.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)` 

@@ -14,7 +14,7 @@ typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ...
 
 typedef kmp_int32 kmp_critical_name[8];
 
-extern int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void **argv );
+extern "C" int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void **argv );
 
 enum sched_type {
         kmp_sch_lower                     = 32,   /**< lower bound for unordered values */
