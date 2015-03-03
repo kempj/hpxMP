@@ -283,6 +283,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     thread_func(tid, fp);
 #else
     //Not sure why I need to do this, but the asm segfaults if I don't
+    //It seems to be fine fo argc > 0.
     if(argc == 0) {
         thread_func(&tid, &tid);
     } else {

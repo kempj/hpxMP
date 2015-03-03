@@ -7,7 +7,6 @@ using std::cout;
 using std::endl;
 
 boost::shared_ptr<hpx_runtime> hpx_backend;
-
 //mutex_type print_mtx{};
 
 void start_backend(){
@@ -41,8 +40,9 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
         argv[i] = va_arg( ap, void * );
     }
     va_end( ap );
+    void ** args = argv.data();
 
-    hpx_backend->fork(__kmp_invoke_microtask, microtask, argc, argv.data());
+    hpx_backend->fork(__kmp_invoke_microtask, microtask, argc, args);
 }
 
 // ----- Tasks -----
