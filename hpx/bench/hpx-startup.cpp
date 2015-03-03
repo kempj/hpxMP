@@ -30,7 +30,6 @@ int hpx_main(boost::program_options::variables_map& vm) {
 
     cout << "hpx started with " << hpx::get_os_thread_count() << " threads" << endl;
 
-
     hpx_time2 = high_resolution_clock::now();
     return hpx::finalize();
 }
