@@ -1,4 +1,4 @@
-all: lu-hpx lu-hpx-dataflow
+all: micro taskbench hpx-startup
 
 1d_stencil:
 	clang++ -fopenmp 1d_stencil_3_omp_task.cpp -o omp4 `pkg-config --cflags --libs hpx_application`
@@ -20,6 +20,9 @@ fib: fibonacci.cpp
 
 micro: micro-bench.cpp
 	g++  micro-bench.cpp -o micro `pkg-config --cflags --libs hpx_application`
+
+taskbench: hpx-taskbench.cpp
+	g++  hpx-taskbench.cpp -o taskbench `pkg-config --cflags --libs hpx_application`
 
 startup: hpx-startup.cpp
 	g++  hpx-startup.cpp -o startup `pkg-config --cflags --libs hpx_application`

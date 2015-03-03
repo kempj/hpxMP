@@ -1,9 +1,10 @@
 #include <hpx/hpx_init.hpp>
-//#include <hpx/include/lcos.hpp>
+#include <hpx/include/lcos.hpp>
 //#include <hpx/include/async.hpp>
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/include/util.hpp>
+#include <hpx/util/unwrapped.hpp>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
@@ -75,28 +76,54 @@ void barrier_func(int delay_length, barrier *B) {
     delay(delay_length);
     B->wait();
 }
-//barrier
-boost::uint64_t barrier_test(int num_threads, int delay_length) {
-    vector<future<void>> threads;
-    barrier B(num_threads);
-    for(int i = 0; i < num_threads - 1; i++) {
-        threads.push_back(hpx::async(barrier_func, delay_length, &B));
-    }
-    B.wait();
-    boost::uint64_t start = hpx::util::high_resolution_clock::now();
-    B.wait();
-    uint64_t total = hpx::util::high_resolution_clock::now() - start;
-    hpx::wait_all(threads);
-    return total;
+
+//PARALLEL TASK
+void testParallelTaskGeneration() {
+    //spawn N threads (as in a parallel region)
+    //from each thread, spawn innerreps tasks
 }
 
-//single doesn't really translate to hpx
-//master
-//lock/unlock
-//par for
-//for static
-//for dynamic
+//MASTER TASK
+void testMasterTaskGeneration() {
+    //spawn n * innerreps tasks from one thread
+}
 
+//MASTER TASK BUSY SLAVES
+void testMasterTaskGenerationWithBusySlaves() {
+    //spawn n threads, where 0 spawns innerreps tasks
+    // and n-1 threads delay innerreps times
+}
+
+future<void> tw_func(int num_iter, int delay_length) {
+    vector<future<void>> tasks;
+    for(int i = 0; i < num_iter; i++) {
+        tasks.push_back(hpx::async(delay, delay_length));
+    }
+    return hpx::when_all(tasks);
+}
+
+//TASK WAIT
+void testTaskWait(){
+    //each thread does a for over innerreps/nthreads
+    //  spawning  a task that spawns nthreads tasks
+    //  then wait on all tasks.
+}
+
+//NESTED TASK
+void testNestedTaskGeneration() {
+}
+
+//NESTED MASTER TASK
+void testNestedMasterTaskGeneration() {
+}
+
+//BRANCH TASK TREE 
+void testBranchTaskGeneration() {
+}
+
+//LEAF TASK TREE
+void testLeafTaskGeneration() {
+}
 
 int hpx_main(boost::program_options::variables_map& vm) {
     std::string test = vm["test"].as<std::string>();
@@ -114,9 +141,9 @@ int hpx_main(boost::program_options::variables_map& vm) {
     }
     if(test == "all" or test == "1") {
         for(int i = 0; i < reps; i++) {
-            time[i] = barrier_test(num_threads, default_delay);
+            //time[i] =;
         }
-        print_time(time, "Barrier");
+        print_time(time, "");
     }
 
 
