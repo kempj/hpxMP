@@ -35,16 +35,20 @@ int hpx_main(boost::program_options::variables_map& vm) {
     return hpx::finalize();
 }
 
+void time_startup(int argc, char** argv) {
+    time_point t1 = high_resolution_clock::now();
+    hpx::init(argc, argv);
+    time_point t2 = high_resolution_clock::now();
+    print_time(t1, hpx_time1,  "startup time");
+    print_time(hpx_time2, t2, "shutdown time");
+}
+
 int main(int argc, char ** argv) {
     int arg_count = 3;
     char *new_args[3];
 
     if(argc > 1) {
-        time_point t1 = high_resolution_clock::now();
-        hpx::init(argc, argv);
-        time_point t2 = high_resolution_clock::now();
-        print_time(t1, hpx_time1,  "startup time");
-        print_time(hpx_time2, t2, "shutdown time");
+        time_startup(argc, argv);
     }
 
     char opt[] = "-t";
@@ -52,11 +56,11 @@ int main(int argc, char ** argv) {
     std::string num_threads = std::to_string(hpx::threads::hardware_concurrency());
     new_args[2] = &num_threads[0];
 
+    time_startup(arg_count, new_args);
 
-    time_point t1 = high_resolution_clock::now();
-    hpx::init(arg_count, new_args);
-    time_point t2 = high_resolution_clock::now();
-    print_time(t1, hpx_time1, "startup time");
-    print_time(hpx_time2, t2, "shutdown time");
+    num_threads = std::to_string(1);
+    new_args[2] = &num_threads[0];
+    time_startup(arg_count, new_args);
+
     return 0;
 }
