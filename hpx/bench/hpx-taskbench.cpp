@@ -18,6 +18,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 
+int delay_length;
 
 void print_time(std::vector<uint64_t> time, std::string name) {
     uint64_t total = 0, min = time[0], max = 0;
@@ -30,8 +31,8 @@ void print_time(std::vector<uint64_t> time, std::string name) {
             min = time[i];
         }
     }
-    cout << "\ntest " << name << ", average = " << total / time.size()
-         << "ns, min = " << min << ", max = " << max << endl;
+    cout << "\ntest " << name << ", average = " << (total / time.size()) 
+         << ", min = " << min << ", max = " << max << " (nanoseconds)" << endl;
 }
 
 void delay(int delaylength) {
@@ -60,32 +61,36 @@ int getdelaylengthfromtime(uint64_t delaytime) {
     return delaylength;
 }
 
-//parallel spawn
-boost::uint64_t par_region(int num_threads, int delay_length) {
+future<void> spawn_tasks(int inner_reps) {
+    vector<future<void>> tasks;
+    tasks.reserve(inner_reps);
+    for(int i = 0; i < inner_reps; i++) {
+        tasks.push_back(hpx::async(delay, delay_length));
+    }
+    return hpx::when_all(tasks);
+}
+//PARALLEL TASK
+uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
+    threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(hpx::async(delay, delay_length));
+        threads.push_back(spawn_tasks(inner_reps));
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
 }
 
-void barrier_func(int delay_length, barrier *B) {
-    B->wait();
-    delay(delay_length);
-    B->wait();
-}
-
-//PARALLEL TASK
-void testParallelTaskGeneration() {
-    //spawn N threads (as in a parallel region)
-    //from each thread, spawn innerreps tasks
-}
-
 //MASTER TASK
-void testMasterTaskGeneration() {
-    //spawn n * innerreps tasks from one thread
+uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
+    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    vector<future<void>> threads;
+    threads.reserve(num_threads * inner_reps);
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(hpx::async(delay, delay_length));
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
 }
 
 //MASTER TASK BUSY SLAVES
@@ -128,24 +133,24 @@ void testLeafTaskGeneration() {
 int hpx_main(boost::program_options::variables_map& vm) {
     std::string test = vm["test"].as<std::string>();
     int reps = vm["reps"].as<int>();
+    int inner_reps = vm["inner-reps"].as<int>();
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
-    int default_delay = getdelaylengthfromtime(100);//.1 microseconds
+    delay_length = getdelaylengthfromtime(100);//.1 microseconds
 
 
     if(test == "all" or test == "0") {
         for(int i = 0; i < reps; i++) {
-            time[i] = par_region(num_threads, default_delay);
+            time[i] = testParallelTaskGeneration(num_threads, inner_reps);
         }
-        print_time(time, "parallel region");
+        print_time(time, "PARALLEL TASK");
     }
     if(test == "all" or test == "1") {
         for(int i = 0; i < reps; i++) {
-            //time[i] =;
+            time[i] =testMasterTaskGeneration(num_threads, inner_reps);
         }
-        print_time(time, "");
+        print_time(time, "MASTER TASK");
     }
-
 
     return hpx::finalize(); // Handles HPX shutdown
 }
@@ -165,8 +170,9 @@ int main(int argc, char ** argv) {
         ( "reps", value<int>()->default_value(20),
           "number of times to repeat the benchmark")
         ( "test", value<std::string>()->default_value("all"),
-          "select tests to execute (0-?, default: all)") ;
-
+          "select tests to execute (0-?, default: all)") 
+        ( "inner-reps", value<int>()->default_value(256),
+          "number of times to iterate through loops in the benchmark") ;
 
     return hpx::init(desc_commandline, argc, argv, cfg);
 }
