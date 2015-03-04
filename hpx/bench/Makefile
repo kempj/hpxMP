@@ -24,5 +24,8 @@ micro: micro-bench.cpp
 taskbench: hpx-taskbench.cpp
 	g++  hpx-taskbench.cpp -o taskbench `pkg-config --cflags --libs hpx_application`
 
+task-wait: hpx-wait-bench.cpp
+	g++  hpx-wait-bench.cpp -o task-wait `pkg-config --cflags --libs hpx_application`
+
 startup: hpx-startup.cpp
 	g++  hpx-startup.cpp -o startup `pkg-config --cflags --libs hpx_application`
