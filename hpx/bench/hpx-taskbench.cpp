@@ -31,8 +31,8 @@ void print_time(std::vector<uint64_t> time, std::string name) {
             min = time[i];
         }
     }
-    cout << "\ntest " << name << ", average = " << (total / time.size()) 
-         << ", min = " << min << ", max = " << max << " (nanoseconds)" << endl;
+    cout << endl << name << ", (average, min, max) in ns:" << endl
+         << (total / time.size()) << ", " << min << ", " << max << endl;
 }
 
 void delay(int delaylength) {
@@ -125,14 +125,32 @@ future<void> tw_func(int num_iter, int delay_length) {
 }
 
 //TASK WAIT
-void testTaskWait(){
-    //each thread does a for over innerreps/nthreads
-    //  spawning  a task that spawns nthreads tasks
-    //  then wait on all tasks.
+void spawn_tasks_wait(int inner_reps) {
+    vector<future<void>> tasks;
+    tasks.reserve(inner_reps);
+    for(int i = 0; i < inner_reps; i++) {
+        tasks.push_back(hpx::async(delay, delay_length));
+    }
+    hpx::wait_all(tasks);
+}
+// this is very similar to PARALLEL TASK, only with taskwaits in each thread
+// this is probably going to be slower, though.
+uint64_t testTaskWait(int num_threads, int inner_reps){
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    vector<future<void>> threads;
+    threads.reserve(num_threads);
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(hpx::async(spawn_tasks_wait, inner_reps));
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
 }
 
 //NESTED TASK
 void testNestedTaskGeneration() {
+    //each thread does a for over innerreps/nthreads
+    //  spawning  a task that spawns nthreads tasks
+    //  then wait on all tasks.
 }
 
 //NESTED MASTER TASK
@@ -171,6 +189,11 @@ int hpx_main(boost::program_options::variables_map& vm) {
         time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps);
     }
     print_time(time, "MASTER TASK BUSY SLAVES");
+
+    for(int i = 0; i < reps; i++) {
+        time[i] = testTaskWait(num_threads, inner_reps);
+    }
+    print_time(time, "TASK WAIT");
 
     return hpx::finalize(); // Handles HPX shutdown
 }
