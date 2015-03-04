@@ -46,7 +46,7 @@ void delay(int delaylength) {
 int getdelaylengthfromtime(uint64_t delaytime) {
     int delaylength = 0;
     int reps = 1000;
-    boost::uint64_t starttime, lapsedtime = 0;
+    uint64_t starttime, lapsedtime = 0;
     delaytime = delaytime/1.0E6; // convert from microseconds to seconds
     delay(delaylength);
 
@@ -71,7 +71,7 @@ future<void> spawn_tasks(int inner_reps) {
 }
 //PARALLEL TASK
 uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
-    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
@@ -83,7 +83,7 @@ uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
 
 //MASTER TASK
 uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
-    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads * inner_reps);
     for(int i = 0; i < num_threads; i++) {
@@ -93,10 +93,27 @@ uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
     return hpx::util::high_resolution_clock::now() - start;
 }
 
+future<void> master_busy_thread(int thread_id, int inner_reps) {
+    vector<future<void>> tasks;
+    if(thread_id == 0) {
+        for(int i = 0; i < inner_reps; i++) {
+            tasks.push_back(hpx::async(delay, delay_length));
+        }
+    } else {
+        delay(inner_reps);
+    }
+    return hpx::when_all(tasks);
+}
 //MASTER TASK BUSY SLAVES
-void testMasterTaskGenerationWithBusySlaves() {
-    //spawn n threads, where 0 spawns innerreps tasks
-    // and n-1 threads delay innerreps times
+uint64_t testMasterTaskGenerationWithBusySlaves(int num_threads, int inner_reps)  {
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    vector<future<void>> threads;
+    threads.reserve(num_threads);
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(master_busy_thread(i, inner_reps));
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
 }
 
 future<void> tw_func(int num_iter, int delay_length) {
@@ -139,18 +156,21 @@ int hpx_main(boost::program_options::variables_map& vm) {
     delay_length = getdelaylengthfromtime(100);//.1 microseconds
 
 
-    if(test == "all" or test == "0") {
-        for(int i = 0; i < reps; i++) {
-            time[i] = testParallelTaskGeneration(num_threads, inner_reps);
-        }
-        print_time(time, "PARALLEL TASK");
+    //if(test == "all" or test == "0") {
+    for(int i = 0; i < reps; i++) {
+        time[i] = testParallelTaskGeneration(num_threads, inner_reps);
     }
-    if(test == "all" or test == "1") {
-        for(int i = 0; i < reps; i++) {
-            time[i] =testMasterTaskGeneration(num_threads, inner_reps);
-        }
-        print_time(time, "MASTER TASK");
+    print_time(time, "PARALLEL TASK");
+    //}
+    for(int i = 0; i < reps; i++) {
+        time[i] = testMasterTaskGeneration(num_threads, inner_reps);
     }
+    print_time(time, "MASTER TASK");
+
+    for(int i = 0; i < reps; i++) {
+        time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps);
+    }
+    print_time(time, "MASTER TASK BUSY SLAVES");
 
     return hpx::finalize(); // Handles HPX shutdown
 }
