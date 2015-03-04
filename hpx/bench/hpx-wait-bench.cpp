@@ -55,6 +55,19 @@ uint64_t task_spawn_count(int total_tasks) {
     return hpx::util::high_resolution_clock::now() - start;
 }
 
+uint64_t task_apply_count(int total_tasks) {
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    num_tasks = 0;
+    for(int i = 0; i < total_tasks; i++) {
+        num_tasks++;
+        hpx::apply(placeholder_task);
+    }
+    while(num_tasks > 0) {
+        hpx::this_thread::yield();
+    }
+    return hpx::util::high_resolution_clock::now() - start;
+}
+
 //test apply
 //test lock and signal
 
@@ -65,6 +78,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
 
     cout << "time for wait_all = " << task_spawn_wait(total_tasks) << endl;
     cout << "time for count    = " << task_spawn_count(total_tasks) << endl;
+    cout << "time for apply    = " << task_apply_count(total_tasks) << endl;
     return hpx::finalize();
 }
 

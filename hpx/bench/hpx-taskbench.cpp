@@ -1,7 +1,6 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/lcos.hpp>
 //#include <hpx/include/async.hpp>
-#include <hpx/lcos/local/barrier.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/include/util.hpp>
 #include <hpx/util/unwrapped.hpp>
@@ -10,7 +9,6 @@
 #include <boost/cstdint.hpp>
 #include <boost/format.hpp>
 
-using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
 using hpx::lcos::future;
 
