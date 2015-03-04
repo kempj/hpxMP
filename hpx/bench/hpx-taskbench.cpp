@@ -207,19 +207,16 @@ uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
 }
 
 //LEAF TASK TREE
-future<void> leafTaskTree(int tree_level);
-void leaf2(int tree_level) {
-    leafTaskTree(tree_level - 1);
-    leafTaskTree(tree_level - 1);
-}
 
-future<void> leafTaskTree(int tree_level) {
+future<void> leaf_task_tree(int tree_level) {
     if( tree_level == 0 ) {
         delay(delay_length);
         return hpx::make_ready_future();
     } else {
-        return hpx::async(leaf2, tree_level);
-    }
+        auto f1 = hpx::async(leaf_task_tree, tree_level-1);
+        auto f2 = hpx::async(leaf_task_tree, tree_level-1);
+        return hpx::when_all(f1, f2);
+    } 
 }
 future<void> leaf_thread_func(int inner_reps) {
     vector<future<void>> tasks;
