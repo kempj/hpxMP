@@ -18,6 +18,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 
+const inst DEPTH = 6;
 int delay_length;
 
 void print_time(std::vector<uint64_t> time, std::string name) {
@@ -61,6 +62,7 @@ int getdelaylengthfromtime(uint64_t delaytime) {
     return delaylength;
 }
 
+//PARALLEL TASK
 future<void> spawn_tasks(int inner_reps) {
     vector<future<void>> tasks;
     tasks.reserve(inner_reps);
@@ -69,7 +71,6 @@ future<void> spawn_tasks(int inner_reps) {
     }
     return hpx::when_all(tasks);
 }
-//PARALLEL TASK
 uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
@@ -93,6 +94,7 @@ uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
     return hpx::util::high_resolution_clock::now() - start;
 }
 
+//MASTER TASK BUSY SLAVES
 future<void> master_busy_thread(int thread_id, int inner_reps) {
     vector<future<void>> tasks;
     if(thread_id == 0) {
@@ -104,7 +106,6 @@ future<void> master_busy_thread(int thread_id, int inner_reps) {
     }
     return hpx::when_all(tasks);
 }
-//MASTER TASK BUSY SLAVES
 uint64_t testMasterTaskGenerationWithBusySlaves(int num_threads, int inner_reps)  {
     uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
@@ -114,14 +115,6 @@ uint64_t testMasterTaskGenerationWithBusySlaves(int num_threads, int inner_reps)
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
-}
-
-future<void> tw_func(int num_iter, int delay_length) {
-    vector<future<void>> tasks;
-    for(int i = 0; i < num_iter; i++) {
-        tasks.push_back(hpx::async(delay, delay_length));
-    }
-    return hpx::when_all(tasks);
 }
 
 //TASK WAIT
@@ -147,22 +140,76 @@ uint64_t testTaskWait(int num_threads, int inner_reps){
 }
 
 //NESTED TASK
-void testNestedTaskGeneration() {
-    //each thread does a for over innerreps/nthreads
-    //  spawning  a task that spawns nthreads tasks
-    //  then wait on all tasks.
+void spawn_nested_tasks_wait(int num_threads, int inner_reps) {
+    vector<future<void>> tasks;
+    tasks.reserve(inner_reps);
+    for(int i = 0; i < inner_reps; i++) {
+        tasks.push_back(spawn_tasks( num_threads ));
+    }
+    hpx::wait_all(tasks);
+}
+uint64_t testNestedTaskGeneration(int num_threads, int inner_reps) {
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    vector<future<void>> threads;
+    threads.reserve(num_threads);
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(hpx::async(spawn_nested_tasks_wait, num_threads, inner_reps/num_threads));
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
 }
 
 //NESTED MASTER TASK
-void testNestedMasterTaskGeneration() {
+uint64_t testNestedMasterTaskGeneration(int num_threads, int inner_reps) {
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    vector<future<void>> threads;
+    threads.reserve(inner_reps);
+    for(int i = 0; i < inner_reps; i++) {
+        threads.push_back(spawn_tasks( num_threads ));
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
 }
 
 //BRANCH TASK TREE 
-void testBranchTaskGeneration() {
+void branchTaskTree(int tree_level);
+
+void branch1(int tree_level) {
+    branchTaskTree(tree_level - 1);
+    delay(delay_length);
+}
+void branch2(int tree_level) {
+    branchTaskTree(tree_level - 1);
+    branchTaskTree(tree_level - 1);
+    delay(delay_length);
+}
+void branchTaskTree(int tree_level){
+    if(tree_level > 0) {
+        hpx::async(branch2, tree_level);
+    }
+}
+void branch_thread_func(int inner_reps) {
+    vector<future<void>> tasks;
+    for(int i = 0; i < (inner_reps >> DEPTH); i++) {
+        tasks.push_back(hpx::async(branch1, DEPTH));
+    }
+    hpx::wait_all(tasks);
+}
+uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    vector<future<void>> threads;
+    threads.reserve(num_threads);
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(hpx::async(branch_thread_func, inner_reps));
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
 }
 
 //LEAF TASK TREE
-void testLeafTaskGeneration() {
+uint64_t testLeafTaskGeneration(int num_threads, int inner_reps) {
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    return hpx::util::high_resolution_clock::now() - start;
 }
 
 int hpx_main(boost::program_options::variables_map& vm) {
@@ -194,6 +241,27 @@ int hpx_main(boost::program_options::variables_map& vm) {
         time[i] = testTaskWait(num_threads, inner_reps);
     }
     print_time(time, "TASK WAIT");
+
+    for(int i = 0; i < reps; i++) {
+        time[i] = testNestedTaskGeneration(num_threads, inner_reps);
+    }
+    print_time(time, "NESTED TASK");
+
+    for(int i = 0; i < reps; i++) {
+        time[i] = testNestedMasterTaskGeneration(num_threads, inner_reps);
+    }
+    print_time(time, "NESTED MASTER TASK");
+
+    for(int i = 0; i < reps; i++) {
+        time[i] = testBranchTaskGeneration(num_threads, inner_reps);
+    }
+    print_time(time, "BRANCH TASK TREE");
+
+    for(int i = 0; i < reps; i++) {
+        time[i] = testLeafTaskGeneration(num_threads, inner_reps);
+    }
+    print_time(time, "LEAF TASK TREE");
+
 
     return hpx::finalize(); // Handles HPX shutdown
 }
