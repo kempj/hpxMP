@@ -18,7 +18,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 
-const inst DEPTH = 6;
+const int DEPTH = 6;
 int delay_length;
 
 void print_time(std::vector<uint64_t> time, std::string name) {
@@ -172,43 +172,72 @@ uint64_t testNestedMasterTaskGeneration(int num_threads, int inner_reps) {
 }
 
 //BRANCH TASK TREE 
-void branchTaskTree(int tree_level);
+future<void> branch2(int tree_level);
 
-void branch1(int tree_level) {
-    branchTaskTree(tree_level - 1);
+future<void> branch1(int tree_level) {
+    future<void> f = branch2(tree_level - 1);
     delay(delay_length);
+    return f;
 }
-void branch2(int tree_level) {
-    branchTaskTree(tree_level - 1);
-    branchTaskTree(tree_level - 1);
-    delay(delay_length);
-}
-void branchTaskTree(int tree_level){
+future<void> branch2(int tree_level) {
+    vector<future<void>> sub;
     if(tree_level > 0) {
-        hpx::async(branch2, tree_level);
+        sub.push_back(branch2(tree_level - 1));
+        sub.push_back(branch2(tree_level - 1));
+        delay(delay_length);
     }
+    return hpx::when_all(sub);
 }
-void branch_thread_func(int inner_reps) {
+future<void> branch_thread_func(int inner_reps) {
     vector<future<void>> tasks;
     for(int i = 0; i < (inner_reps >> DEPTH); i++) {
         tasks.push_back(hpx::async(branch1, DEPTH));
     }
-    hpx::wait_all(tasks);
+    return hpx::when_all(tasks);
 }
 uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(hpx::async(branch_thread_func, inner_reps));
+        threads.push_back(branch_thread_func( inner_reps ));
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
 }
 
 //LEAF TASK TREE
+future<void> leafTaskTree(int tree_level);
+void leaf2(int tree_level) {
+    leafTaskTree(tree_level - 1);
+    leafTaskTree(tree_level - 1);
+}
+
+future<void> leafTaskTree(int tree_level) {
+    if( tree_level == 0 ) {
+        delay(delay_length);
+        return hpx::make_ready_future();
+    } else {
+        return hpx::async(leaf2, tree_level);
+    }
+}
+future<void> leaf_thread_func(int inner_reps) {
+    vector<future<void>> tasks;
+    tasks.reserve(inner_reps >> DEPTH);
+    for(int i = 0; i < (inner_reps >> DEPTH); i++) {
+        tasks.push_back(leaf_task_tree(DEPTH));
+    }
+    return hpx::when_all(tasks);
+}
 uint64_t testLeafTaskGeneration(int num_threads, int inner_reps) {
     uint64_t start = hpx::util::high_resolution_clock::now();
+
+    vector<future<void>> threads;
+    threads.reserve(num_threads);
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(leaf_thread_func( inner_reps ));
+    }
+
     return hpx::util::high_resolution_clock::now() - start;
 }
 
