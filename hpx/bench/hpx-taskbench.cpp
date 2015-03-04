@@ -242,6 +242,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
     delay_length = getdelaylengthfromtime(delay_time);
+    cout << "number of delay iterations = " << delay_length << endl;
 
     if(timing_version > 1) {
         inner_reps *=  timing_version;
