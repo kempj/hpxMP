@@ -207,7 +207,6 @@ uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
 }
 
 //LEAF TASK TREE
-
 future<void> leaf_task_tree(int tree_level) {
     if( tree_level == 0 ) {
         delay(delay_length);
@@ -228,65 +227,77 @@ future<void> leaf_thread_func(int inner_reps) {
 }
 uint64_t testLeafTaskGeneration(int num_threads, int inner_reps) {
     uint64_t start = hpx::util::high_resolution_clock::now();
-
     vector<future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
         threads.push_back(leaf_thread_func( inner_reps ));
     }
-
     return hpx::util::high_resolution_clock::now() - start;
 }
 
 int hpx_main(boost::program_options::variables_map& vm) {
     std::string test = vm["test"].as<std::string>();
     int reps = vm["reps"].as<int>();
-    int inner_reps = vm["inner-reps"].as<int>();
+    int timing_version = vm["timings"].as<int>();
+    int inner_reps = 20;
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
     delay_length = getdelaylengthfromtime(100);//.1 microseconds
 
-
-    //if(test == "all" or test == "0") {
     for(int i = 0; i < reps; i++) {
-        time[i] = testParallelTaskGeneration(num_threads, inner_reps);
+        time[i] = testParallelTaskGeneration(num_threads, 20);
     }
-    print_time(time, "PARALLEL TASK");
-    //}
-    for(int i = 0; i < reps; i++) {
-        time[i] = testMasterTaskGeneration(num_threads, inner_reps);
-    }
-    print_time(time, "MASTER TASK");
+    print_time(time, "PARALLEL TASK");//20
 
+    for(int i = 0; i < reps; i++) {
+        time[i] = testMasterTaskGeneration(num_threads, 20);
+    }
+    print_time(time, "MASTER TASK");//20
+
+    if(timing_version == 0) {
+        inner_reps = 1280;
+    } else {
+        inner_reps = 640;
+    }
     for(int i = 0; i < reps; i++) {
         time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps);
     }
-    print_time(time, "MASTER TASK BUSY SLAVES");
+    print_time(time, "MASTER TASK BUSY SLAVES");//1280 / 640 (hpxMP)
 
+    if(timing_version == 0) {
+        inner_reps = 1280;
+    } else {
+        inner_reps = 80;
+    }
     for(int i = 0; i < reps; i++) {
         time[i] = testTaskWait(num_threads, inner_reps);
     }
-    print_time(time, "TASK WAIT");
+    print_time(time, "TASK WAIT");//1280 / 80 (hpxMP)
 
     for(int i = 0; i < reps; i++) {
         time[i] = testNestedTaskGeneration(num_threads, inner_reps);
     }
-    print_time(time, "NESTED TASK");
+    print_time(time, "NESTED TASK");//2560 / 80 (hpxMP)
 
+    if(timing_version == 0) {
+        inner_reps = 1280;
+    } else {
+        inner_reps = 160;
+    }
     for(int i = 0; i < reps; i++) {
         time[i] = testNestedMasterTaskGeneration(num_threads, inner_reps);
     }
-    print_time(time, "NESTED MASTER TASK");
+    print_time(time, "NESTED MASTER TASK");//2560 / 160 (hpxMP)
 
     for(int i = 0; i < reps; i++) {
         time[i] = testBranchTaskGeneration(num_threads, inner_reps);
     }
-    print_time(time, "BRANCH TASK TREE");
+    print_time(time, "BRANCH TASK TREE");//5120 / 160 (hpxMP)
 
     for(int i = 0; i < reps; i++) {
         time[i] = testLeafTaskGeneration(num_threads, inner_reps);
     }
-    print_time(time, "LEAF TASK TREE");
+    print_time(time, "LEAF TASK TREE");//5120 / 160 (hpxMP)
 
 
     return hpx::finalize(); // Handles HPX shutdown
@@ -308,8 +319,8 @@ int main(int argc, char ** argv) {
           "number of times to repeat the benchmark")
         ( "test", value<std::string>()->default_value("all"),
           "select tests to execute (0-?, default: all)") 
-        ( "inner-reps", value<int>()->default_value(256),
-          "number of times to iterate through loops in the benchmark") ;
+        ( "timings", value<int>()->default_value(0),
+          "0 to mimic inner reps for icc, 1 for hpxMP") ;
 
     return hpx::init(desc_commandline, argc, argv, cfg);
 }
