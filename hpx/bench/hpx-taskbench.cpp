@@ -243,6 +243,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
     vector<uint64_t> time(reps);
     delay_length = getdelaylengthfromtime(delay_time);
     cout << "number of delay iterations = " << delay_length << endl;
+    cout << "for delay time = " << delay_time << endl;
 
     if(timing_version > 1) {
         inner_reps *=  timing_version;
