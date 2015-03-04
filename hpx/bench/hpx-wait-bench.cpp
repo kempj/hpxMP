@@ -110,7 +110,7 @@ uint64_t task_cond_apply(int total_tasks) {
 int hpx_main(boost::program_options::variables_map& vm) {
     int delay_length = vm["delay_length"].as<int>();
     int num_threads = hpx::get_os_thread_count();
-    int total_tasks = num_threads * 1024;
+    int total_tasks = num_threads * vm["task_count"].as<int>();
 
     cout << "time for wait_all  = " << task_spawn_wait(total_tasks) << endl;
     cout << "time for count     = " << task_spawn_count(total_tasks) << endl;
@@ -132,6 +132,8 @@ int main(int argc, char **argv) {
     desc_commandline.add_options()
         ( "reps", value<int>()->default_value(20),
           "number of times to repeat the benchmark")
+        ( "task_count", value<int>()->default_value(1024),
+          "number of tasks to spawn (default 1024*num_threads")
         ( "delay_length", value<int>()->default_value(1000),
           "size of work to be done in the task") ;
 
