@@ -243,30 +243,40 @@ int hpx_main(boost::program_options::variables_map& vm) {
     vector<uint64_t> time(reps);
     delay_length = getdelaylengthfromtime(delay_time);
 
+    if(timing_version > 1) {
+        inner_reps *=  timing_version;
+    }
+    
     for(int i = 0; i < reps; i++) {
-        time[i] = testParallelTaskGeneration(num_threads, 20);
+        time[i] = testParallelTaskGeneration(num_threads, inner_reps);
     }
     print_time(time, "PARALLEL TASK");//20
 
     for(int i = 0; i < reps; i++) {
-        time[i] = testMasterTaskGeneration(num_threads, 20);
+        time[i] = testMasterTaskGeneration(num_threads, inner_reps);
     }
     print_time(time, "MASTER TASK");//20
 
-    if(timing_version == 0) {
-        inner_reps = 1280;
-    } else {
+    if(timing_version == 1) {
         inner_reps = 640;
+    } else {
+        inner_reps = 1280;
+    }
+    if(timing_version > 1) {
+        inner_reps *= timing_version;
     }
     for(int i = 0; i < reps; i++) {
         time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps);
     }
     print_time(time, "MASTER TASK BUSY SLAVES");//1280 / 640 (hpxMP)
 
-    if(timing_version == 0) {
-        inner_reps = 1280;
-    } else {
+    if(timing_version == 1) {
         inner_reps = 80;
+    } else {
+        inner_reps = 1280;
+    }
+    if(timing_version > 1) {
+        inner_reps *= timing_version;
     }
     for(int i = 0; i < reps; i++) {
         time[i] = testTaskWait(num_threads, inner_reps);
@@ -278,10 +288,13 @@ int hpx_main(boost::program_options::variables_map& vm) {
     }
     print_time(time, "NESTED TASK");//2560 / 80 (hpxMP)
 
-    if(timing_version == 0) {
-        inner_reps = 1280;
-    } else {
+    if(timing_version == 1) {
         inner_reps = 160;
+    } else {
+        inner_reps = 1280;
+    }
+    if(timing_version > 1) {
+        inner_reps *= timing_version;
     }
     for(int i = 0; i < reps; i++) {
         time[i] = testNestedMasterTaskGeneration(num_threads, inner_reps);
