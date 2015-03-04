@@ -239,10 +239,11 @@ int hpx_main(boost::program_options::variables_map& vm) {
     std::string test = vm["test"].as<std::string>();
     int reps = vm["reps"].as<int>();
     int timing_version = vm["timings"].as<int>();
+    int delay_time = vm["delay_time"].as<int>();
     int inner_reps = 20;
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
-    delay_length = getdelaylengthfromtime(100);//.1 microseconds
+    delay_length = getdelaylengthfromtime(delay_time);
 
     for(int i = 0; i < reps; i++) {
         time[i] = testParallelTaskGeneration(num_threads, 20);
@@ -317,6 +318,8 @@ int main(int argc, char ** argv) {
     desc_commandline.add_options()
         ( "reps", value<int>()->default_value(20),
           "number of times to repeat the benchmark")
+        ( "delay_time", value<int>()->default_value(100),
+          "amount of time to do work in a task, in ns (default 100ns)")
         ( "test", value<std::string>()->default_value("all"),
           "select tests to execute (0-?, default: all)") 
         ( "timings", value<int>()->default_value(0),
