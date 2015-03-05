@@ -62,7 +62,7 @@ uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads * inner_reps);
-    for(int i = 0; i < num_threads; i++) {
+    for(int i = 0; i < num_threads * inner_reps; i++) {
         threads.push_back(hpx::async(delay, delay_length));
     }
     hpx::wait_all(threads);
