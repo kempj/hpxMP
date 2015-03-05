@@ -51,7 +51,8 @@ uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
     vector<future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(hpx::async(spawn_tasks_wait, inner_reps));
+        threads.push_back(spawn_tasks( inner_reps));
+        //threads.push_back(hpx::async(spawn_tasks_wait, inner_reps));
         //the omp version has no wait. This should be spawn_tasks, but the wait is faster.
     }
     hpx::wait_all(threads);
