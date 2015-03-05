@@ -119,9 +119,10 @@ uint64_t nested_task_apply_count(int level1, int level2) {
 int hpx_main(boost::program_options::variables_map& vm) {
     int delay_length = vm["delay_length"].as<int>();
     int num_threads = hpx::get_os_thread_count();
-    int total_tasks = num_threads * vm["task_count"].as<int>();
-    int nesting1 = 16;
-    int nesting2 = total_tasks/nesting1;
+    int total_tasks = vm["task_count"].as<int>();
+    int nesting1 = num_threads;
+    int nesting2 = total_tasks;
+    total_tasks *= num_threads;
 
     //cout << "time for wait_all  = " << task_spawn_wait(total_tasks) << endl;
     //cout << "time for count     = " << task_spawn_count(total_tasks) << endl;
