@@ -61,7 +61,7 @@ void parse_args( int argc, char *argv[], int &delay_reps, int &inner_reps, int &
     }
 }
 int main(int argc, char **argv) {
-    int delay_reps = 1000, inner_reps = 512, outer_reps = 20; 
+    int delay_reps = 10000, inner_reps = 1024, outer_reps = 20; 
     parse_args(argc, argv, delay_reps, inner_reps, outer_reps);
 
     printf("Running OpenMP benchmark version 3.0\n"
