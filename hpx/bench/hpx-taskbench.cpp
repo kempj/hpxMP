@@ -284,7 +284,7 @@ int main(int argc, char ** argv) {
           "number of times to repeat the benchmark")
         ( "inner_reps", value<int>()->default_value(512),
           "corresponds to the number of tasks spawned, default 512")
-        ( "delay_length", value<int>()->default_value("1000"),
+        ( "delay_length", value<int>()->default_value(1000),
           "number of iterations in delay function (0-?, default: 1000)") ;
 
     return hpx::init(desc_commandline, argc, argv, cfg);
