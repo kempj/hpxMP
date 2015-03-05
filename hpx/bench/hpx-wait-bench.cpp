@@ -103,25 +103,31 @@ uint64_t nested_task_wait(int level1, int level2) {
     return hpx::util::high_resolution_clock::now() - start;
 }
 
-void nested_spawner(int num_tasks) {
+// These functions are used for the nested_task_apply_count test
+void counting_task(atomic<int> &local_counter) {
+    placeholder_task();
+    local_counter--;
+}
+void nested_spawner(int num_tasks, atomic<int> &local_counter) {
     for(int i = 0; i < num_tasks; i++) {
-        task_counter++;
-        hpx::apply(wrapper_task);
+        local_counter++;
+        hpx::apply(counting_task, boost::ref(local_counter));
     }
-    task_counter--;
+    local_counter--;
 }
 uint64_t nested_task_apply_count(int level1, int level2) {
     uint64_t start = hpx::util::high_resolution_clock::now();
-    task_counter = 0;
+    atomic<int> local_task_counter{0};
     for(int i = 0; i < level1; i++) {
-        task_counter++;
-        hpx::apply(nested_spawner, level2);
+        local_task_counter++;
+        hpx::apply(nested_spawner, level2, boost::ref(local_task_counter));
     }
-    while(task_counter > 0) {
+    while(local_task_counter > 0) {
         hpx::this_thread::yield();
     }
     return hpx::util::high_resolution_clock::now() - start;
 }
+//-----------------------------------------------------------------------------
 
 int hpx_main(boost::program_options::variables_map& vm) {
     delay_length = vm["delay_length"].as<int>();
