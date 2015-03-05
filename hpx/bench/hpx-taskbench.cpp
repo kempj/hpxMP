@@ -282,10 +282,10 @@ int main(int argc, char ** argv) {
     desc_commandline.add_options()
         ( "reps", value<int>()->default_value(20),
           "number of times to repeat the benchmark")
-        ( "inner_reps", value<int>()->default_value(512),
-          "corresponds to the number of tasks spawned, default 512")
-        ( "delay_length", value<int>()->default_value(1000),
-          "number of iterations in delay function (0-?, default: 1000)") ;
+        ( "inner_reps", value<int>()->default_value(1024),
+          "corresponds to the number of tasks spawned, default 1024")
+        ( "delay_length", value<int>()->default_value(10000),
+          "number of iterations in delay function (0-?, default: 10000)") ;
 
     return hpx::init(desc_commandline, argc, argv, cfg);
 }
