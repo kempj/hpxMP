@@ -133,8 +133,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
 
     print_task_time();
 
-    //cout << "time for wait_all  = " << task_spawn_wait(total_tasks) << endl;
-    //cout << "time for count     = " << task_spawn_count(total_tasks) << endl;
+    cout << "wait  time ( " << total_tasks << " ) = " << task_spawn_wait(total_tasks) << endl;
     
     cout << "apply time ( " << total_tasks << " ) = " << task_apply_count(total_tasks) << endl;
 
@@ -172,36 +171,3 @@ int main(int argc, char **argv) {
     return hpx::init(desc_commandline, argc, argv, cfg);
 }
 
-/*
- * not faster than other, simpler methods
-void notifying_task() {
-    float a = 0.;
-    for(int i = 0; i < delay_length; i++)
-        a += i;
-    if(a < 0)
-        printf("%f \n", a);
-    int tasks_remaining = task_counter--;
-    if(tasks_remaining == 0) {
-        cond.notify_one();
-    }
-}
-uint64_t task_cond_apply(int total_tasks) {
-    uint64_t start = hpx::util::high_resolution_clock::now();
-    task_counter = 0;
-    for(int i = 0; i < total_tasks; i++) {
-        task_counter++;
-        hpx::apply(notifying_task);
-    }
-    while(task_counter > 0) {
-        hpx::this_thread::yield();
-    }
-    hpx::lcos::local::spinlock mtx;
-    {
-        hpx::lcos::local::spinlock::scoped_lock lk(mtx);
-        while(task_counter > 0) {
-            cond.wait(lk);
-        }
-    }
-    return hpx::util::high_resolution_clock::now() - start;
-}
-*/
