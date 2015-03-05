@@ -22,7 +22,7 @@ using std::endl;
 
 int delay_length;
 atomic<int> task_counter{0};
-atomic<int> tasks_created{0};
+//atomic<int> tasks_created{0};
 
 
 void placeholder_task() {
@@ -41,9 +41,9 @@ uint64_t task_spawn_wait(int total_tasks) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> tasks;
     tasks.reserve(total_tasks);
-    tasks_created = 0;
+    //tasks_created = 0;
     for(int i = 0; i < total_tasks; i++) {
-        tasks_created++;
+        //tasks_created++;
         tasks.push_back(hpx::async(placeholder_task));
     }
     hpx::wait_all(tasks);
@@ -53,10 +53,10 @@ uint64_t task_spawn_wait(int total_tasks) {
 uint64_t task_spawn_count(int total_tasks) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     task_counter = 0;
-    tasks_created = 0;
+    //tasks_created = 0;
     for(int i = 0; i < total_tasks; i++) {
         task_counter++;
-        tasks_created++;
+        //tasks_created++;
         hpx::async(wrapper_task);
     }
     while(task_counter > 0) {
@@ -68,10 +68,10 @@ uint64_t task_spawn_count(int total_tasks) {
 uint64_t task_apply_count(int total_tasks) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     task_counter = 0;
-    tasks_created = 0;
+    //tasks_created = 0;
     for(int i = 0; i < total_tasks; i++) {
         task_counter++;
-        tasks_created++;
+        //tasks_created++;
         hpx::apply(wrapper_task);
     }
     while(task_counter > 0) {
@@ -86,7 +86,7 @@ void nested_wait_spawner(int num_tasks) {
     vector<future<void>> tasks;
     tasks.reserve(num_tasks);
     for(int i = 0; i < num_tasks; i++) {
-        tasks_created++;
+        //tasks_created++;
         tasks.push_back(hpx::async(placeholder_task));
     }
     hpx::wait_all(tasks);
@@ -97,9 +97,9 @@ uint64_t nested_task_wait(int level1, int level2) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> tasks;
     tasks.reserve(level1);
-    tasks_created = 0;
+    //tasks_created = 0;
     for(int i = 0; i < level1; i++) {
-        tasks_created++;
+        //tasks_created++;
         tasks.push_back(hpx::async(nested_wait_spawner, level2));
     }
     hpx::wait_all(tasks);
@@ -109,7 +109,7 @@ uint64_t nested_task_wait(int level1, int level2) {
 void nested_spawner(int num_tasks) {
     for(int i = 0; i < num_tasks; i++) {
         task_counter++;
-        tasks_created++;
+        //tasks_created++;
         hpx::apply(wrapper_task);
     }
     task_counter--;
@@ -117,10 +117,10 @@ void nested_spawner(int num_tasks) {
 uint64_t nested_task_apply_count(int level1, int level2) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     task_counter = 0;
-    tasks_created = 0;
+    //tasks_created = 0;
     for(int i = 0; i < level1; i++) {
         task_counter++;
-        tasks_created++;
+        //tasks_created++;
         hpx::apply(nested_spawner, level2);
     }
     while(task_counter > 0) {
@@ -141,21 +141,17 @@ int hpx_main(boost::program_options::variables_map& vm) {
     //cout << "time for count     = " << task_spawn_count(total_tasks) << endl;
     
     cout << "apply time ( " << total_tasks << " ) = " << task_apply_count(total_tasks) << endl;
-    cout << "tasks_created = " << tasks_created << endl;
+    //cout << "tasks_created = " << tasks_created << endl;
 
     cout << "nested-wait(" << nesting1 << "," << nesting2  << ") = " 
         << nested_task_wait(nesting1, nesting2) << endl;
-    cout << "tasks_created = " << tasks_created << endl;
     cout << "nested-wait(" << nesting2 << "," << nesting1  << ") = " 
         << nested_task_wait(nesting2, nesting1) << endl;
-    cout << "tasks_created = " << tasks_created << endl;
 
     cout << "nested     (" << nesting1 << "," << nesting2  << ") = " 
          << nested_task_apply_count(nesting1, nesting2) << endl;
-    cout << "tasks_created = " << tasks_created << endl;
     cout << "nested     (" << nesting2 << "," << nesting1  << ") = " 
          << nested_task_apply_count(nesting2, nesting1) << endl;
-    cout << "tasks_created = " << tasks_created << endl;
 
     return hpx::finalize();
 }
