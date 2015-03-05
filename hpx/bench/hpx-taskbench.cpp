@@ -217,19 +217,13 @@ void print_time(std::vector<double> time, std::string name) {
 }
 
 int hpx_main(boost::program_options::variables_map& vm) {
-    std::string test = vm["test"].as<std::string>();
     int num_threads = hpx::get_os_thread_count();
 
     int reps = vm["reps"].as<int>();
-    int timing_version = vm["timings"].as<int>();
     int inner_reps = vm["inner_reps"].as<int>();
     delay_length = vm["delay_length"].as<int>();
     vector<double> time(reps);
 
-    if(timing_version > 1) {
-        inner_reps *=  timing_version;
-    }
-    
     for(int i = 0; i < reps; i++) {
         time[i] = testParallelTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
@@ -240,27 +234,11 @@ int hpx_main(boost::program_options::variables_map& vm) {
     }
     print_time(time, "MASTER TASK");//20
 
-    if(timing_version == 1) {
-        inner_reps = 640;
-    } else {
-        inner_reps = 1280;
-    }
-    if(timing_version > 1) {
-        inner_reps *= timing_version;
-    }
     for(int i = 0; i < reps; i++) {
         time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "MASTER TASK BUSY SLAVES");//1280 / 640 (hpxMP)
 
-    if(timing_version == 1) {
-        inner_reps = 80;
-    } else {
-        inner_reps = 1280;
-    }
-    if(timing_version > 1) {
-        inner_reps *= timing_version;
-    }
     for(int i = 0; i < reps; i++) {
         time[i] = testTaskWait(num_threads, inner_reps) / (double)inner_reps;
     }
@@ -271,14 +249,6 @@ int hpx_main(boost::program_options::variables_map& vm) {
     }
     print_time(time, "NESTED TASK");//2560 / 80 (hpxMP)
 
-    if(timing_version == 1) {
-        inner_reps = 160;
-    } else {
-        inner_reps = 1280;
-    }
-    if(timing_version > 1) {
-        inner_reps *= timing_version;
-    }
     for(int i = 0; i < reps; i++) {
         time[i] = testNestedMasterTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
@@ -315,9 +285,7 @@ int main(int argc, char ** argv) {
         ( "inner_reps", value<int>()->default_value(512),
           "corresponds to the number of tasks spawned, default 512")
         ( "delay_length", value<std::string>()->default_value("1000"),
-          "number of iterations in delay function (0-?, default: 1000)") 
-        ( "timings", value<int>()->default_value(0),
-          "0 to mimic inner reps for icc, 1 for hpxMP") ;
+          "number of iterations in delay function (0-?, default: 1000)") ;
 
     return hpx::init(desc_commandline, argc, argv, cfg);
 }
