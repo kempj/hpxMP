@@ -30,6 +30,9 @@ void placeholder_task() {
         a += i;
     if(a < 0)
         printf("%f \n", a);
+}
+void wrapper_task() {
+    placeholder_task();
     task_counter--;
 }
 
@@ -49,7 +52,7 @@ uint64_t task_spawn_count(int total_tasks) {
     task_counter = 0;
     for(int i = 0; i < total_tasks; i++) {
         task_counter++;
-        hpx::async(placeholder_task);
+        hpx::async(wrapper_task);
     }
     while(task_counter > 0) {
         hpx::this_thread::yield();
@@ -62,7 +65,7 @@ uint64_t task_apply_count(int total_tasks) {
     task_counter = 0;
     for(int i = 0; i < total_tasks; i++) {
         task_counter++;
-        hpx::apply(placeholder_task);
+        hpx::apply(wrapper_task);
     }
     while(task_counter > 0) {
         hpx::this_thread::yield();
@@ -96,11 +99,10 @@ uint64_t nested_task_wait(int level1, int level2) {
 void nested_spawner(int num_tasks) {
     for(int i = 0; i < num_tasks; i++) {
         task_counter++;
-        hpx::apply(placeholder_task);
+        hpx::apply(wrapper_task);
     }
     task_counter--;
 }
-
 uint64_t nested_task_apply_count(int level1, int level2) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     task_counter = 0;
@@ -123,11 +125,19 @@ int hpx_main(boost::program_options::variables_map& vm) {
 
     //cout << "time for wait_all  = " << task_spawn_wait(total_tasks) << endl;
     //cout << "time for count     = " << task_spawn_count(total_tasks) << endl;
-    cout << "time for apply     = " << task_apply_count(total_tasks * nesting1) << endl;
+    
+    cout << "time for apply       = " << task_apply_count(total_tasks) << endl;
+
+    cout << "time for nested wait (" << nesting1 << ", " << nesting2  << ") = " 
+        << nested_task_wait(nesting1, nesting2) << endl;
+    cout << "time for nested wait (" << nesting2 << ", " << nesting1  << ") = " 
+        << nested_task_wait(nesting2, nesting1) << endl;
+
     cout << "time for nested(" << nesting1 << ", " << nesting2  << ") = " 
-         << nested_task_apply_count(total_tasks/nesting1, nesting2) << endl;
+         << nested_task_apply_count(nesting1, nesting2) << endl;
     cout << "time for nested(" << nesting2 << ", " << nesting1  << ") = " 
          << nested_task_apply_count(nesting2, nesting1) << endl;
+
     return hpx::finalize();
 }
 
