@@ -29,20 +29,20 @@ void delay(int delaylength) {
 }
 
 //PARALLEL TASK
-future<void> spawn_tasks(int inner_reps) {
+void spawn_tasks(int inner_reps) {
     vector<future<void>> tasks;
     tasks.reserve(inner_reps);
     for(int i = 0; i < inner_reps; i++) {
         tasks.push_back(hpx::async(delay, delay_length));
     }
-    return hpx::when_all(tasks);
+    hpx::wait_all(tasks);
 }
 uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(spawn_tasks(inner_reps));
+        threads.push_back(hpx::async(spawn_tasks, inner_reps));
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
@@ -110,7 +110,7 @@ void spawn_nested_tasks_wait(int num_threads, int inner_reps) {
     vector<future<void>> tasks;
     tasks.reserve(inner_reps);
     for(int i = 0; i < inner_reps; i++) {
-        tasks.push_back(spawn_tasks( num_threads ));
+        tasks.push_back(hpx::async(spawn_tasks, num_threads ));
     }
     hpx::wait_all(tasks);
 }
@@ -131,7 +131,7 @@ uint64_t testNestedMasterTaskGeneration(int num_threads, int inner_reps) {
     vector<future<void>> threads;
     threads.reserve(inner_reps);
     for(int i = 0; i < inner_reps; i++) {
-        threads.push_back(spawn_tasks( num_threads ));
+        threads.push_back(hpx::async(spawn_tasks, num_threads ));
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
