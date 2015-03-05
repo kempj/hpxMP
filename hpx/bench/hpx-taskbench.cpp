@@ -52,9 +52,6 @@ uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
         threads.push_back(hpx::async(spawn_tasks, inner_reps));
-        //threads.push_back(spawn_tasks( inner_reps));
-        //threads.push_back(hpx::async(spawn_tasks_wait, inner_reps));
-        //the omp version has no wait. This should be spawn_tasks, but the wait is faster.
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
@@ -206,9 +203,17 @@ uint64_t testLeafTaskGeneration(int num_threads, int inner_reps) {
     vector<future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(leaf_thread_func( inner_reps ));
+        threads.push_back(hpx::async(leaf_thread_func, inner_reps ));
     }
+    hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
+}
+
+int num_active_tasks(){
+    hpx::performance_counters::performance_counter count(
+            "/threadqueue{locality#0/total}/length");
+    int Ntasks = count.get_value<int>().get();
+    return Ntasks;
 }
 
 void print_time(std::vector<double> time, std::string name) {
@@ -224,6 +229,8 @@ void print_time(std::vector<double> time, std::string name) {
     }
     cout << endl << name << ", (average, min, max) in ns:" << endl
          << (total / time.size()) << ", " << min << ", " << max << endl;
+    
+    cout << "num active tasks " << num_active_tasks() << endl;
 }
 
 int hpx_main(boost::program_options::variables_map& vm) {
@@ -233,6 +240,8 @@ int hpx_main(boost::program_options::variables_map& vm) {
     int inner_reps = vm["inner_reps"].as<int>();
     delay_length = vm["delay_length"].as<int>();
     vector<double> time(reps);
+
+    cout << "num active tasks " << num_active_tasks() << endl;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testParallelTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
