@@ -126,11 +126,11 @@ int hpx_main(boost::program_options::variables_map& vm) {
     //cout << "time for wait_all  = " << task_spawn_wait(total_tasks) << endl;
     //cout << "time for count     = " << task_spawn_count(total_tasks) << endl;
     
-    cout << "time for apply         = " << task_apply_count(total_tasks) << endl;
+    cout << "apply time          = " << task_apply_count(total_tasks) << endl;
 
-    cout << "nested wait (" << nesting1 << ", " << nesting2  << ") = " 
+    cout << "nested-wait (" << nesting1 << ", " << nesting2  << ") = " 
         << nested_task_wait(nesting1, nesting2) << endl;
-    cout << "nested wait (" << nesting2 << ", " << nesting1  << ") = " 
+    cout << "nested-wait (" << nesting2 << ", " << nesting1  << ") = " 
         << nested_task_wait(nesting2, nesting1) << endl;
 
     cout << "nested      (" << nesting1 << ", " << nesting2  << ") = " 
