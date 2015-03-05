@@ -40,7 +40,7 @@
 
 #define DEPTH 6
 
-void parse_args( int argc, char *argv[], int delay_reps, int inner_reps, int outer_reps) {
+void parse_args( int argc, char *argv[], int &delay_reps, int &inner_reps, int &outer_reps) {
     for(int arg = 1; arg < argc; arg++) {
         if( string(argv[arg]) == "--outer-repetitions" ) {
             outer_reps = atoi(argv[++arg]);
@@ -53,6 +53,7 @@ void parse_args( int argc, char *argv[], int delay_reps, int inner_reps, int out
             printf("\t--delay-repetitions: the number of repetitions for the delay function\n");
             printf("\t--inner-repetitions: the number of of tasks created in each test.\n");
             printf("\t--outer-repetitions: the number of times to run each test\n");
+            exit(0);
         }
     }
     if(outer_reps == 0 || inner_reps < 1 || delay_reps < 1) {
