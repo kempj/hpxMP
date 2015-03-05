@@ -232,12 +232,12 @@ int hpx_main(boost::program_options::variables_map& vm) {
     }
     
     for(int i = 0; i < reps; i++) {
-        time[i] = testParallelTaskGeneration(num_threads, inner_reps) / inner_reps;
+        time[i] = testParallelTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "PARALLEL TASK");//20
 
     for(int i = 0; i < reps; i++) {
-        time[i] = testMasterTaskGeneration(num_threads, inner_reps) / inner_reps;
+        time[i] = testMasterTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "MASTER TASK");//20
 
@@ -250,7 +250,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
         inner_reps *= timing_version;
     }
     for(int i = 0; i < reps; i++) {
-        time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps) / inner_reps;
+        time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "MASTER TASK BUSY SLAVES");//1280 / 640 (hpxMP)
 
@@ -263,12 +263,12 @@ int hpx_main(boost::program_options::variables_map& vm) {
         inner_reps *= timing_version;
     }
     for(int i = 0; i < reps; i++) {
-        time[i] = testTaskWait(num_threads, inner_reps) / inner_reps;
+        time[i] = testTaskWait(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "TASK WAIT");//1280 / 80 (hpxMP)
 
     for(int i = 0; i < reps; i++) {
-        time[i] = testNestedTaskGeneration(num_threads, inner_reps) / inner_reps;
+        time[i] = testNestedTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "NESTED TASK");//2560 / 80 (hpxMP)
 
@@ -281,17 +281,17 @@ int hpx_main(boost::program_options::variables_map& vm) {
         inner_reps *= timing_version;
     }
     for(int i = 0; i < reps; i++) {
-        time[i] = testNestedMasterTaskGeneration(num_threads, inner_reps) / inner_reps;
+        time[i] = testNestedMasterTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "NESTED MASTER TASK");//2560 / 160 (hpxMP)
 
     for(int i = 0; i < reps; i++) {
-        time[i] = testBranchTaskGeneration(num_threads, inner_reps) / inner_reps;
+        time[i] = testBranchTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "BRANCH TASK TREE");//5120 / 160 (hpxMP)
 
     for(int i = 0; i < reps; i++) {
-        time[i] = testLeafTaskGeneration(num_threads, inner_reps) / inner_reps;
+        time[i] = testLeafTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "LEAF TASK TREE");//5120 / 160 (hpxMP)
 
@@ -315,6 +315,8 @@ int main(int argc, char ** argv) {
           "number of times to repeat the benchmark")
         ( "delay_time", value<int>()->default_value(100),
           "amount of time to do work in a task, in ns (default 100ns)")
+        ( "delay_length", value<std::string>()->default_value("490"),
+          "number of iterations in delay function (0-?, default: 490)") 
         ( "test", value<std::string>()->default_value("all"),
           "select tests to execute (0-?, default: all)") 
         ( "timings", value<int>()->default_value(0),
