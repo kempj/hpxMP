@@ -328,6 +328,17 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     }
     hpx::wait_all(threads);
 
+    for(int i = 0; i < parent->threads_requested; i++) {
+        std::string name = "/threads{locality#0/worker-thread#";
+        name += std::to_string(i);
+        name += "}/count/cumulative";
+        hpx::performance_counters::performance_counter completed(name);
+        //hpx::performance_counters::performance_counter
+        //completed(
+        //"/threads{locality#0/total}/count/cumulative");
+        int Ncompleted = completed.get_value<int>().get();
+        cout << Ncompleted << "completed hpx threads on thread " << i << endl;
+    }
 }
 
 #ifdef BUILD_UH
