@@ -9,16 +9,20 @@
 #include <boost/cstdint.hpp>
 #include <boost/format.hpp>
 
+#include <atomic>
+
 using hpx::lcos::shared_future;
 using hpx::lcos::future;
 
 using std::vector;
 using std::cout;
 using std::endl;
+using std::atomic;
 
 const int DEPTH = 6;
 int delay_length;
 
+atomic<int> task_counter{0};
 
 void delay(int delaylength) {
     float a = 0.;
@@ -26,6 +30,7 @@ void delay(int delaylength) {
         a += i;
     if(a < 0)
         printf("%f \n", a);
+    task_counter++;
 }
 
 void spawn_tasks_wait(int inner_reps) {
@@ -268,45 +273,62 @@ int hpx_main(boost::program_options::variables_map& vm) {
     print_delay_time();
     print_tasks(num_threads);
 
+    task_counter = 0;
     for(int i = 0; i < reps; i++) {
         time[i] = testParallelTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "PARALLEL TASK");//20
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testMasterTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "MASTER TASK");//20
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testMasterTaskGenerationWithBusySlaves(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "MASTER TASK BUSY SLAVES");//1280 / 640 (hpxMP)
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testTaskWait(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "TASK WAIT");//1280 / 80 (hpxMP)
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testNestedTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "NESTED TASK");//2560 / 80 (hpxMP)
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testNestedMasterTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "NESTED MASTER TASK");//2560 / 160 (hpxMP)
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testBranchTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "BRANCH TASK TREE");//5120 / 160 (hpxMP)
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
     for(int i = 0; i < reps; i++) {
         time[i] = testLeafTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
     }
     print_time(time, "LEAF TASK TREE");//5120 / 160 (hpxMP)
+    cout << "task counter = " << task_counter << endl;
+    task_counter = 0;
 
 
     return hpx::finalize(); // Handles HPX shutdown
