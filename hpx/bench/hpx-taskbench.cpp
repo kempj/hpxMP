@@ -212,15 +212,22 @@ uint64_t testLeafTaskGeneration(int num_threads, int inner_reps) {
     return hpx::util::high_resolution_clock::now() - start;
 }
 
-void print_tasks(){
+void print_tasks(int num_threads){
     hpx::performance_counters::performance_counter count(
             "/threadqueue{locality#0/total}/length");
     int Ntasks = count.get_value<int>().get();
     cout << "num active tasks : " << Ntasks << endl;
-    hpx::performance_counters::performance_counter completed(
-    "/threads{locality#0/total}/count/cumulative");
-    int Ncompleted = completed.get_value<int>().get();
-    cout << Ncompleted << " completed hpx threads" << endl;
+    
+    for(int i = 0; i < num_threads; i++) {
+        std::string name = "/threads{locality#0/worker-thread#";
+        name += std::to_string(i);
+        name += "}/count/cumulative";
+        hpx::performance_counters::performance_counter completed(name);
+    //hpx::performance_counters::performance_counter completed(
+    //"/threads{locality#0/total}/count/cumulative");
+        int Ncompleted = completed.get_value<int>().get();
+        cout << Ncompleted << " completed hpx threads on thread " << i << endl;
+    }
 }
 
 void print_time(std::vector<double> time, std::string name) {
@@ -237,7 +244,7 @@ void print_time(std::vector<double> time, std::string name) {
     cout << endl << name << ", (average, min, max) in ns:" << endl
          << (total / time.size()) << ", " << min << ", " << max << endl;
     
-    print_tasks();
+    print_tasks(hpx::get_os_thread_count());
 }
 
 void print_delay_time(){
@@ -259,7 +266,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
     vector<double> time(reps);
 
     print_delay_time();
-    print_tasks();
+    print_tasks(num_threads);
 
     for(int i = 0; i < reps; i++) {
         time[i] = testParallelTaskGeneration(num_threads, inner_reps) / (double)inner_reps;
