@@ -152,14 +152,16 @@ future<void> branch1(int tree_level) {
     delay(delay_length);
     return f;
 }
+
 future<void> branch2(int tree_level) {
-    vector<future<void>> sub;
-    if(tree_level > 0) {
-        sub.push_back(hpx::async(branch2, tree_level - 1));
-        sub.push_back(hpx::async(branch2, tree_level - 1));
-        delay( delay_length );
+    vector<future<void> tasks;
+    tasks.push_back( hpx::async( delay, delay_length ));
+    if(tree_level == 1 ) {
+        return tasks[0];
     }
-    return hpx::when_all(sub);
+    tasks.push_back( hpx::async( branch2, tree_level-1 ));
+    tasks.push_back( branch2( tree_level-1 ));
+    return hpx::when_all(tasks);
 }
 future<void> branch_thread_func(int inner_reps) {
     vector<future<void>> tasks;
