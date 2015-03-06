@@ -157,7 +157,7 @@ future<void> branch2(int tree_level) {
     vector<future<void>> tasks;
     tasks.push_back( hpx::async( delay, delay_length ));
     if(tree_level == 1 ) {
-        return tasks[0];
+        return std::move(tasks[0]);
     }
     tasks.push_back( hpx::async( branch2, tree_level-1 ));
     tasks.push_back( branch2( tree_level-1 ));
