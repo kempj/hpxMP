@@ -72,12 +72,12 @@ uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
 //MASTER TASK BUSY SLAVES
 future<void> master_busy_thread(int thread_id, int inner_reps) {
     vector<future<void>> tasks;
-    if(thread_id == 0) {
-        for(int i = 0; i < inner_reps; i++) {
+    for(int i = 0; i < inner_reps; i++) {
+        if(thread_id == 0) {
             tasks.push_back(hpx::async(delay, delay_length));
+        } else {
+            delay( inner_reps );
         }
-    } else {
-        delay(inner_reps);
     }
     return hpx::when_all(tasks);
 }
@@ -86,7 +86,7 @@ uint64_t testMasterTaskGenerationWithBusySlaves(int num_threads, int inner_reps)
     vector<future<void>> threads;
     threads.reserve(num_threads);
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(master_busy_thread(i, inner_reps));
+        threads.push_back(hpx::async(master_busy_thread, i, inner_reps));
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
@@ -148,7 +148,7 @@ uint64_t testNestedMasterTaskGeneration(int num_threads, int inner_reps) {
 future<void> branch2(int tree_level);
 
 future<void> branch1(int tree_level) {
-    future<void> f = branch2(tree_level);
+    future<void> f = hpx::async(branch2, tree_level);
     delay(delay_length);
     return f;
 }
@@ -157,7 +157,7 @@ future<void> branch2(int tree_level) {
     if(tree_level > 0) {
         sub.push_back(hpx::async(branch2, tree_level - 1));
         sub.push_back(hpx::async(branch2, tree_level - 1));
-        delay( delay_length);
+        delay( delay_length );
     }
     return hpx::when_all(sub);
 }
@@ -183,7 +183,7 @@ uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
 future<void> leaf_task_tree(int tree_level) {
     vector<future<void>> tasks;
     if( tree_level == 0 ) {
-        delay(delay_length);
+        //delay(delay_length);
         //return hpx::make_ready_future();
         return hpx::async(delay, delay_length);
     } else {
