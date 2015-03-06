@@ -236,6 +236,7 @@ void print_tasks(int num_threads){
 }
 
 void print_time(std::vector<double> time, std::string name) {
+    print_tasks(hpx::get_os_thread_count());
     double total = 0, min = time[0], max = 0;
     for(int i = 0; i < time.size(); i++) {
         total += time[i];
@@ -249,7 +250,6 @@ void print_time(std::vector<double> time, std::string name) {
     cout << endl << name << ", (average, min, max) in ns:" << endl
          << (total / time.size()) << ", " << min << ", " << max << endl;
     
-    print_tasks(hpx::get_os_thread_count());
 }
 
 void print_delay_time(){
