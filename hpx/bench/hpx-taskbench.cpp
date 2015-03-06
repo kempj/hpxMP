@@ -240,6 +240,16 @@ void print_time(std::vector<double> time, std::string name) {
     print_tasks();
 }
 
+void print_delay_time(){
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    for(int i = 0; i < 1000; i++) {
+        delay(delay_length);
+    }
+    uint64_t total = hpx::util::high_resolution_clock::now() - start;
+    double average = (double)total / (double)1000.0;
+    cout << "total delay time is: " << average << " nanoseconds)" << endl;
+}
+
 int hpx_main(boost::program_options::variables_map& vm) {
     int num_threads = hpx::get_os_thread_count();
 
@@ -248,6 +258,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
     delay_length = vm["delay_length"].as<int>();
     vector<double> time(reps);
 
+    print_delay_time();
     print_tasks();
 
     for(int i = 0; i < reps; i++) {
