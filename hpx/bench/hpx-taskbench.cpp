@@ -228,9 +228,9 @@ void print_tasks(int num_threads){
         name += std::to_string(i);
         name += "}/count/cumulative";
         hpx::performance_counters::performance_counter completed(name);
-    //hpx::performance_counters::performance_counter completed(
-    //"/threads{locality#0/total}/count/cumulative");
+        //"/threads{locality#0/total}/count/cumulative");
         int Ncompleted = completed.get_value<int>().get();
+        completed.reset();
         cout << Ncompleted << " completed hpx threads on thread " << i << endl;
     }
 }
