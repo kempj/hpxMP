@@ -154,7 +154,7 @@ future<void> branch1(int tree_level) {
 }
 
 future<void> branch2(int tree_level) {
-    vector<future<void> tasks;
+    vector<future<void>> tasks;
     tasks.push_back( hpx::async( delay, delay_length ));
     if(tree_level == 1 ) {
         return tasks[0];
