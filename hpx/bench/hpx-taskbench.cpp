@@ -148,16 +148,16 @@ uint64_t testNestedMasterTaskGeneration(int num_threads, int inner_reps) {
 future<void> branch2(int tree_level);
 
 future<void> branch1(int tree_level) {
-    future<void> f = branch2(tree_level - 1);
+    future<void> f = branch2(tree_level);
     delay(delay_length);
     return f;
 }
 future<void> branch2(int tree_level) {
     vector<future<void>> sub;
     if(tree_level > 0) {
-        sub.push_back(branch2(tree_level - 1));
-        sub.push_back(branch2(tree_level - 1));
-        delay(delay_length);
+        sub.push_back(hpx::async(branch2, tree_level - 1));
+        sub.push_back(hpx::async(branch2, tree_level - 1));
+        delay( delay_length);
     }
     return hpx::when_all(sub);
 }
@@ -181,14 +181,15 @@ uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
 
 //LEAF TASK TREE
 future<void> leaf_task_tree(int tree_level) {
+    vector<future<void>> tasks;
     if( tree_level == 0 ) {
         delay(delay_length);
         //return hpx::make_ready_future();
         return hpx::async(delay, delay_length);
     } else {
-        auto f1 = hpx::async(leaf_task_tree, tree_level-1);
-        auto f2 = hpx::async(leaf_task_tree, tree_level-1);
-        return hpx::when_all(f1, f2);
+        tasks.push_back(hpx::async(leaf_task_tree, tree_level-1));
+        tasks.push_back(hpx::async(leaf_task_tree, tree_level-1));
+        return hpx::when_all(tasks);
     } 
 }
 future<void> leaf_thread_func(int inner_reps) {
