@@ -223,6 +223,7 @@ void print_tasks(int num_threads){
     int Ntasks = count.get_value<int>().get();
     cout << "num active tasks : " << Ntasks << endl;
     
+    //TODO: show the number for each test, not the current accumulation
     for(int i = 0; i < num_threads; i++) {
         std::string name = "/threads{locality#0/worker-thread#";
         name += std::to_string(i);
