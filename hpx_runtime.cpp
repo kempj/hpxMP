@@ -291,6 +291,9 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 #endif
 
+    //TODO: This should wait on the number of tasks the current
+    // "thread"/task has outstanding. This would be an optimization, 
+    // as it is currently correct.
     team->num_tasks--;
     if(team->num_tasks == 0) {
         team->cond.notify_all();
