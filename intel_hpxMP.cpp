@@ -80,27 +80,61 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
     return 1;
 }
 
-//    TASK_CURRENT_NOT_QUEUED (0) if did not suspend and queue current task to be resumed later.
-//    TASK_CURRENT_QUEUED (1) if suspended and queued the current task to be resumed later.
+//do I insert the stub future into the list here? 
+//No, after new future is made for this task.
+shared_future<void> get_future_from_dep(kmp_depend_info_t dep, depends_map *df_map) {
+    if(df_map->count(dep.base_addr) == 0) {
+        return hpx::make_ready_future();
+    }
+    return df_map->at(dep.base_addr);
+}
+
+void test_then_func(shared_future<void> in) {
+    in.wait();
+    cout << "done waiting\n";
+}
+
+// return 1 if suspended and queued the current task to be resumed later, 0 if not.
 kmp_int32 
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
-    //see__kmp_invoke_task
-    //new_task->routine(gtid, new_task);
     //TODO:how to I handle immediate tasks?
     // read them from flags?
-    
-    //for depends clauses:
-    //for(int i = 0; i < ndeps; i++){
-    //}
-    if(ndeps > 0) {
-        cout << "ndeps = " << ndeps << endl;
+    if(ndeps == 0 && ndeps_noalias == 0) {
+        hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+        return 1;
     }
-    if(ndeps_noalias > 0) {
-        cout << "ndeps_noalias = " << ndeps_noalias << endl;
+    //map<int64_t, shared_future<void>> *df_map = &(hpx_backend->get_task_data()->df_map);
+    depends_map *df_map = &(hpx_backend->get_task_data()->df_map);
+
+    vector<shared_future<void>> dep_futures;
+    int real_deps = 0;
+
+    for(int i = 0; i < ndeps; i++) {
+        if(df_map->count(dep_list[i].base_addr) > 0) {
+            real_deps++;
+            dep_futures.push_back(df_map->at(dep_list[i].base_addr));
+        }
     }
-    hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+    if(real_deps > 0) {
+        //hpx::async(new_task->routine, gtid, new_task);
+        //hpx::when_all(dep_futures); //.then(test_then_func);
+    } else {
+        hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+    }
+    //auto wrapper_op = hpx::util::unwrapped(depends_wrapper);
+    //auto futurized_task_data = make_ready_future(new_task);
+    //share_future<void> new_task = dataflow(wrapper_op, futurized_task_data, dep_future);
+
+    //add future to map
+    /*
+    for(int i = 0 ; i < ndeps; i++) {
+        if(dep_list[i].flags.out) {
+            df_map->at(dep_list[i].base_addr) = dep_future;
+        }
+    }
+    */
     return 1;
 }
 

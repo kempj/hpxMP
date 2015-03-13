@@ -228,7 +228,6 @@ void hpx_runtime::barrier_wait(){
     if(team->num_threads > 1) {
         team->globalBarrier.wait();
     }
-
 }
 
 int hpx_runtime::get_thread_num() {

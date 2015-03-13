@@ -42,6 +42,8 @@ typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
 typedef int (* kmp_routine_entry_t)( int, void * );
 
+typedef std::map<int64_t, hpx::shared_future<void>> depends_map;
+
 using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
@@ -51,11 +53,12 @@ using hpx::lcos::future;
 using std::cout;
 using std::endl;
 using std::vector;
-using std::map;
+//using std::map;
 using hpx::util::high_resolution_timer;
 using hpx::threads::set_thread_data;
 using hpx::threads::get_thread_data;
 using hpx::threads::get_self_id;
+using hpx::lcos::local::dataflow;
 
 
 class loop_data {
@@ -153,8 +156,10 @@ class omp_task_data {
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
 #endif
-        vector<future<void>> task_handles;
+        vector<shared_future<void>> task_handles;
         omp_icv icv;
+        //map<int64_t, shared_future<void>> df_map;
+        depends_map df_map;
 
         //assuming the number of threads that can be created is infinte (so I can avoid using ThreadsBusy)
         //This is the way it is because of the OMP spec. 
@@ -171,6 +176,7 @@ class omp_task_data {
                 threads_requested = 1;
             }
         }
+        //void add_dep(int64_t addr, )
 };
 
 class hpx_runtime {
