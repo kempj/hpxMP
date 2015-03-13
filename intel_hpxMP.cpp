@@ -123,9 +123,10 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     } else {
         hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
     }
-    //auto wrapper_op = hpx::util::unwrapped(depends_wrapper);
-    //auto futurized_task_data = make_ready_future(new_task);
-    //share_future<void> new_task = dataflow(wrapper_op, futurized_task_data, dep_future);
+    auto wrapped_routine = hpx::util::unwrapped(new_task->routine);
+    auto futurized_task_data = hpx::make_ready_future(new_task);
+    auto futurized_gtid = hpx::make_ready_future(gtid);
+    shared_future<void> task_future = dataflow( wrapped_routine, futurized_gtid, futurized_task_data, when_all(dep_futures) );
 
     //add future to map
     /*
