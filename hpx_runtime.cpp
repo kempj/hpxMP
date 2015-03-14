@@ -257,50 +257,58 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     delete[] (char*)task;
 }
 
-void df_wrapper_func(kmp_task_t *thunk, int gtid){//, vector<future<void>> dep_futures) {
-}
-
-void df_sync_func(vector<shared_future<void>> deps) {
-    hpx::wait_all(deps);
-}
-void hpx_runtime::create_df_task( kmp_task_t *thunk, int gtid, vector<int64_t> in_deps, vector<int64_t> out_deps) {
-    auto task = get_task_data();
-    vector<shared_future<void>> dep_futures;
-
-    for(int i = 0; i < in_deps.size(); i++) {
-        if(task->df_map.count( in_deps[i]) > 0) {
-            dep_futures.push_back(task->df_map[i]);
-        }
-    }
-    for(int i = 0; i < in_deps.size(); i++) {
-        if(task->df_map.count( in_deps[i]) > 0) {
-            dep_futures.push_back(task->df_map[i]);
-        }
-    }
-
-    auto wrapped_routine = hpx::util::unwrapped(df_wrapper_func);
-    shared_future<kmp_task_t*> futurized_task_data = hpx::make_ready_future(thunk);
-    shared_future<int> futurized_gtid = hpx::make_ready_future(gtid);
-
-    shared_future<void> f1 = hpx::async(df_sync_func, dep_futures);
-    auto current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid,f1); // hpx::when_all(dep_futures));
-
-    //Then add out deps to the map
-    /*
-    for(int i = 0 ; i < ndeps; i++) {
-        if(dep_list[i].flags.out) {
-            df_map->at(dep_list[i].base_addr) = dep_future;
-        }
-    }
-    */
-}
-
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
     auto *current_task = get_task_data();
     current_task->team->num_tasks++;
     current_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, task_func, gtid, task, current_task->icv,
                                 current_task->team, current_task->thread_num));
+}
+
+
+void df_wrapper_func(kmp_task_t *thunk, int gtid){//, vector<future<void>> dep_futures) {
+
+}
+
+//void df_sync_func(vector<shared_future<void>> deps) {
+void df_sync_func(future<vector<shared_future<void>>> deps) {
+    //hpx::wait_all(deps);
+    deps.wait();
+}
+void hpx_runtime::create_df_task( kmp_task_t *thunk, int gtid, vector<int64_t> in_deps, vector<int64_t> out_deps) {
+    auto task = get_task_data();
+    vector<shared_future<void>> dep_futures;
+
+    for(int i = 0; i < in_deps.size(); i++) {
+        if(task->df_map.count( in_deps[i] ) > 0) {
+            dep_futures.push_back(task->df_map[in_deps[i]]);
+        } else {
+        }
+    }
+    for(int i = 0; i < out_deps.size(); i++) {
+        if(task->df_map.count( out_deps[i] ) > 0) {
+            dep_futures.push_back(task->df_map[out_deps[i]]);
+        } else {
+        }
+    }
+
+    shared_future<void>  current_task;
+    if(dep_futures.size() == 0) {
+        current_task = hpx::async(df_wrapper_func, thunk, gtid);
+    } else {
+        auto wrapped_routine = unwrapped(df_wrapper_func);
+        shared_future<kmp_task_t*> futurized_task_data = hpx::make_ready_future(thunk);
+        shared_future<int> futurized_gtid = hpx::make_ready_future(gtid);
+    
+        shared_future<void> f1 = hpx::async(df_sync_func, hpx::when_all(dep_futures));
+        current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid, f1);
+        //current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid, f1); // hpx::when_all(dep_futures));
+    }
+
+    //Then add out deps to the map
+    for(int i = 0 ; i < out_deps.size(); i++) {
+        task->df_map[out_deps[i]] = current_task;
+    }
 }
 
 

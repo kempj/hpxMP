@@ -69,6 +69,7 @@ using hpx::threads::set_thread_data;
 using hpx::threads::get_thread_data;
 using hpx::threads::get_self_id;
 using hpx::lcos::local::dataflow;
+using hpx::util::unwrapped;
 
 
 class loop_data {
