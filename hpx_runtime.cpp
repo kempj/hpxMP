@@ -279,7 +279,7 @@ void hpx_runtime::create_df_task( kmp_task_t *thunk, int gtid, vector<int64_t> i
     shared_future<kmp_task_t*> futurized_task_data = hpx::make_ready_future(thunk);
     shared_future<int> futurized_gtid = hpx::make_ready_future(gtid);
 
-    auto current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid//, hpx::when_all(dep_futures));
+    auto current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid);//, hpx::when_all(dep_futures));
 
     //Then add out deps to the map
     /*
