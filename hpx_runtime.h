@@ -208,7 +208,7 @@ class hpx_runtime {
                          void *firstprivates,// int may_delay,
                          int is_tied, int blocks_parent);
         void create_intel_task( kmp_routine_entry_t taskfunc, int gtid, void *task);
-        void create_df_task( void *task, int gtid, vector<int64_t> in, vector<int64_t> out);
+        void create_df_task( kmp_task_t *task, int gtid, vector<int64_t> in, vector<int64_t> out);
         void task_exit();
         void task_wait();
         double get_time();
