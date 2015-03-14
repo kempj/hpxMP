@@ -70,6 +70,7 @@ using hpx::threads::get_thread_data;
 using hpx::threads::get_self_id;
 using hpx::lcos::local::dataflow;
 using hpx::util::unwrapped;
+using hpx::make_ready_future;
 
 
 class loop_data {
@@ -208,8 +209,8 @@ class hpx_runtime {
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates,// int may_delay,
                          int is_tied, int blocks_parent);
-        void create_intel_task( kmp_routine_entry_t taskfunc, int gtid, void *task);
-        void create_df_task( kmp_task_t *task, int gtid, vector<int64_t> in, vector<int64_t> out);
+        void create_intel_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
+        void create_df_task( int gtid, kmp_task_t *task, vector<int64_t> in, vector<int64_t> out);
         void task_exit();
         void task_wait();
         double get_time();

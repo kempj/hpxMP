@@ -241,10 +241,11 @@ void hpx_runtime::task_wait() {
     tasks->clear();
 }
 
-void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
+void intel_task_setup( int gtid, kmp_task_t *task,
                        omp_icv icv_vars,
-                       parallel_region *team, int thread_num) {
+                       parallel_region *team) {
 
+    auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv_vars);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
@@ -257,57 +258,52 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     delete[] (char*)task;
 }
 
-void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
+void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk){
     auto *current_task = get_task_data();
     current_task->team->num_tasks++;
     current_task->task_handles.push_back( 
-                    hpx::async( intel_task_setup, task_func, gtid, task, current_task->icv,
-                                current_task->team, current_task->thread_num));
+                    hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
+                                current_task->team));
 }
 
-
-void df_wrapper_func(kmp_task_t *thunk, int gtid){//, vector<future<void>> dep_futures) {
-
-}
-
-//void df_sync_func(vector<shared_future<void>> deps) {
 void df_sync_func(future<vector<shared_future<void>>> deps) {
-    //hpx::wait_all(deps);
     deps.wait();
 }
-void hpx_runtime::create_df_task( kmp_task_t *thunk, int gtid, vector<int64_t> in_deps, vector<int64_t> out_deps) {
+
+void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
     auto task = get_task_data();
     vector<shared_future<void>> dep_futures;
 
     for(int i = 0; i < in_deps.size(); i++) {
         if(task->df_map.count( in_deps[i] ) > 0) {
             dep_futures.push_back(task->df_map[in_deps[i]]);
-        } else {
         }
     }
     for(int i = 0; i < out_deps.size(); i++) {
         if(task->df_map.count( out_deps[i] ) > 0) {
             dep_futures.push_back(task->df_map[out_deps[i]]);
-        } else {
         }
     }
 
-    shared_future<void>  current_task;
+    shared_future<void>  new_task;
     if(dep_futures.size() == 0) {
-        current_task = hpx::async(df_wrapper_func, thunk, gtid);
+        //new_task = hpx::async(df_wrapper_func, gtid, thunk);
+        task->team->num_tasks++;
+        new_task = hpx::async( intel_task_setup, gtid, thunk, task->icv, task->team);
     } else {
-        auto wrapped_routine = unwrapped(df_wrapper_func);
-        shared_future<kmp_task_t*> futurized_task_data = hpx::make_ready_future(thunk);
-        shared_future<int> futurized_gtid = hpx::make_ready_future(gtid);
+        shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
+        shared_future<int>              f_gtid  = make_ready_future( gtid );
+        shared_future<omp_icv>          f_icv   = make_ready_future( task->icv );
+        shared_future<parallel_region*> f_team  = make_ready_future( task->team );
     
         shared_future<void> f1 = hpx::async(df_sync_func, hpx::when_all(dep_futures));
-        current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid, f1);
-        //current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid, f1); // hpx::when_all(dep_futures));
+
+        task->team->num_tasks++;
+        new_task = dataflow( unwrapped(intel_task_setup), f_gtid, f_thunk, f_icv, f_team, f1);
     }
 
-    //Then add out deps to the map
     for(int i = 0 ; i < out_deps.size(); i++) {
-        task->df_map[out_deps[i]] = current_task;
+        task->df_map[out_deps[i]] = new_task;
     }
 }
 

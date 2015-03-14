@@ -86,9 +86,8 @@ kmp_int32
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
-    //TODO:how to I handle immediate tasks?
-    // read them from flags?
     if(ndeps == 0 && ndeps_noalias == 0) {
+        //TODO:how to I handle immediate tasks, read them from flags?
         hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
     } else {
         vector<int64_t> in_deps;
@@ -110,7 +109,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                 out_deps.push_back(noalias_dep_list[i].base_addr);
             }
         }
-        hpx_backend->create_df_task(new_task, gtid, in_deps, out_deps);
+        hpx_backend->create_df_task(gtid, new_task, in_deps, out_deps);
     }
     return 1;
 }
