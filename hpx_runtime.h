@@ -44,6 +44,16 @@ typedef int (* kmp_routine_entry_t)( int, void * );
 
 typedef std::map<int64_t, hpx::shared_future<void>> depends_map;
 
+typedef struct kmp_task {
+    void *              shareds;
+    kmp_routine_entry_t routine;
+    int                 part_id;
+#if OMP_40_ENABLED
+    kmp_routine_entry_t destructors;
+#endif
+} kmp_task_t;
+
+
 using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
@@ -198,6 +208,7 @@ class hpx_runtime {
                          void *firstprivates,// int may_delay,
                          int is_tied, int blocks_parent);
         void create_intel_task( kmp_routine_entry_t taskfunc, int gtid, void *task);
+        void create_df_task( void *task, int gtid, vector<int64_t> in, vector<int64_t> out);
         void task_exit();
         void task_wait();
         double get_time();

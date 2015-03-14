@@ -257,6 +257,27 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
     delete[] (char*)task;
 }
 
+//void df_wrapper_func(kmp_task_t *task_data, int gtid, vector<future<void>> dep_futures) {
+//}
+
+void hpx_runtime::create_df_task( void *task, int gtid, vector<int64_t> in, vector<int64_t> out) {
+    
+    //auto wrapped_routine = hpx::util::unwrapped(new_task->routine);
+    //shared_future<kmp_task_t*> futurized_task_data = hpx::make_ready_future(new_task);
+    //shared_future<kmp_int32> futurized_gtid = hpx::make_ready_future(gtid);
+    //shared_future<vector<shared_future<void>>> all_deps = when_all(dep_futures);
+    //auto current_task = dataflow( wrapped_routine, futurized_gtid, futurized_task_data, all_deps);
+
+    //Then add out deps to the map
+    /*
+    for(int i = 0 ; i < ndeps; i++) {
+        if(dep_list[i].flags.out) {
+            df_map->at(dep_list[i].base_addr) = dep_future;
+        }
+    }
+    */
+}
+
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
     auto *current_task = get_task_data();
     current_task->team->num_tasks++;
@@ -264,6 +285,7 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, vo
                     hpx::async( intel_task_setup, task_func, gtid, task, current_task->icv,
                                 current_task->team, current_task->thread_num));
 }
+
 
 #ifdef BUILD_UH
 void thread_setup( omp_micro thread_func, void *fp, int tid,

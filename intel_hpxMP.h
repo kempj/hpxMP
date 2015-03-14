@@ -124,15 +124,16 @@ typedef struct kmp_tasking_flags {          /* Total struct must be exactly 32 b
 typedef kmp_int32 (* kmp_routine_entry_t)( kmp_int32, void * );
 
 
-typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned somehow? */
-    void *              shareds;            /**< pointer to block of pointers to shared vars   */
-    kmp_routine_entry_t routine;            /**< pointer to routine to call for executing task */
-    kmp_int32           part_id;            /**< part id for the task                          */
-#if OMP_40_ENABLED
-    kmp_routine_entry_t destructors;        /* pointer to function to invoke deconstructors of firstprivate C++ objects */
-#endif // OMP_40_ENABLED
-    //private variables are also tacked on here
-} kmp_task_t;
+
+//typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned somehow? */
+//    void *              shareds;            /**< pointer to block of pointers to shared vars   */
+//    kmp_routine_entry_t routine;            /**< pointer to routine to call for executing task */
+//    kmp_int32           part_id;            /**< part id for the task                          */
+//#if OMP_40_ENABLED
+//    kmp_routine_entry_t destructors;        /* pointer to function to invoke deconstructors of firstprivate C++ objects */
+//#endif // OMP_40_ENABLED
+//    //private variables are also tacked on here
+//} kmp_task_t;
 
 extern "C" kmp_task_t*
 __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
