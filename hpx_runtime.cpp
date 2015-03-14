@@ -260,6 +260,9 @@ void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
 void df_wrapper_func(kmp_task_t *thunk, int gtid){//, vector<future<void>> dep_futures) {
 }
 
+void df_sync_func(vector<shared_future<void>> deps) {
+    hpx::wait_all(deps);
+}
 void hpx_runtime::create_df_task( kmp_task_t *thunk, int gtid, vector<int64_t> in_deps, vector<int64_t> out_deps) {
     auto task = get_task_data();
     vector<shared_future<void>> dep_futures;
@@ -279,7 +282,8 @@ void hpx_runtime::create_df_task( kmp_task_t *thunk, int gtid, vector<int64_t> i
     shared_future<kmp_task_t*> futurized_task_data = hpx::make_ready_future(thunk);
     shared_future<int> futurized_gtid = hpx::make_ready_future(gtid);
 
-    auto current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid);//, hpx::when_all(dep_futures));
+    shared_future<void> f1 = hpx::async(df_sync_func, dep_futures);
+    auto current_task = dataflow( wrapped_routine, futurized_task_data, futurized_gtid,f1); // hpx::when_all(dep_futures));
 
     //Then add out deps to the map
     /*
