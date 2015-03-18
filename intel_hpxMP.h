@@ -160,6 +160,11 @@ __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * task )
 extern "C" void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task );
 
+extern "C" void
+__kmpc_taskgroup( ident_t * loc, int gtid );
+extern "C" void
+__kmpc_end_taskgroup( ident_t * loc, int gtid );
+
 
 extern "C" int  __kmpc_ok_to_fork(ident_t *loc);//used in icc
 extern "C" void __kmpc_begin( ident_t *, kmp_int32 flags );//used in icc
@@ -208,6 +213,8 @@ __kmpc_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_vars,
 extern "C" void 
 __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_name *lck );
 
+
+//library_calls:
 extern "C" int  omp_get_thread_num();
 extern "C" int  omp_get_num_threads();
 extern "C" void omp_set_num_threads(int);

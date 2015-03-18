@@ -218,8 +218,12 @@ void hpx_runtime::set_num_threads(int nthreads) {
     }
 }
 
-//According to the spec, this should only be called from a "thread", 
-// and never from inside an openmp tasks.
+int hpx_runtime::get_thread_num() {
+    auto *data = get_task_data();
+    return get_task_data()->thread_num;
+}
+
+// this should only be called from implicit tasks
 void hpx_runtime::barrier_wait(){
     auto *team = get_team();
     while(team->num_tasks > team->num_threads){
@@ -230,16 +234,11 @@ void hpx_runtime::barrier_wait(){
     }
 }
 
-int hpx_runtime::get_thread_num() {
-    auto *data = get_task_data();
-    return get_task_data()->thread_num;
-}
-
 void hpx_runtime::task_wait() {
     auto *tasks = &(get_task_data()->task_handles);
     hpx::wait_all(*tasks);
     tasks->clear();
-    //TODO: make this wait on depends tasks
+    //FIXME: make this wait on depends tasks
 }
 
 void intel_task_setup( int gtid, kmp_task_t *task, omp_icv icv, parallel_region *team) {
@@ -259,10 +258,17 @@ void intel_task_setup( int gtid, kmp_task_t *task, omp_icv icv, parallel_region 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk){
     auto *current_task = get_task_data();
     current_task->team->num_tasks++;
+    //what could I pass here that might otherwise be out of scope when this (parent) goes out of
+    //scope?
+    //  I need a counter in the parent for the number of child tasks it has/the number of sibling
+    //  tasks any given task has.
     current_task->task_handles.push_back( 
                     hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
                                 current_task->team));
 }
+
+// Ideas for implementing the task dependencies better:
+//did I try changing the wrapper function to take a vector?
 
 void df_sync_func(future<vector<shared_future<void>>> deps) {
     deps.wait();
@@ -283,7 +289,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         }
     }
 
-    shared_future<void>  new_task;
+    shared_future<void> new_task;
     if(dep_futures.size() == 0) {
         task->team->num_tasks++;
         new_task = hpx::async( intel_task_setup, gtid, thunk, task->icv, task->team);
@@ -320,9 +326,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 #ifdef BUILD_UH
     thread_func(tid, fp);
 #else
-    //Not sure why I need to do this, but the asm segfaults if I don't
-    //It seems to be fine fo argc > 0.
-    if(argc == 0) {
+    if(argc == 0) { //note: kmp_invoke segfaults iff argc == 0
         thread_func(&tid, &tid);
     } else {
         kmp_invoke(thread_func, tid, tid, argc, argv);
@@ -332,6 +336,9 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     //TODO: This should wait on the number of tasks the current
     // "thread"/task has outstanding. This would be an optimization, 
     // as it is currently correct.
+    //But, when the parent task is explicit, it could be out of scope
+    // so I need some way to know when this parent is an implicit task,
+    // or otherwise in scope.
     team->num_tasks--;
     if(team->num_tasks == 0) {
         team->cond.notify_all();
@@ -368,19 +375,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         }
     }
     hpx::wait_all(threads);
-
-    /*
-    for(int i = 0; i < parent->threads_requested; i++) {
-        std::string name = "/threads{locality#0/worker-thread#";
-        name += std::to_string(i);
-        name += "}/count/cumulative";
-        hpx::performance_counters::performance_counter completed(name);
-        //hpx::performance_counters::performance_counter
-        //completed(
-        //"/threads{locality#0/total}/count/cumulative");
-        int Ncompleted = completed.get_value<int>().get();
-        cout << Ncompleted << "completed hpx threads on thread " << i << endl;
-    }*/
 }
 
 #ifdef BUILD_UH

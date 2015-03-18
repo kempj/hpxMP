@@ -117,7 +117,6 @@ struct parallel_region {
         depth = parent->depth + 1; 
     }
     int num_threads;
-    atomic<int> num_tasks{0};
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type single_mtx{}; 
@@ -129,9 +128,13 @@ struct parallel_region {
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
     vector<void*> reduce_data;
+    atomic<int> num_tasks{0};
 };
 
 
+//What parts of a task could I move to a shared state to get a performance
+// improvement, or some other, orgizational improvement?
+// icvs?
 class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
@@ -151,7 +154,6 @@ class omp_task_data {
         };
 
         //This is for explicit tasks
-        //omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), icv(P->icv) {//, parent(P){
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars): thread_num(tid), team(T), icv(icv_vars) {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -162,6 +164,8 @@ class omp_task_data {
         parallel_region *team;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
+        atomic<int> num_tasks{0};
+
 #ifdef BUILD_UH
         omp_task_data *parent;
         atomic<int> blocking_children {0};
@@ -170,11 +174,9 @@ class omp_task_data {
 #endif
         vector<shared_future<void>> task_handles;
         omp_icv icv;
-        //map<int64_t, shared_future<void>> df_map;
         depends_map df_map;
 
         //assuming the number of threads that can be created is infinte (so I can avoid using ThreadsBusy)
-        //This is the way it is because of the OMP spec. 
         //See section 2.3 of the OpenMP 4.0 spec for details on ICVs.
         void set_threads_requested( int nthreads ){
             if( nthreads > 0) {
@@ -188,7 +190,6 @@ class omp_task_data {
                 threads_requested = 1;
             }
         }
-        //void add_dep(int64_t addr, )
 };
 
 class hpx_runtime {
