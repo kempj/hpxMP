@@ -239,14 +239,12 @@ void hpx_runtime::task_wait() {
     auto *tasks = &(get_task_data()->task_handles);
     hpx::wait_all(*tasks);
     tasks->clear();
+    //TODO: make this wait on depends tasks
 }
 
-void intel_task_setup( int gtid, kmp_task_t *task,
-                       omp_icv icv_vars,
-                       parallel_region *team) {
-
+void intel_task_setup( int gtid, kmp_task_t *task, omp_icv icv, parallel_region *team) {
     auto task_func = task->routine;
-    omp_task_data task_data(gtid, team, icv_vars);
+    omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
     task_func(gtid, task);
@@ -287,7 +285,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
 
     shared_future<void>  new_task;
     if(dep_futures.size() == 0) {
-        //new_task = hpx::async(df_wrapper_func, gtid, thunk);
         task->team->num_tasks++;
         new_task = hpx::async( intel_task_setup, gtid, thunk, task->icv, task->team);
     } else {
@@ -306,7 +303,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         task->df_map[out_deps[i]] = new_task;
     }
 }
-
 
 #ifdef BUILD_UH
 void thread_setup( omp_micro thread_func, void *fp, int tid,
