@@ -43,15 +43,15 @@
 # Makefile Intel compiler with Linux
 
 ## OpenMP
-#MPFC = ifort -openmp
-#MPCC = icc -openmp
+MPFC = ifort -openmp
+MPCC = icc -openmp
 
 #NoOpenMP
 #MPFC = ifort
 #MPCC = icc
 
-#FC90 = ifort
-#CC = icc
+FC90 = ifort
+CC = icc
 
 ##OPTS90 = -O3
 #OPTS90 = -O3 -no-vec
@@ -65,14 +65,14 @@
 # Makefile openUH compiler on Linux
 
 # OpenMP
-MPFC = ~/openUH/bin/uhf90 -fopenmp
-MPCC = ~/openUH/bin/uhcc -fopenmp
+#MPFC = ~/openUH/bin/uhf90 -fopenmp
+#MPCC = ~/openUH/bin/uhcc -fopenmp
 # NoOpenMP
 #MPFC = ~/openUH/bin/uhf90
 #MPCC = ~/openUH/bin/uhcc 
 
-FC90 = ~/openUH/bin/uhf90
-CC = ~/openUH/bin/uhcc
+#FC90 = ~/openUH/bin/uhf90
+#CC = ~/openUH/bin/uhcc
 
 OPTS90 = -g -O3
 #OPTS90 = -O3 -no-vec

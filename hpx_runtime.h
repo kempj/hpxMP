@@ -42,6 +42,18 @@ typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
 typedef int (* kmp_routine_entry_t)( int, void * );
 
+typedef std::map<int64_t, hpx::shared_future<void>> depends_map;
+
+typedef struct kmp_task {
+    void *              shareds;
+    kmp_routine_entry_t routine;
+    int                 part_id;
+#if OMP_40_ENABLED
+    kmp_routine_entry_t destructors;
+#endif
+} kmp_task_t;
+
+
 using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
@@ -51,11 +63,14 @@ using hpx::lcos::future;
 using std::cout;
 using std::endl;
 using std::vector;
-using std::map;
+//using std::map;
 using hpx::util::high_resolution_timer;
 using hpx::threads::set_thread_data;
 using hpx::threads::get_thread_data;
 using hpx::threads::get_self_id;
+using hpx::lcos::local::dataflow;
+using hpx::util::unwrapped;
+using hpx::make_ready_future;
 
 
 class loop_data {
@@ -102,7 +117,6 @@ struct parallel_region {
         depth = parent->depth + 1; 
     }
     int num_threads;
-    atomic<int> num_tasks{0};
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type single_mtx{}; 
@@ -114,13 +128,19 @@ struct parallel_region {
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
     vector<void*> reduce_data;
+    atomic<int> num_tasks{0};
 };
 
 
+//What parts of a task could I move to a shared state to get a performance
+// improvement, or some other, orgizational improvement?
+// icvs?
 class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
-        omp_task_data(parallel_region *T, omp_device_icv *global, int init_num_threads) : team(T) {
+        omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads) 
+            : team(T), num_child_tasks(new atomic<int>{0}), 
+              num_thread_tasks(new atomic<int>{0}) {
             thread_num = 0;
             icv.device = global;
             icv.nthreads = init_num_threads;
@@ -128,7 +148,10 @@ class omp_task_data {
         };
 
         //should be used for implicit tasks/threads
-        omp_task_data(int tid, parallel_region *T, omp_task_data *P ): omp_task_data(tid, T, P->icv) {
+        omp_task_data(int tid, parallel_region *T, omp_task_data *P )
+            : omp_task_data(tid, T, P->icv)
+        {
+            num_thread_tasks.reset(new atomic<int>{0});
             icv.levels++;
             if(team->num_threads > 1) {
                 icv.active_levels++;
@@ -136,28 +159,14 @@ class omp_task_data {
         };
 
         //This is for explicit tasks
-        //omp_task_data(omp_task_data *P) : thread_num(P->thread_num), team(P->team), icv(P->icv) {//, parent(P){
-        omp_task_data(int tid, parallel_region *T, omp_icv icv_vars): thread_num(tid), team(T), icv(icv_vars) {
+        omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
+            : thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int>{0}) 
+        {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
         };
-        
-        int thread_num;
-        int threads_requested;
-        parallel_region *team;
-        mutex_type thread_mutex;
-        hpx::lcos::local::condition_variable thread_cond;
-#ifdef BUILD_UH
-        omp_task_data *parent;
-        atomic<int> blocking_children {0};
-        atomic<bool> is_finished {false};
-        atomic<bool> has_dependents {false};
-#endif
-        vector<future<void>> task_handles;
-        omp_icv icv;
 
         //assuming the number of threads that can be created is infinte (so I can avoid using ThreadsBusy)
-        //This is the way it is because of the OMP spec. 
         //See section 2.3 of the OpenMP 4.0 spec for details on ICVs.
         void set_threads_requested( int nthreads ){
             if( nthreads > 0) {
@@ -171,6 +180,28 @@ class omp_task_data {
                 threads_requested = 1;
             }
         }
+        
+        int thread_num;
+        int threads_requested;
+        parallel_region *team;
+        mutex_type thread_mutex;
+        hpx::lcos::local::condition_variable thread_cond;
+        //atomic<int> num_tasks{0};
+        shared_ptr<atomic<int>> num_taskgroup_tasks;
+        shared_ptr<atomic<int>> num_thread_tasks;
+        shared_ptr<atomic<int>> num_child_tasks;
+        //shared_ptr<atomic<int>> parent_task_counter;
+
+#ifdef BUILD_UH
+        omp_task_data *parent;
+        atomic<int> blocking_children {0};
+        atomic<bool> is_finished {false};
+        atomic<bool> has_dependents {false};
+#endif
+        vector<shared_future<void>> task_handles;
+        omp_icv icv;
+        depends_map df_map;
+
 };
 
 class hpx_runtime {
@@ -191,7 +222,8 @@ class hpx_runtime {
         void create_task(omp_task_func taskfunc, void *frame_pointer,
                          void *firstprivates,// int may_delay,
                          int is_tied, int blocks_parent);
-        void create_intel_task( kmp_routine_entry_t taskfunc, int gtid, void *task);
+        void create_intel_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
+        void create_df_task( int gtid, kmp_task_t *task, vector<int64_t> in, vector<int64_t> out);
         void task_exit();
         void task_wait();
         double get_time();

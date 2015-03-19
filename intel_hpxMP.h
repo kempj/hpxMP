@@ -14,6 +14,16 @@ typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ...
 
 typedef kmp_int32 kmp_critical_name[8];
 
+typedef struct kmp_depend_info {
+    int64_t                    base_addr;
+    size_t                     len;
+    struct {
+        bool                   in:1;
+        bool                   out:1;
+    } flags;
+} kmp_depend_info_t;
+
+
 extern "C" int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void **argv );
 
 enum sched_type {
@@ -74,6 +84,8 @@ enum sched_type {
         kmp_sch_default = kmp_sch_static  /**< default scheduling algorithm */
 };
 
+
+
 typedef struct ident {
     kmp_int32 reserved_1;   /**<  m ght be used in Fortran; see above  */
     kmp_int32 flags;        /**<  also f.flags; KMP_IDENT_xxx flags; KMP_IDENT_KMPC identifies this union member  */
@@ -111,17 +123,17 @@ typedef struct kmp_tasking_flags {          /* Total struct must be exactly 32 b
 
 typedef kmp_int32 (* kmp_routine_entry_t)( kmp_int32, void * );
 
-typedef void* kmp_depend_info_t;
 
-typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned somehow? */
-    void *              shareds;            /**< pointer to block of pointers to shared vars   */
-    kmp_routine_entry_t routine;            /**< pointer to routine to call for executing task */
-    kmp_int32           part_id;            /**< part id for the task                          */
-#if OMP_40_ENABLED
-    kmp_routine_entry_t destructors;        /* pointer to function to invoke deconstructors of firstprivate C++ objects */
-#endif // OMP_40_ENABLED
-    //private variables are also tacked on here
-} kmp_task_t;
+
+//typedef struct kmp_task {                   /* GEH: Shouldn't this be aligned somehow? */
+//    void *              shareds;            /**< pointer to block of pointers to shared vars   */
+//    kmp_routine_entry_t routine;            /**< pointer to routine to call for executing task */
+//    kmp_int32           part_id;            /**< part id for the task                          */
+//#if OMP_40_ENABLED
+//    kmp_routine_entry_t destructors;        /* pointer to function to invoke deconstructors of firstprivate C++ objects */
+//#endif // OMP_40_ENABLED
+//    //private variables are also tacked on here
+//} kmp_task_t;
 
 extern "C" kmp_task_t*
 __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
@@ -147,6 +159,11 @@ extern "C" void
 __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * task );
 extern "C" void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task );
+
+extern "C" void
+__kmpc_taskgroup( ident_t * loc, int gtid );
+extern "C" void
+__kmpc_end_taskgroup( ident_t * loc, int gtid );
 
 
 extern "C" int  __kmpc_ok_to_fork(ident_t *loc);//used in icc
@@ -196,6 +213,8 @@ __kmpc_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_int32 num_vars,
 extern "C" void 
 __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 global_tid, kmp_critical_name *lck );
 
+
+//library_calls:
 extern "C" int  omp_get_thread_num();
 extern "C" int  omp_get_num_threads();
 extern "C" void omp_set_num_threads(int);

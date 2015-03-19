@@ -218,52 +218,137 @@ void hpx_runtime::set_num_threads(int nthreads) {
     }
 }
 
-//According to the spec, this should only be called from a "thread", 
-// and never from inside an openmp tasks.
+int hpx_runtime::get_thread_num() {
+    auto *data = get_task_data();
+    return get_task_data()->thread_num;
+}
+
+// this should only be called from implicit tasks
 void hpx_runtime::barrier_wait(){
     auto *team = get_team();
-    while(team->num_tasks > team->num_threads){
+    //while(team->num_tasks > team->num_threads){
+    //    hpx::this_thread::yield();
+    //}
+    auto *task = get_task_data();
+    task_wait();
+    //can barriers be called from inside taskgroups?
+    while(*(task->num_thread_tasks) > 0){
         hpx::this_thread::yield();
     }
     if(team->num_threads > 1) {
         team->globalBarrier.wait();
     }
-
-}
-
-int hpx_runtime::get_thread_num() {
-    auto *data = get_task_data();
-    return get_task_data()->thread_num;
 }
 
 void hpx_runtime::task_wait() {
     auto *tasks = &(get_task_data()->task_handles);
     hpx::wait_all(*tasks);
     tasks->clear();
+    //FIXME: make this wait on depends tasks
 }
 
-void intel_task_setup( kmp_routine_entry_t task_func, int gtid, void *task,
-                       omp_icv icv_vars,
-                       parallel_region *team, int thread_num) {
-
-    omp_task_data task_data(gtid, team, icv_vars);
+void intel_task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
+                       shared_ptr<atomic<int>> parent_task_counter,
+                       shared_ptr<atomic<int>> task_counter,
+                       parallel_region *team) {
+    auto task_func = task->routine;
+    omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+    task_data.num_thread_tasks = task_counter;
 
     task_func(gtid, task);
 
-    team->num_tasks--;
-    if(team->num_tasks == 0) {
-        team->cond.notify_all();
-    }
+    *(task_data.num_thread_tasks) -= 1;
+    //does parent_task_counter need to be in the task class? When will I need it outside this
+    //function? 
+    *(parent_task_counter) -= 1;
+    //team->num_tasks--;
+    //if(team->num_tasks == 0) {
+    //    team->cond.notify_all();
+    //}
     delete[] (char*)task;
 }
 
-void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, void *task){
+void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk){
     auto *current_task = get_task_data();
-    current_task->team->num_tasks++;
-    current_task->task_handles.push_back( 
-                    hpx::async( intel_task_setup, task_func, gtid, task, current_task->icv,
-                                current_task->team, current_task->thread_num));
+    //current_task->team->num_tasks++;
+    *(current_task->num_child_tasks) += 1;
+
+    if(current_task->num_taskgroup_tasks.use_count() > 0) {
+        *(current_task->num_taskgroup_tasks) += 1;
+        current_task->task_handles.push_back( 
+                        hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
+                                    current_task->num_taskgroup_tasks,
+                                    current_task->num_child_tasks,
+                                    current_task->team));
+    } else {
+        *(current_task->num_thread_tasks) += 1;
+        current_task->task_handles.push_back( 
+                        hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
+                                    current_task->num_thread_tasks,
+                                    current_task->num_child_tasks,
+                                    current_task->team));
+    }
+}
+
+// Ideas for implementing the task dependencies better:
+//did I try changing the wrapper function to take a vector?
+
+void df_sync_func(future<vector<shared_future<void>>> deps) {
+    deps.wait();
+}
+
+void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
+    auto task = get_task_data();
+    vector<shared_future<void>> dep_futures;
+
+    for(int i = 0; i < in_deps.size(); i++) {
+        if(task->df_map.count( in_deps[i] ) > 0) {
+            dep_futures.push_back(task->df_map[in_deps[i]]);
+        }
+    }
+    for(int i = 0; i < out_deps.size(); i++) {
+        if(task->df_map.count( out_deps[i] ) > 0) {
+            dep_futures.push_back(task->df_map[out_deps[i]]);
+        }
+    }
+
+    shared_future<void> new_task;
+
+    if(task->num_taskgroup_tasks.use_count() > 0) {
+        *(task->num_taskgroup_tasks) += 1;
+    } else {
+        *(task->num_thread_tasks) += 1;
+    }
+    *(task->num_child_tasks) += 1;
+    if(dep_futures.size() == 0) {
+        if(task->num_taskgroup_tasks.use_count() > 0) {
+            new_task = hpx::async( intel_task_setup, gtid, thunk, task->icv, 
+                    task->num_child_tasks, task->num_taskgroup_tasks, task->team);
+        } else {
+            new_task = hpx::async( intel_task_setup, gtid, thunk, task->icv,
+                    task->num_child_tasks, task->num_thread_tasks, task->team);
+        }
+    } else {
+        shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
+        shared_future<int>              f_gtid  = make_ready_future( gtid );
+        shared_future<omp_icv>          f_icv   = make_ready_future( task->icv );
+        shared_future<parallel_region*> f_team  = make_ready_future( task->team );
+        shared_future<shared_ptr<atomic<int>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
+        shared_future<shared_ptr<atomic<int>>> f_counter;
+        if(task->num_taskgroup_tasks.use_count() > 0) {
+            f_counter= hpx::make_ready_future( task->num_taskgroup_tasks );
+        } else {
+            f_counter= hpx::make_ready_future( task->num_thread_tasks );
+        }
+        shared_future<void> f1 = hpx::async(df_sync_func, hpx::when_all(dep_futures));
+
+        new_task = dataflow( unwrapped(intel_task_setup), f_gtid, f_thunk, 
+                             f_icv, f_parent_counter, f_counter, f_team, f1);
+    }
+    for(int i = 0 ; i < out_deps.size(); i++) {
+        task->df_map[out_deps[i]] = new_task;
+    }
 }
 
 #ifdef BUILD_UH
@@ -282,18 +367,18 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 #ifdef BUILD_UH
     thread_func(tid, fp);
 #else
-    //Not sure why I need to do this, but the asm segfaults if I don't
-    //It seems to be fine fo argc > 0.
-    if(argc == 0) {
+    if(argc == 0) { //note: kmp_invoke segfaults iff argc == 0
         thread_func(&tid, &tid);
     } else {
         kmp_invoke(thread_func, tid, tid, argc, argv);
     }
 #endif
-
-    team->num_tasks--;
-    if(team->num_tasks == 0) {
-        team->cond.notify_all();
+    //But, when the parent task is explicit, it could be out of scope
+    // so I need some way to know when this parent is an implicit task, or otherwise in scope.
+    //team->num_tasks--;
+    //if(team->num_tasks == 0) { team->cond.notify_all(); }
+    while(*(task_data.num_thread_tasks) > 0) {
+        hpx::this_thread::yield();
     }
 }
 
@@ -312,34 +397,20 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     vector<hpx::lcos::future<void>> threads;
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
-        team.num_tasks++;
+        //team.num_tasks++;
 #ifdef BUILD_UH
         threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team, parent ) );
 #else
         threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
 #endif
     }
-
-    {
-        boost::unique_lock<hpx::lcos::local::spinlock> lock(team.thread_mtx);
-        while(team.num_tasks > 0) {
-            team.cond.wait(lock);
-        }
-    }
+    //{
+        //boost::unique_lock<hpx::lcos::local::spinlock> lock(team.thread_mtx);
+        //while(team.num_tasks > 0) {
+        //    team.cond.wait(lock);
+        //}
+    //}
     hpx::wait_all(threads);
-
-    /*
-    for(int i = 0; i < parent->threads_requested; i++) {
-        std::string name = "/threads{locality#0/worker-thread#";
-        name += std::to_string(i);
-        name += "}/count/cumulative";
-        hpx::performance_counters::performance_counter completed(name);
-        //hpx::performance_counters::performance_counter
-        //completed(
-        //"/threads{locality#0/total}/count/cumulative");
-        int Ncompleted = completed.get_value<int>().get();
-        cout << Ncompleted << "completed hpx threads on thread " << i << endl;
-    }*/
 }
 
 #ifdef BUILD_UH
