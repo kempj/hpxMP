@@ -273,7 +273,7 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, km
                         hpx::apply( intel_task_setup, gtid, thunk, current_task->icv,
                                     current_task->num_taskgroup_tasks,
                                     current_task->num_child_tasks,
-                                    current_task->team);
+                                    current_task->team );
     } else {
         *(current_task->num_thread_tasks) += 1;
         //current_task->task_handles.push_back( 
@@ -281,12 +281,13 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, km
                         hpx::apply( intel_task_setup, gtid, thunk, current_task->icv,
                                     current_task->num_thread_tasks,
                                     current_task->num_child_tasks,
-                                    current_task->team);
+                                    current_task->team );
     }
 }
 
 // Ideas for implementing the task dependencies better:
-//did I try changing the wrapper function to take a vector?
+// - did I try changing the wrapper function to take a vector?
+// - .then?
 
 void df_sync_func(future<vector<shared_future<void>>> deps) {
     deps.wait();
