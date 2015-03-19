@@ -226,9 +226,6 @@ int hpx_runtime::get_thread_num() {
 // this should only be called from implicit tasks
 void hpx_runtime::barrier_wait(){
     auto *team = get_team();
-    //while(team->num_tasks > team->num_threads){
-    //    hpx::this_thread::yield();
-    //}
     auto *task = get_task_data();
     task_wait();
     //can barriers be called from inside taskgroups?
@@ -241,10 +238,14 @@ void hpx_runtime::barrier_wait(){
 }
 
 void hpx_runtime::task_wait() {
-    auto *tasks = &(get_task_data()->task_handles);
-    hpx::wait_all(*tasks);
-    tasks->clear();
+    //auto *tasks = &(get_task_data()->task_handles);
+    //hpx::wait_all(*tasks);
+    //tasks->clear();
     //FIXME: make this wait on depends tasks
+    auto *task = get_task_data();
+    while( *(task->num_child_tasks) > 0 ) {
+        hpx::this_thread::yield();
+    }
 }
 
 void intel_task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
@@ -262,16 +263,11 @@ void intel_task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     //does parent_task_counter need to be in the task class? When will I need it outside this
     //function? 
     *(parent_task_counter) -= 1;
-    //team->num_tasks--;
-    //if(team->num_tasks == 0) {
-    //    team->cond.notify_all();
-    //}
     delete[] (char*)task;
 }
 
 void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk){
     auto *current_task = get_task_data();
-    //current_task->team->num_tasks++;
     *(current_task->num_child_tasks) += 1;
 
     if(current_task->num_taskgroup_tasks.use_count() > 0) {
@@ -373,10 +369,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
         kmp_invoke(thread_func, tid, tid, argc, argv);
     }
 #endif
-    //But, when the parent task is explicit, it could be out of scope
-    // so I need some way to know when this parent is an implicit task, or otherwise in scope.
-    //team->num_tasks--;
-    //if(team->num_tasks == 0) { team->cond.notify_all(); }
     while(*(task_data.num_thread_tasks) > 0) {
         hpx::this_thread::yield();
     }
@@ -397,19 +389,12 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     vector<hpx::lcos::future<void>> threads;
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
-        //team.num_tasks++;
 #ifdef BUILD_UH
         threads.push_back( hpx::async( thread_setup, *thread_func, fp, i, &team, parent ) );
 #else
         threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
 #endif
     }
-    //{
-        //boost::unique_lock<hpx::lcos::local::spinlock> lock(team.thread_mtx);
-        //while(team.num_tasks > 0) {
-        //    team.cond.wait(lock);
-        //}
-    //}
     hpx::wait_all(threads);
 }
 
