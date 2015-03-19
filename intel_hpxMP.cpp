@@ -60,7 +60,6 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
 
     kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
 
-
     //This gets deleted at the end of intel_task_setup
     task->routine = task_entry;
     if( sizeof_shareds == 0 ) {
