@@ -238,10 +238,6 @@ void hpx_runtime::barrier_wait(){
 }
 
 void hpx_runtime::task_wait() {
-    //auto *tasks = &(get_task_data()->task_handles);
-    //hpx::wait_all(*tasks);
-    //tasks->clear();
-    //FIXME: make this wait on depends tasks
     auto *task = get_task_data();
     while( *(task->num_child_tasks) > 0 ) {
         hpx::this_thread::yield();
@@ -272,18 +268,20 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, km
 
     if(current_task->num_taskgroup_tasks.use_count() > 0) {
         *(current_task->num_taskgroup_tasks) += 1;
-        current_task->task_handles.push_back( 
-                        hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
+        //current_task->task_handles.push_back( 
+                        //hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
+                        hpx::apply( intel_task_setup, gtid, thunk, current_task->icv,
                                     current_task->num_taskgroup_tasks,
                                     current_task->num_child_tasks,
-                                    current_task->team));
+                                    current_task->team);
     } else {
         *(current_task->num_thread_tasks) += 1;
-        current_task->task_handles.push_back( 
-                        hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
+        //current_task->task_handles.push_back( 
+                        //hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
+                        hpx::apply( intel_task_setup, gtid, thunk, current_task->icv,
                                     current_task->num_thread_tasks,
                                     current_task->num_child_tasks,
-                                    current_task->team));
+                                    current_task->team);
     }
 }
 
