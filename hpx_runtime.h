@@ -186,22 +186,19 @@ class omp_task_data {
         parallel_region *team;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
-        //atomic<int> num_tasks{0};
         shared_ptr<atomic<int>> num_taskgroup_tasks;
         shared_ptr<atomic<int>> num_thread_tasks;
         shared_ptr<atomic<int>> num_child_tasks;
-        //shared_ptr<atomic<int>> parent_task_counter;
 
 #ifdef BUILD_UH
         omp_task_data *parent;
         atomic<int> blocking_children {0};
         atomic<bool> is_finished {false};
         atomic<bool> has_dependents {false};
-#endif
         vector<shared_future<void>> task_handles;
+#endif
         omp_icv icv;
         depends_map df_map;
-
 };
 
 class hpx_runtime {

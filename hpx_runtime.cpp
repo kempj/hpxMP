@@ -5,7 +5,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 
-#define  HPX_LIMIT 8
+#define  HPX_LIMIT 9
 
 #include "hpx_runtime.h"
 
@@ -65,7 +65,6 @@ hpx_runtime::hpx_runtime() {
 
     if(external_hpx)
         return;
-
 
     //char const* omp_stack_size = getenv("OMP_STACKSIZE");
         
@@ -228,7 +227,6 @@ void hpx_runtime::barrier_wait(){
     auto *team = get_team();
     auto *task = get_task_data();
     task_wait();
-    //can barriers be called from inside taskgroups?
     while(*(task->num_thread_tasks) > 0){
         hpx::this_thread::yield();
     }
@@ -256,8 +254,6 @@ void intel_task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     task_func(gtid, task);
 
     *(task_data.num_thread_tasks) -= 1;
-    //does parent_task_counter need to be in the task class? When will I need it outside this
-    //function? 
     *(parent_task_counter) -= 1;
     delete[] (char*)task;
 }
@@ -268,28 +264,27 @@ void hpx_runtime::create_intel_task( kmp_routine_entry_t task_func, int gtid, km
 
     if(current_task->num_taskgroup_tasks.use_count() > 0) {
         *(current_task->num_taskgroup_tasks) += 1;
-        //current_task->task_handles.push_back( 
-                        //hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
-                        hpx::apply( intel_task_setup, gtid, thunk, current_task->icv,
-                                    current_task->num_taskgroup_tasks,
-                                    current_task->num_child_tasks,
-                                    current_task->team);
+        hpx::apply( intel_task_setup, gtid, thunk, current_task->icv, 
+                    current_task->num_taskgroup_tasks, current_task->num_child_tasks,
+                                    current_task->team );
     } else {
         *(current_task->num_thread_tasks) += 1;
-        //current_task->task_handles.push_back( 
-                        //hpx::async( intel_task_setup, gtid, thunk, current_task->icv,
-                        hpx::apply( intel_task_setup, gtid, thunk, current_task->icv,
-                                    current_task->num_thread_tasks,
-                                    current_task->num_child_tasks,
-                                    current_task->team);
+        hpx::apply( intel_task_setup, gtid, thunk, current_task->icv,
+                    current_task->num_thread_tasks, current_task->num_child_tasks,
+                    current_task->team );
     }
 }
 
-// Ideas for implementing the task dependencies better:
-//did I try changing the wrapper function to take a vector?
-
+// did I try changing the wrapper function to take a vector?
 void df_sync_func(future<vector<shared_future<void>>> deps) {
     deps.wait();
+}
+
+void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
+                       shared_ptr<atomic<int>> parent_task_counter,
+                       shared_ptr<atomic<int>> task_counter,
+                       parallel_region *team, vector<shared_future<void>> deps) {
+intel_task_setup( gtid, task, icv, parent_task_counter, task_counter, team);
 }
 
 void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
@@ -335,10 +330,14 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         } else {
             f_counter= hpx::make_ready_future( task->num_thread_tasks );
         }
-        shared_future<void> f1 = hpx::async(df_sync_func, hpx::when_all(dep_futures));
+        //TODO: Is there a better way to do this?
+        //shared_future<void> f1 = hpx::async(df_sync_func, hpx::when_all(dep_futures));
 
-        new_task = dataflow( unwrapped(intel_task_setup), f_gtid, f_thunk, 
-                             f_icv, f_parent_counter, f_counter, f_team, f1);
+        //new_task = dataflow( unwrapped(intel_task_setup), f_gtid, f_thunk, 
+        //                     f_icv, f_parent_counter, f_counter, f_team, f1);
+        new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, 
+                             f_icv, f_parent_counter, f_counter, f_team,
+                             hpx::when_all(dep_futures) );
     }
     for(int i = 0 ; i < out_deps.size(); i++) {
         task->df_map[out_deps[i]] = new_task;
@@ -353,11 +352,9 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    int argc, void **argv, int tid,
                    parallel_region *team, omp_task_data *parent ) {
 #endif
-    
     omp_task_data task_data(tid, team, parent);
     auto thread_id = get_self_id();
     set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
-
 #ifdef BUILD_UH
     thread_func(tid, fp);
 #else
