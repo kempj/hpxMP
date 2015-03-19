@@ -138,7 +138,9 @@ struct parallel_region {
 class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
-        omp_task_data(parallel_region *T, omp_device_icv *global, int init_num_threads) : team(T) {
+        omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads) 
+            : team(T), num_child_tasks(new atomic<int>{0}), 
+              num_thread_tasks(new atomic<int>{0}) {
             thread_num = 0;
             icv.device = global;
             icv.nthreads = init_num_threads;
@@ -146,7 +148,10 @@ class omp_task_data {
         };
 
         //should be used for implicit tasks/threads
-        omp_task_data(int tid, parallel_region *T, omp_task_data *P ): omp_task_data(tid, T, P->icv) {
+        omp_task_data(int tid, parallel_region *T, omp_task_data *P )
+            : omp_task_data(tid, T, P->icv)
+        {
+            num_thread_tasks.reset(new atomic<int>{0});
             icv.levels++;
             if(team->num_threads > 1) {
                 icv.active_levels++;
@@ -154,27 +159,12 @@ class omp_task_data {
         };
 
         //This is for explicit tasks
-        omp_task_data(int tid, parallel_region *T, omp_icv icv_vars): thread_num(tid), team(T), icv(icv_vars) {
+        omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
+            : thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int>{0}) 
+        {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
         };
-        
-        int thread_num;
-        int threads_requested;
-        parallel_region *team;
-        mutex_type thread_mutex;
-        hpx::lcos::local::condition_variable thread_cond;
-        atomic<int> num_tasks{0};
-
-#ifdef BUILD_UH
-        omp_task_data *parent;
-        atomic<int> blocking_children {0};
-        atomic<bool> is_finished {false};
-        atomic<bool> has_dependents {false};
-#endif
-        vector<shared_future<void>> task_handles;
-        omp_icv icv;
-        depends_map df_map;
 
         //assuming the number of threads that can be created is infinte (so I can avoid using ThreadsBusy)
         //See section 2.3 of the OpenMP 4.0 spec for details on ICVs.
@@ -190,6 +180,28 @@ class omp_task_data {
                 threads_requested = 1;
             }
         }
+        
+        int thread_num;
+        int threads_requested;
+        parallel_region *team;
+        mutex_type thread_mutex;
+        hpx::lcos::local::condition_variable thread_cond;
+        //atomic<int> num_tasks{0};
+        shared_ptr<atomic<int>> num_taskgroup_tasks;
+        shared_ptr<atomic<int>> num_thread_tasks;
+        shared_ptr<atomic<int>> num_child_tasks;
+        //shared_ptr<atomic<int>> parent_task_counter;
+
+#ifdef BUILD_UH
+        omp_task_data *parent;
+        atomic<int> blocking_children {0};
+        atomic<bool> is_finished {false};
+        atomic<bool> has_dependents {false};
+#endif
+        vector<shared_future<void>> task_handles;
+        omp_icv icv;
+        depends_map df_map;
+
 };
 
 class hpx_runtime {
