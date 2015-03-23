@@ -41,15 +41,15 @@ void init_df(vector<vector<vector<shared_future<block>>>> &dfArray, int numBlock
     shared_future<int> fsize = make_ready_future(size);
 
     dfArray[0][0][0] = async( ProcessDiagonalBlock, size, blockList[0][0] );
-    auto *diag_block = &dfArray[0][0][0];
+    
     for(int i = 1; i < numBlocks; i++) {
-        dfArray[0][0][i] = dataflow( row_op, fsize, make_ready_future( blockList[0][i] ), *diag_block);
+        dfArray[0][0][i] = dataflow( row_op, fsize, make_ready_future( blockList[0][i] ), dfArray[0][0][0]);
     }
     for(int i = 1; i < numBlocks; i++) {
-        dfArray[0][i][0] = dataflow( col_op, fsize, make_ready_future( blockList[i][0] ), *diag_block);
-        auto *first_col = &dfArray[0][i][0];
+        dfArray[0][i][0] = dataflow( col_op, fsize, make_ready_future( blockList[i][0] ), dfArray[0][0][0]);
         for(int j = 1; j < numBlocks; j++) {
-            dfArray[0][i][j] = dataflow( inner_op, fsize, make_ready_future( blockList[i][j]), dfArray[0][0][j], *first_col );
+            dfArray[0][i][j] = dataflow( inner_op, fsize, make_ready_future( blockList[i][j] ),
+                                                   dfArray[0][0][j], dfArray[0][i][0] );
         }
     }
 }
@@ -57,23 +57,28 @@ void init_df(vector<vector<vector<shared_future<block>>>> &dfArray, int numBlock
 void LU( int size, int numBlocks)
 {
     vector<vector<vector<shared_future<block>>>> dfArray(2);
-    shared_future<block> *diag_block, *first_col;
     shared_future<int> fsize = make_ready_future(size);
 
     init_df(dfArray, numBlocks, size);
 
     for(int i = 1; i < numBlocks; i++) {
-        //TODO: use two 2d df arrays, instead of a 3d df array
         dfArray[i%2][i][i] = dataflow( diag_op, fsize, dfArray[(i-1)%2][i][i]);
-        diag_block = &dfArray[i%2][i][i];
+        
         for(int j = i + 1; j < numBlocks; j++){
-            dfArray[i%2][i][j] = dataflow( row_op , fsize, dfArray[(i-1)%2][i][j], *diag_block);
+            dfArray[i%2][i][j] = dataflow( row_op , fsize, 
+                                           dfArray[(i-1)%2][i][j], 
+                                           dfArray[ i   %2][i][i] );
         }
         for(int j = i + 1; j < numBlocks; j++){
-            dfArray[i%2][j][i] = dataflow( col_op, fsize, dfArray[(i-1)%2][j][i], *diag_block);
-            first_col = &dfArray[i%2][j][i];
+            dfArray[i%2][j][i] = dataflow( col_op, fsize, 
+                                           dfArray[(i-1)%2][j][i], 
+                                           dfArray[ i   %2][i][i] );
+            
             for(int k = i + 1; k < numBlocks; k++) {
-                dfArray[i%2][j][k] = dataflow( inner_op, fsize, dfArray[(i-1)%2][j][k], dfArray[i%2][i][k], *first_col );
+                dfArray[i%2][j][k] = dataflow( inner_op, fsize, 
+                                               dfArray[(i-1)%2][j][k], 
+                                               dfArray[ i   %2][i][k],
+                                               dfArray[ i   %2][j][i] );
             }
         }
     }
@@ -106,15 +111,18 @@ int hpx_main(int argc, char *argv[])
         }
     }
 
-    t1 = GetTickCount();
     if(numBlocks == 1) {
+        t1 = GetTickCount();
         ProcessDiagonalBlock( size, block(size, 0, size));
+        t2 = GetTickCount();
     } else if( numBlocks > 1) {
+        t1 = GetTickCount();
         LU( size, numBlocks);
+        t2 = GetTickCount();
     } else { 
         printf("Error: numBlocks must be greater than 0.\n");
+        return hpx::finalize();
     }
-    t2 = GetTickCount();
     printf("Time for LU-decomposition in secs: %f \n", (t2-t1)/1000000.0);
     
     if(runCheck) {
