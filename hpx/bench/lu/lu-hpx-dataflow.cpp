@@ -29,12 +29,13 @@ auto inner_op = unwrapped( &ProcessInnerBlock );
 void init_df(vector<vector<vector<shared_future<block>>>> &dfArray, int numBlocks, int size) {
     vector<vector<block>> blockList;
     getBlockList(blockList, numBlocks, size);
+    
+    dfArray[0].resize(numBlocks);
+    dfArray[1].resize(numBlocks);
 
     for(int i = 0; i < numBlocks; i++){
-        dfArray[i].resize( numBlocks );
-        for(int j = 0; j < numBlocks; j++){
-            dfArray[i][j].resize( numBlocks, make_ready_future( block()));
-        }
+        dfArray[0][i].resize( numBlocks );
+        dfArray[1][i].resize( numBlocks );
     }
 
     shared_future<int> fsize = make_ready_future(size);
@@ -55,27 +56,28 @@ void init_df(vector<vector<vector<shared_future<block>>>> &dfArray, int numBlock
 
 void LU( int size, int numBlocks)
 {
-    vector<vector<vector<shared_future<block>>>> dfArray(numBlocks);
-    init_df(dfArray, numBlocks, size);
+    vector<vector<vector<shared_future<block>>>> dfArray(2);
     shared_future<block> *diag_block, *first_col;
     shared_future<int> fsize = make_ready_future(size);
 
+    init_df(dfArray, numBlocks, size);
+
     for(int i = 1; i < numBlocks; i++) {
         //TODO: use two 2d df arrays, instead of a 3d df array
-        dfArray[i][i][i] = dataflow( diag_op, fsize, dfArray[i-1][i][i]);
-        diag_block = &dfArray[i][i][i];
+        dfArray[i%2][i][i] = dataflow( diag_op, fsize, dfArray[(i-1)%2][i][i]);
+        diag_block = &dfArray[i%2][i][i];
         for(int j = i + 1; j < numBlocks; j++){
-            dfArray[i][i][j] = dataflow( row_op , fsize, dfArray[i-1][i][j], *diag_block);
+            dfArray[i%2][i][j] = dataflow( row_op , fsize, dfArray[(i-1)%2][i][j], *diag_block);
         }
         for(int j = i + 1; j < numBlocks; j++){
-            dfArray[i][j][i] = dataflow( col_op, fsize, dfArray[i-1][j][i], *diag_block);
-            first_col = &dfArray[i][j][i];
+            dfArray[i%2][j][i] = dataflow( col_op, fsize, dfArray[(i-1)%2][j][i], *diag_block);
+            first_col = &dfArray[i%2][j][i];
             for(int k = i + 1; k < numBlocks; k++) {
-                dfArray[i][j][k] = dataflow( inner_op, fsize, dfArray[i-1][j][k], dfArray[i][i][k], *first_col );
+                dfArray[i%2][j][k] = dataflow( inner_op, fsize, dfArray[(i-1)%2][j][k], dfArray[i%2][i][k], *first_col );
             }
         }
     }
-    wait_all(dfArray[numBlocks-1][numBlocks-1][numBlocks-1]);
+    wait_all(dfArray[(numBlocks-1)%2][numBlocks-1][numBlocks-1]);
 }
 
 int hpx_main(int argc, char *argv[])
