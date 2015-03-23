@@ -59,7 +59,7 @@ void InitMatrix3( int size )
     vector<shared_future<void>> futures, LU_futures;
     futures.reserve(size);
     LU_futures.reserve(size);
-    int range = 4;
+    int range = 8;
 
     for(int i = 0; i < size; i += range) {
         futures.push_back( async( &initA, std::ref(L), std::ref(U), i, size, range));
