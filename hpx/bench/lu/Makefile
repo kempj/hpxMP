@@ -1,4 +1,4 @@
-all: micro taskbench hpx-startup
+all: lu-hpx-dataflow
 
 lu-hpx: hpx-lu.cpp
 	g++  hpx-lu.cpp -o hpx-lu `pkg-config --cflags --libs hpx_application`
