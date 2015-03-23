@@ -1,6 +1,8 @@
 #include "lu-utils.h"
 #include <stdio.h>
+
 extern std::vector<double> A;
+
 using std::vector;
 
 void getBlockList( vector<vector<block>> &blockList, int numBlocks, int size)

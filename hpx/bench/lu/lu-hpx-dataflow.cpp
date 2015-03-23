@@ -63,7 +63,6 @@ void LU( int size, int numBlocks)
 
     for(int i = 1; i < numBlocks; i++) {
         dfArray[i%2][i][i] = dataflow( diag_op, fsize, dfArray[(i-1)%2][i][i]);
-        
         for(int j = i + 1; j < numBlocks; j++){
             dfArray[i%2][i][j] = dataflow( row_op , fsize, 
                                            dfArray[(i-1)%2][i][j], 
