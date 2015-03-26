@@ -22,7 +22,7 @@ int spawn_children( int depth, int num_children ) {
 
 int main(int argc, char **argv) 
 {
-    int depth = 12;
+    int depth = 10;
     int breadth = 8;
     int total = 0;
     if(argc > 1) {

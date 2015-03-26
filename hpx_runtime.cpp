@@ -22,52 +22,12 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 
 void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
+    //this should only be done if this runtime started hpx
     hpx::get_runtime().stop();
 }
 
-hpx_runtime::hpx_runtime() {
-    int initial_num_threads;
-    num_procs = hpx::threads::hardware_concurrency();
-    char const* omp_num_threads = getenv("OMP_NUM_THREADS");
-
-    if(omp_num_threads != NULL){
-        initial_num_threads = atoi(omp_num_threads);
-    } else { 
-        initial_num_threads = num_procs;
-    }
-    //TODO:
-    //OMP_NESTED -> initial_nest_var
-    //cancel_var
-    //stacksize_var
-    /*
-    char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
-    if(omp_max_levels != NULL) { max_active_levels_var = atoi(omp_max_levels); }
-    
-    //Not device specific, so it needs to move to parallel region:
-    char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
-    if(omp_thread_limit != NULL) { thread_limit_var = atoi(omp_thread_limit); }
-    */
-
-    external_hpx = hpx::get_runtime_ptr();
-    if(external_hpx){
-        //It doesn't make much sense to try and use openMP thread settings
-        // when the application has already initialized it's own threads.
-        num_procs = hpx::get_os_thread_count();
-        initial_num_threads = num_procs;
-    }
-
-    //TODO: nthreads_var is a list of ints where the nth item corresponds
-    // to the number of threads in nth level parallel regions.
-
-    implicit_region.reset(new parallel_region(1));
-    initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv, initial_num_threads));
-    walltime.reset(new high_resolution_timer);
-
-    if(external_hpx)
-        return;
-
-    //char const* omp_stack_size = getenv("OMP_STACKSIZE");
         
+void start_hpx(int initial_num_threads) {
     std::vector<std::string> cfg;
     int argc;
     char ** argv;
@@ -122,6 +82,51 @@ hpx_runtime::hpx_runtime() {
     atexit(fini_runtime);
 
     delete[] argv;
+}
+
+hpx_runtime::hpx_runtime() {
+    int initial_num_threads;
+    num_procs = hpx::threads::hardware_concurrency();
+    char const* omp_num_threads = getenv("OMP_NUM_THREADS");
+
+    if(omp_num_threads != NULL){
+        initial_num_threads = atoi(omp_num_threads);
+    } else { 
+        initial_num_threads = num_procs;
+    }
+    //TODO:
+    //OMP_NESTED -> initial_nest_var
+    //cancel_var
+    //stacksize_var
+    /*
+    char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
+    if(omp_max_levels != NULL) { max_active_levels_var = atoi(omp_max_levels); }
+    
+    //Not device specific, so it needs to move to parallel region:
+    char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
+    if(omp_thread_limit != NULL) { thread_limit_var = atoi(omp_thread_limit); }
+    */
+
+    external_hpx = hpx::get_runtime_ptr();
+    if(external_hpx){
+        //It doesn't make much sense to try and use openMP thread settings
+        // when the application has already initialized it's own threads.
+        num_procs = hpx::get_os_thread_count();
+        initial_num_threads = num_procs;
+    }
+
+    //TODO: nthreads_var is a list of ints where the nth item corresponds
+    // to the number of threads in nth level parallel regions.
+
+    implicit_region.reset(new parallel_region(1));
+    initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv, initial_num_threads));
+    walltime.reset(new high_resolution_timer);
+
+    if(!external_hpx) {
+        start_hpx(initial_num_threads);
+    }
+
+    //char const* omp_stack_size = getenv("OMP_STACKSIZE");
 }
 
 
