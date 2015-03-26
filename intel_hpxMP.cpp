@@ -60,7 +60,7 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
 
     kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
 
-    //This gets deleted at the end of intel_task_setup
+    //This gets deleted at the end of task_setup
     task->routine = task_entry;
     if( sizeof_shareds == 0 ) {
         task->shareds = NULL;
@@ -73,7 +73,7 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
 }
 
 int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
-    hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+    hpx_backend->create_task(new_task->routine, gtid, new_task);
     return 1;
 }
 
@@ -85,7 +85,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
     if(ndeps == 0 && ndeps_noalias == 0) {
         //TODO:how to I handle immediate tasks, read them from flags?
-        hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+        hpx_backend->create_task(new_task->routine, gtid, new_task);
     } else {
         vector<int64_t> in_deps;
         vector<int64_t> out_deps;
@@ -119,7 +119,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
 //    TASK_CURRENT_NOT_QUEUED (0) if did not suspend and queue current task to be resumed later.
 //    TASK_CURRENT_QUEUED (1) if suspended and queued the current task to be resumed later.
 int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task) {
-    hpx_backend->create_intel_task(new_task->routine, gtid, new_task);
+    hpx_backend->create_task(new_task->routine, gtid, new_task);
     return 0;
 }
 
