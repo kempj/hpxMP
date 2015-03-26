@@ -96,10 +96,6 @@ class loop_data {
         std::vector<int> first_iter;
         std::vector<int> last_iter;
         std::vector<int> iter_count;
-#ifdef BUILD_UH
-        std::vector<int> local_iter;
-        std::vector<int> iter_remaining;
-#endif
         int iter_size;
         mutex_type loop_mtx{};
         bool ordered = false;//do I need this?
@@ -190,13 +186,6 @@ class omp_task_data {
         shared_ptr<atomic<int>> num_thread_tasks;
         shared_ptr<atomic<int>> num_child_tasks;
 
-#ifdef BUILD_UH
-        omp_task_data *parent;
-        atomic<int> blocking_children {0};
-        atomic<bool> is_finished {false};
-        atomic<bool> has_dependents {false};
-        vector<shared_future<void>> task_handles;
-#endif
         omp_icv icv;
         depends_map df_map;
 };
@@ -204,11 +193,7 @@ class omp_task_data {
 class hpx_runtime {
     public:
         hpx_runtime();
-#ifdef BUILD_UH
-        void fork(int num_threads, omp_micro thread_func, frame_pointer_t fp);
-#else
         void fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv);
-#endif
         parallel_region* get_team();
         omp_task_data* get_task_data();
         int get_thread_num();
