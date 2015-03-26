@@ -19,13 +19,6 @@ kmp_atomic.o: kmp_atomic.cpp kmp_atomic.h
 asm_functions.o: asm_functions.s
 	$(cc) -c -x assembler-with-cpp -o asm_functions.o asm_functions.s 
 
-libopenmp.so.1: FLAGS += -DBUILD_UH
-libopenmp.so.1: hpxMP.o uh-hpx_runtime.o 
-	$(CC) -g -shared -Wl,-x -Wl,-soname=libopenmp.so.1,--version-script=libopenmp.vs -o libopenmp.so.1 hpxMP.o uh-hpx_runtime.o -L. `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
-
-uh-hpx_runtime.o: hpx_runtime.cpp hpx_runtime.h 
-	$(CC) -g $(FLAGS) -fPIC -c hpx_runtime.cpp -o uh-hpx_runtime.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
-
 hpx_runtime.o: hpx_runtime.cpp hpx_runtime.h 
 	$(CC) -g -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)` 
 
@@ -46,8 +39,6 @@ tests-omp-clang: libiomp5.so
 tests-omp-icc: libiomp5.so
 	cd omp/tests; make CC=icc RT=libiomp5.so
 
-tests-omp-UH: libopenmp.so.1
-	cd omp/tests; make CC=uhcc RT=libopenmp.so.1
 
 #.PHONY: debug
 debug: HPX_BUILD_TYPE = hpx_application_debug

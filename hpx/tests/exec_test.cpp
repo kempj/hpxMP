@@ -1,5 +1,5 @@
 #include <iostream>
-#include <hpx/hpx_main.hpp>
+#include <hpx/hpx.hpp>
 #include <hpx/hpx_fwd.hpp>
 #include <hpx/hpx_start.hpp>
 #include <hpx/runtime/threads/topology.hpp>
@@ -14,28 +14,42 @@ using hpx::lcos::future;
 using std::cout;
 using std::endl;
 using hpx::threads::executors::local_priority_queue_executor;
+using hpx::threads::executors::local_queue_executor;
 
 
-void print_ints(int i, int j) {
-    cout << " i = " << i << ", j = " << j << endl;
+void thread_setup(int i) {
+    hpx::threads::thread_id_type id = hpx::threads::get_self_id();
+    cout << "i = " << i << endl;
+    cout << "executor: " << hpx::threads::get_executor(id) << endl;
 }
 
-void thread_setup(int i, local_priority_queue_executor exec) {
-    vector<hpx::lcos::future<void>> tasks;
-    for(int j = 0; j < 5; j++) {
-        tasks.push_back(async(exec, print_ints, i , j));
+void exec_spawn(int input){
+    hpx::threads::thread_id_type id = hpx::threads::get_self_id();
+    cout << "in spawn #" << input << ", executor: " << hpx::threads::get_executor(id) << endl;
+
+    {
+        local_priority_queue_executor exec1(1);
+        auto f = async(exec1, thread_setup, input);
+        f.wait();
     }
 }
 
-int main() {
+int hpx_main() {
     vector<hpx::lcos::future<void>> threads;
+    //threads.push_back(async(thread_setup, 42));
+
     {
-        local_priority_queue_executor exec;
+        //local_priority_queue_executor exec;
         for(int i = 0; i < 8; i++) {
-            threads.push_back(async(thread_setup, i, exec));
+            //threads.push_back(async(exec, thread_setup, i));
+            threads.push_back(async(exec_spawn, i));
         }
         hpx::wait_all(threads);
         cout << "All done" << endl;
     }
-    return 0;
+    return hpx::finalize();
+}
+
+int main(int argc, char **argv) {
+    return hpx::init(argc, argv);
 }
