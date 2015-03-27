@@ -201,9 +201,8 @@ class hpx_runtime {
         int get_num_procs();
         void set_num_threads(int nthreads);
         void barrier_wait();
-        void create_task(omp_task_func taskfunc, void *frame_pointer,
-                         void *firstprivates,// int may_delay,
-                         int is_tied, int blocks_parent);
+        void create_task( omp_task_func taskfunc, void *frame_pointer,
+                          void *firstprivates, int is_tied, int blocks_parent);
         void create_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
         void create_df_task( int gtid, kmp_task_t *task, vector<int64_t> in, vector<int64_t> out);
         void task_exit();

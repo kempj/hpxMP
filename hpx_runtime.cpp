@@ -26,7 +26,6 @@ void fini_runtime() {
     hpx::get_runtime().stop();
 }
 
-        
 void start_hpx(int initial_num_threads) {
     std::vector<std::string> cfg;
     int argc;
@@ -243,6 +242,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
     auto task = get_task_data();
     vector<shared_future<void>> dep_futures;
 
+    //Populating a vector of futures that the task depends on
     for(int i = 0; i < in_deps.size(); i++) {
         if(task->df_map.count( in_deps[i] ) > 0) {
             dep_futures.push_back(task->df_map[in_deps[i]]);
@@ -282,11 +282,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         } else {
             f_counter= hpx::make_ready_future( task->num_thread_tasks );
         }
-        //TODO: Is there a better way to do this?
-        //shared_future<void> f1 = hpx::async(df_sync_func, hpx::when_all(dep_futures));
-
-        //new_task = dataflow( unwrapped(task_setup), f_gtid, f_thunk, 
-        //                     f_icv, f_parent_counter, f_counter, f_team, f1);
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, 
                              f_icv, f_parent_counter, f_counter, f_team,
                              hpx::when_all(dep_futures) );
