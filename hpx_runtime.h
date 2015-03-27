@@ -78,14 +78,14 @@ class loop_data {
     public:
         loop_data(int NT) : num_threads(NT), first_iter(NT,0), last_iter(NT,0), iter_count(NT,0){}
         void yield(){ hpx::this_thread::yield(); }
-        void lock(){ loop_mtx.lock(); }
-        void unlock(){ loop_mtx.unlock();}
+        //void lock(){ loop_mtx.lock(); }
+        //void unlock(){ loop_mtx.unlock();}
 
         std::atomic<int> lower{0};
         int upper;
         int stride;
         int chunk;
-        std::atomic<int> loop_count{0}; //unused inside the loop
+        //std::atomic<int> loop_count{0}; //unused inside the loop
         std::atomic<int> num_workers{0}; 
         bool work_remains = false;
         std::atomic<int> ordered_count{0};
@@ -96,9 +96,9 @@ class loop_data {
         std::vector<int> first_iter;
         std::vector<int> last_iter;
         std::vector<int> iter_count;
-        int iter_size;
-        mutex_type loop_mtx{};
-        bool ordered = false;//do I need this?
+        //int iter_size;
+        //mutex_type loop_mtx{};
+        //bool ordered = false;//do I need this?
 };
 
 //Does this need to keep track of the parallel region it is nested in,

@@ -123,10 +123,10 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
         }
 
         if( kmp_ord_lower & loop_sched->schedule ) {
-            loop_sched->ordered = true;
+            //loop_sched->ordered = true;
             loop_sched->schedule = (loop_sched->schedule) - (kmp_ord_lower - kmp_sch_lower);
         } else {
-            loop_sched->ordered = false;
+            //loop_sched->ordered = false;
         }
     }
 
@@ -135,9 +135,7 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
     loop_sched->first_iter[gtid] = 0;
     loop_sched->last_iter[gtid] = 0;
     loop_sched->iter_count[gtid] = 0;
-    //loop_sched->lock();
     //cout << "\tThread " << gtid << " exiting init" << endl;
-    //loop_sched->unlock();
 }
 
 
@@ -173,9 +171,7 @@ __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
 template<typename T, typename D=T>
 int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    //loop_sched->lock();
     //cout << "\tThread " << gtid << " entering next" << endl;
-    //loop_sched->unlock();
     //TODO p_last is not touched in this function
     int schedule = loop_sched->schedule;
     T init;
@@ -207,10 +203,8 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             omp_static_init<T,D>( gtid, kmp_sch_static, p_last,
                                   p_lower, p_upper, p_stride, 
                                   loop_sched->stride, loop_sched->chunk);
-            //loop_sched->lock();
             //cout << "\tThread " << gtid << " assigned " << *p_lower << " to " << *p_upper 
             //     << ", out of " << loop_sched->lower << " - " << loop_sched->upper << endl;
-            //loop_sched->unlock();
 
             //if(loop_sched->ordered) {
                 loop_sched->first_iter[gtid] = *p_lower / *p_stride ;
@@ -248,9 +242,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 loop_sched->num_workers--;
                 return 0;
             }
-            //loop_sched->lock();
             //cout << "\tin next, gtid = " << gtid << " , lower = " << *p_lower << ", upper = " << *p_upper << endl;
-            //loop_sched->unlock();
 
             return 1;
 
@@ -327,18 +319,14 @@ void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
     auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     while( loop_sched->ordered_count < loop_sched->first_iter[global_tid] ||
             loop_sched->ordered_count > loop_sched->last_iter[global_tid] ) {
-        //loop_sched->lock();
         //cout << "\tThread " << global_tid << " waiting for ordered count to be " 
         //     << loop_sched->first_iter[global_tid] 
         //     << "(" << loop_sched->ordered_count << ")" << endl;
-        //loop_sched->unlock();
         loop_sched->yield();
     }
-    //loop_sched->lock();
     //cout << "\tThread " << global_tid << " proceeding with ordered count = " 
     //     << loop_sched->ordered_count << "(" << loop_sched->first_iter[global_tid] 
     //     << ", " << loop_sched->last_iter[global_tid] << ")" << endl;
-    //loop_sched->unlock();
 }
 
 void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
