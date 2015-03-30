@@ -110,6 +110,12 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
                 //loop_sched->ordered = true;
                 schedtype -= (kmp_ord_lower - kmp_sch_lower);
             }
+            if( stride == 0 ) {
+                stride = 1;
+            }
+            if( chunk == 0 ) { 
+                chunk = 1;
+            }
             team->loop_list.emplace_back( loop_data(NT, lower, upper, chunk, stride, schedtype) );
             //start trying to work with invalid data
         }
