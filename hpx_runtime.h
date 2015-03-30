@@ -81,8 +81,8 @@ class loop_data {
               first_iter(NT,0), last_iter(NT,0), iter_count(NT,0) 
     {
         schedule = sched;
-        ordered_count = 0;
-        schedule_count = 0;
+        //ordered_count = 0;
+        //schedule_count = 0;
         if( stride == 0) {
             total_iter = (upper - lower) + 1;
         } else if( stride > 0) {

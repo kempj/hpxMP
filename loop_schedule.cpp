@@ -101,13 +101,12 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
     auto team = hpx_backend->get_team();
 
     //TODO: look at the Intel code to see what data checks are done here. :738
+    
     int NT = team->num_threads; //Is there ever a case where num_threads would be different than the number of threads in a current team?
-    //if first in loop
-    if(team->loop_list.size() <= task->loop_num) {
+    if(team->loop_list.size() <= task->loop_num) { //first in loop
         team->loop_mtx.lock(); //making every thread wait here, until the struct is created.
         if(team->loop_list.size() == task->loop_num) {
             if( kmp_ord_lower & schedtype ) {
-                //loop_sched->ordered = true;
                 schedtype -= (kmp_ord_lower - kmp_sch_lower);
             }
             if( stride == 0 ) {
@@ -117,7 +116,7 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
                 chunk = 1;
             }
             team->loop_list.emplace_back( loop_data(NT, lower, upper, stride, chunk, schedtype) );
-            //start trying to work with invalid data
+            cout << "loop #" << task->loop_num << ": (" << lower << ", " << upper << "), by " << stride << endl;
         }
         team->loop_mtx.unlock();
     }
@@ -132,28 +131,28 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
 void 
 __kmpc_dispatch_init_4( ident_t *loc, int32_t gtid, enum sched_type schedule,
                         int32_t lb, int32_t ub, int32_t st, int32_t chunk ) {
-    scheduler_init<int32_t>( gtid, schedule, lb, ub, st, chunk);
+    scheduler_init<int32_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
 void
 __kmpc_dispatch_init_4u( ident_t *loc, int32_t gtid, enum sched_type schedule,
                          uint32_t lb, uint32_t ub, 
                          int32_t st, int32_t chunk ) {
-    scheduler_init<uint32_t, int32_t>( gtid, schedule, lb, ub, st, chunk);
+    scheduler_init<uint32_t, int32_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
 void
 __kmpc_dispatch_init_8( ident_t *loc, int32_t gtid, enum sched_type schedule,
                         int64_t lb, int64_t ub, 
                         int64_t st, int64_t chunk ) {
-    scheduler_init<int64_t>( gtid, schedule, lb, ub, st, chunk);
+    scheduler_init<int64_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
 void
 __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
                          uint64_t lb, uint64_t ub, 
                          int64_t st, int64_t chunk ) {
-    scheduler_init<uint64_t, int64_t>( gtid, schedule, lb, ub, st, chunk);
+    scheduler_init<uint64_t, int64_t>( gtid, schedule, lb, ub, st, chunk );
 }
 
 //return one if there is work to be done, zero otherwise
@@ -166,6 +165,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
     int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[current_loop]);
     int schedule = loop_sched->schedule;
+    auto team = hpx_backend->get_team();
     T init;
     int loop_id;
 
@@ -241,23 +241,30 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_ord_guided_chunked:
         case kmp_sch_runtime:
         case kmp_ord_runtime:
-            if((loop_sched->upper - loop_sched->lower) * loop_sched->stride < 0 ) {
-                loop_sched->work_remains = false;
-                //loop_sched->num_workers--;
-            } else {
-                *p_stride = loop_sched->stride;
-                //*p_lower = loop_sched->lower;
-                *p_lower = loop_sched->lower += ( (*p_stride) * loop_sched->chunk);
-                *p_upper = *p_lower + (loop_sched->chunk - 1) * (*p_stride);
-                //loop_sched->lower = *p_upper + *p_stride;
-    
-                loop_sched->first_iter[gtid] = loop_sched->schedule_count;
-                loop_sched->last_iter[gtid] = loop_sched->first_iter[gtid] + loop_sched->chunk;
-                loop_sched->schedule_count++;
-            }
-            cout << "in next, chunk size = " << loop_sched->chunk << endl;
 
-            return loop_sched->work_remains;
+            *p_stride = loop_sched->stride;
+            *p_lower = loop_sched->lower += ( (*p_stride) * loop_sched->chunk);
+            *p_upper = *p_lower + (loop_sched->chunk - 1) * (*p_stride);
+
+            //only used for ordered
+            loop_sched->first_iter[gtid] = loop_sched->schedule_count;
+            loop_sched->last_iter[gtid] = loop_sched->first_iter[gtid] + loop_sched->chunk;
+            loop_sched->schedule_count++;
+            *p_last = 0;
+
+            if(*p_lower > loop_sched->upper ) {
+                return 0;
+            }
+            if(*p_upper > loop_sched->upper) {
+                *p_upper = loop_sched->upper;
+                *p_last = 1;
+            }
+
+            team->loop_mtx.lock();
+            cout << "Thread # " << hpx_backend->get_thread_num() << " (" 
+                 << *p_lower << " - " << *p_upper << ") by " << *p_stride << endl;
+            team->loop_mtx.unlock();
+            return 1;
 
         default:
             if(gtid == 0) {
