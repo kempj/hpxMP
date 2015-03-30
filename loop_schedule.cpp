@@ -14,8 +14,9 @@ template<typename T, typename D=T>
 void omp_static_init( int gtid, int schedtype, int *p_last_iter,
                       T *p_lower, T *p_upper,
                       D *p_stride, D incr, D chunk) {
-    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    int team_size = loop_sched->num_threads;
+    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    //int team_size = loop_sched->num_threads;
+    int team_size = hpx_backend->get_team()->num_threads;
     int trip_count = (*p_upper - *p_lower) / incr + 1;
     int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
 
@@ -96,46 +97,29 @@ __kmpc_for_static_fini( ident_t *loc, int32_t gtid ){
 //D is the signed version of T, for when T is unsigned
 template<typename T, typename D=T>
 void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chunk) {
-    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    // waiting for last loop to finish.
-    while( !loop_sched->work_remains && loop_sched->num_workers > 0 ) {
-        loop_sched->yield();
-    }
-    //if(schedtype == kmp_sch_static) schedtype = kmp_sch_static_greedy
+    auto task = hpx_backend->get_task_data();
+    auto team = hpx_backend->get_team();
+
     //TODO: look at the Intel code to see what data checks are done here. :738
-    int NT = loop_sched->num_threads;
-    int loop_id = loop_sched->num_workers++;
-
-    if(loop_id == 0) {
-        loop_sched->work_remains = true;
-        loop_sched->lower = lower;
-        loop_sched->upper = upper;
-        loop_sched->stride = stride;
-        loop_sched->chunk = chunk;
-        loop_sched->schedule = static_cast<int>(schedtype);
-        loop_sched->ordered_count = 0;
-        loop_sched->schedule_count = 0;
-        loop_sched->num_threads = NT;
-        if( loop_sched->stride > 0) {
-            loop_sched->total_iter = (upper - lower) / stride + 1;
-        } else {
-            loop_sched->total_iter = (lower - upper) / -stride + 1;
+    int NT = team->num_threads; //Is there ever a case where num_threads would be different than the number of threads in a current team?
+    //if first in loop
+    if(team->loop_list.size() <= task->loop_num) {
+        team->loop_mtx.lock(); //making every thread wait here, until the struct is created.
+        if(team->loop_list.size() == task->loop_num) {
+            if( kmp_ord_lower & schedtype ) {
+                //loop_sched->ordered = true;
+                schedtype -= (kmp_ord_lower - kmp_sch_lower);
+            }
+            team->loop_list.emplace_back( loop_data(NT, lower, upper, chunk, stride, schedtype) );
+            //start trying to work with invalid data
         }
-
-        if( kmp_ord_lower & loop_sched->schedule ) {
-            //loop_sched->ordered = true;
-            loop_sched->schedule = (loop_sched->schedule) - (kmp_ord_lower - kmp_sch_lower);
-        } else {
-            //loop_sched->ordered = false;
-        }
+        team->loop_mtx.unlock();
     }
 
-    //loop_sched->iter_remaining[gtid] = 0;
-    //loop_sched->local_iter[gtid] = 0;
-    loop_sched->first_iter[gtid] = 0;
-    loop_sched->last_iter[gtid] = 0;
-    loop_sched->iter_count[gtid] = 0;
-    //cout << "\tThread " << gtid << " exiting init" << endl;
+    team->loop_list[task->loop_num].first_iter[gtid] = 0;
+    team->loop_list[task->loop_num].last_iter[gtid]  = 0;
+    team->loop_list[task->loop_num].iter_count[gtid] = 0;
+    task->loop_num++;
 }
 
 
@@ -170,9 +154,11 @@ __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
 
 template<typename T, typename D=T>
 int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
-    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    //cout << "\tThread " << gtid << " entering next" << endl;
     //TODO p_last is not touched in this function
+    //auto loop_sched = get_loop_sched();
+    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    int current_loop = hpx_backend->get_task_data()->loop_num - 1;
+    auto loop_sched = &(hpx_backend->get_team()->loop_list[current_loop]);
     int schedule = loop_sched->schedule;
     T init;
     int loop_id;
@@ -184,14 +170,14 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
 
             //I need to make sure a given thread gets work only once.
             if( loop_sched->iter_count[gtid] > 0 ) {
-                while( loop_sched->schedule_count < loop_sched->num_threads ) {
-                    loop_sched->yield();
-                }
-                loop_sched->num_workers--;
+                //while( loop_sched->schedule_count < loop_sched->num_threads ) {
+                //    loop_sched->yield();
+                //}
+                //loop_sched->num_workers--;
                 return 0;
             } else {
                 loop_sched->schedule_count++;
-                loop_sched->work_remains = (loop_sched->schedule_count < loop_sched->num_threads);
+                //loop_sched->work_remains = (loop_sched->schedule_count < loop_sched->num_threads);
             }
             loop_sched->iter_count[gtid] = 1;
 
@@ -199,12 +185,9 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             *p_upper  = loop_sched->upper;
             *p_stride = loop_sched->stride;
 
-            //omp_static_init<T,D>( gtid, schedule, p_last,
             omp_static_init<T,D>( gtid, kmp_sch_static, p_last,
                                   p_lower, p_upper, p_stride, 
                                   loop_sched->stride, loop_sched->chunk);
-            //cout << "\tThread " << gtid << " assigned " << *p_lower << " to " << *p_upper 
-            //     << ", out of " << loop_sched->lower << " - " << loop_sched->upper << endl;
 
             //if(loop_sched->ordered) {
                 loop_sched->first_iter[gtid] = *p_lower / *p_stride ;
@@ -234,12 +217,12 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             }
 
             if(*p_lower > loop_sched->upper) {
-                loop_sched->work_remains = ( loop_sched->schedule_count <= loop_sched->total_iter );
-                //need to keep the first thread from exiting before the last begins
-                while( loop_sched->work_remains ) { //this waits for all work is handed out. Can probably be done better.
-                    loop_sched->yield();
-                }
-                loop_sched->num_workers--;
+                //loop_sched->work_remains = ( loop_sched->schedule_count <= loop_sched->total_iter );
+                ////need to keep the first thread from exiting before the last begins
+                //while( loop_sched->work_remains ) { //this waits for all work is handed out. Can probably be done better.
+                //    loop_sched->yield();
+                //}
+                //loop_sched->num_workers--;
                 return 0;
             }
             //cout << "\tin next, gtid = " << gtid << " , lower = " << *p_lower << ", upper = " << *p_upper << endl;
@@ -254,7 +237,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_ord_runtime:
             if((loop_sched->upper - loop_sched->lower) * loop_sched->stride < 0 ) {
                 loop_sched->work_remains = false;
-                loop_sched->num_workers--;
+                //loop_sched->num_workers--;
             } else {
                 *p_stride = loop_sched->stride;
                 //*p_lower = loop_sched->lower;
@@ -316,7 +299,9 @@ void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid ){
 }
 
 void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
-    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    int current_loop  = hpx_backend->get_task_data()->loop_num - 1;
+    auto loop_sched = &(hpx_backend->get_team()->loop_list[ current_loop ]);
     while( loop_sched->ordered_count < loop_sched->first_iter[global_tid] ||
             loop_sched->ordered_count > loop_sched->last_iter[global_tid] ) {
         //cout << "\tThread " << global_tid << " waiting for ordered count to be " 
@@ -330,6 +315,8 @@ void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
 }
 
 void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
-    auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
+    int current_loop  = hpx_backend->get_task_data()->loop_num - 1;
+    auto loop_sched = &(hpx_backend->get_team()->loop_list[ current_loop ]);
     loop_sched->ordered_count++;
 }
