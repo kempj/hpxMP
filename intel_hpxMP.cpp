@@ -351,6 +351,51 @@ void
 __kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
 }
 
+void __kmpc_init_lock( ident_t *loc, kmp_int32 gtid,  void **lock ){
+    if(!hpx_backend) {
+        start_backend();
+    }
+    *lock = new omp_lock_t;
+}
+
+void __kmpc_destroy_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    delete ((omp_lock_t*) *lock);
+}
+
+void __kmpc_set_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    ((omp_lock_t*) *lock)->lock();
+}
+
+void __kmpc_unset_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    ((omp_lock_t*) *lock)->unlock();
+}
+
+int __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    return ((omp_lock_t*) *lock)->try_lock();
+}
+
+
+void __kmpc_init_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    __kmpc_init_lock(loc, gtid, lock);
+}
+
+void __kmpc_destroy_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    __kmpc_destroy_lock(loc, gtid, lock);
+}
+
+void __kmpc_set_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    __kmpc_set_lock(loc, gtid, lock);
+}
+
+void __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    __kmpc_unset_lock(loc, gtid, lock);
+}
+
+int __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
+    return __kmpc_test_lock(loc, gtid, lock);
+}
+
+
 //Library functions:--------------------------------------------------
 int omp_get_thread_num(){
     if(hpx_backend)
