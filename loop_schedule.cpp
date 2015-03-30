@@ -242,14 +242,16 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_sch_runtime:
         case kmp_ord_runtime:
 
+            loop_id = loop_sched->schedule_count++;
+
             *p_stride = loop_sched->stride;
-            *p_lower = loop_sched->lower += ( (*p_stride) * loop_sched->chunk);
+            //*p_lower = loop_sched->lower += ( (*p_stride) * loop_sched->chunk);
+            *p_lower = loop_sched->lower + (loop_id * (*p_stride) * loop_sched->chunk);
             *p_upper = *p_lower + (loop_sched->chunk - 1) * (*p_stride);
 
             //only used for ordered
-            loop_sched->first_iter[gtid] = loop_sched->schedule_count;
+            loop_sched->first_iter[gtid] = loop_id;
             loop_sched->last_iter[gtid] = loop_sched->first_iter[gtid] + loop_sched->chunk;
-            loop_sched->schedule_count++;
             *p_last = 0;
 
             if(*p_lower > loop_sched->upper ) {
