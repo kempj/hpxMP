@@ -74,31 +74,48 @@ using hpx::make_ready_future;
 
 
 class loop_data {
-    //TODO: does this need to be changed to work with teams?
     public:
-        loop_data(int NT) : num_threads(NT), first_iter(NT,0), last_iter(NT,0), iter_count(NT,0){}
+        //loop_data(int NT) : num_threads(NT), first_iter(NT,0), last_iter(NT,0), iter_count(NT,0){}
+        loop_data(int NT, int L, int U, int S, int C, int sched) 
+            : lower(L), upper(U), stride(S), chunk(C), num_threads(NT), 
+              first_iter(NT,0), last_iter(NT,0), iter_count(NT,0) 
+    {
+        schedule = sched;
+        //ordered_count = 0;
+        //schedule_count = 0;
+        if( stride == 0) {
+            total_iter = (upper - lower) + 1;
+        } else if( stride > 0) {
+            total_iter = (upper - lower) / stride + 1;
+        } else {
+            total_iter = (lower - upper) / -stride + 1;
+        }
+    }
         void yield(){ hpx::this_thread::yield(); }
-        void lock(){ loop_mtx.lock(); }
-        void unlock(){ loop_mtx.unlock();}
+        //void lock(){ loop_mtx.lock(); }
+        //void unlock(){ loop_mtx.unlock();}
 
-        std::atomic<int> lower{0};
+        //std::atomic<int> lower{0};
+        int lower;
         int upper;
         int stride;
         int chunk;
-        std::atomic<int> loop_count{0}; //unused inside the loop
-        std::atomic<int> num_workers{0}; 
-        bool work_remains = false;
-        std::atomic<int> ordered_count{0};
-        std::atomic<int> schedule_count{0};
-        int num_threads;
+        //std::atomic<int> loop_count{0}; //unused inside the loop
+        //std::atomic<int> num_workers{0}; 
+        bool work_remains = true;
+        //std::atomic<int> ordered_count{0};
+        //std::atomic<int> schedule_count{0};
+        int ordered_count{0};
+        int schedule_count{0};
+        int num_threads;  //Is there ever a case where num_threads would be different than the number of threads in a current team?
         int schedule;
         int total_iter;
         std::vector<int> first_iter;
         std::vector<int> last_iter;
         std::vector<int> iter_count;
-        int iter_size;
-        mutex_type loop_mtx{};
-        bool ordered = false;//do I need this?
+        //int iter_size;
+        //mutex_type loop_mtx{};
+        //bool ordered = false;//do I need this?
 };
 
 //Does this need to keep track of the parallel region it is nested in,
@@ -106,8 +123,8 @@ class loop_data {
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N), 
-                               loop_sched(N), depth(0),
-                               reduce_data(N, 0) {};
+                               //loop_sched(N), 
+                               depth(0), reduce_data(N, 0) {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
         depth = parent->depth + 1; 
@@ -118,13 +135,15 @@ struct parallel_region {
     mutex_type single_mtx{}; 
     mutex_type crit_mtx{};
     mutex_type thread_mtx{};
-    loop_data loop_sched;
+    //loop_data loop_sched;
     int depth;
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
     vector<void*> reduce_data;
     atomic<int> num_tasks{0};
+    vector<loop_data> loop_list;
+    mutex_type loop_mtx;
 };
 
 
@@ -156,7 +175,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int>{0}) 
+            : thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int>{0})
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -185,6 +204,7 @@ class omp_task_data {
         shared_ptr<atomic<int>> num_taskgroup_tasks;
         shared_ptr<atomic<int>> num_thread_tasks;
         shared_ptr<atomic<int>> num_child_tasks;
+        int loop_num{0};
 
         omp_icv icv;
         depends_map df_map;
@@ -201,9 +221,8 @@ class hpx_runtime {
         int get_num_procs();
         void set_num_threads(int nthreads);
         void barrier_wait();
-        void create_task(omp_task_func taskfunc, void *frame_pointer,
-                         void *firstprivates,// int may_delay,
-                         int is_tied, int blocks_parent);
+        void create_task( omp_task_func taskfunc, void *frame_pointer,
+                          void *firstprivates, int is_tied, int blocks_parent);
         void create_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
         void create_df_task( int gtid, kmp_task_t *task, vector<int64_t> in, vector<int64_t> out);
         void task_exit();
