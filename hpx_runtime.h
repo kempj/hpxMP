@@ -76,7 +76,7 @@ using hpx::make_ready_future;
 class loop_data {
     public:
         //loop_data(int NT) : num_threads(NT), first_iter(NT,0), last_iter(NT,0), iter_count(NT,0){}
-        loop_data(int NT, int U, int L, int S, int C, int sched) 
+        loop_data(int NT, int L, int U, int S, int C, int sched) 
             : lower(L), upper(U), stride(S), chunk(C), num_threads(NT), 
               first_iter(NT,0), last_iter(NT,0), iter_count(NT,0) 
     {
@@ -102,7 +102,7 @@ class loop_data {
         int chunk;
         //std::atomic<int> loop_count{0}; //unused inside the loop
         //std::atomic<int> num_workers{0}; 
-        bool work_remains = false;
+        bool work_remains = true;
         //std::atomic<int> ordered_count{0};
         //std::atomic<int> schedule_count{0};
         int ordered_count{0};

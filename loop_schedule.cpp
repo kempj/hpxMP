@@ -116,7 +116,7 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
             if( chunk == 0 ) { 
                 chunk = 1;
             }
-            team->loop_list.emplace_back( loop_data(NT, lower, upper, chunk, stride, schedtype) );
+            team->loop_list.emplace_back( loop_data(NT, lower, upper, stride, chunk, schedtype) );
             //start trying to work with invalid data
         }
         team->loop_mtx.unlock();
@@ -255,6 +255,7 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 loop_sched->last_iter[gtid] = loop_sched->first_iter[gtid] + loop_sched->chunk;
                 loop_sched->schedule_count++;
             }
+            cout << "in next, chunk size = " << loop_sched->chunk << endl;
 
             return loop_sched->work_remains;
 
