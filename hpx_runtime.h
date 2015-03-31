@@ -75,14 +75,11 @@ using hpx::make_ready_future;
 
 class loop_data {
     public:
-        //loop_data(int NT) : num_threads(NT), first_iter(NT,0), last_iter(NT,0), iter_count(NT,0){}
         loop_data(int NT, int L, int U, int S, int C, int sched) 
             : lower(L), upper(U), stride(S), chunk(C), num_threads(NT), 
-              first_iter(NT,0), last_iter(NT,0), iter_count(NT,0) 
+              first_iter(NT,0), last_iter(NT,0), iter_count(NT,0), 
+              schedule(sched)
     {
-        schedule = sched;
-        //ordered_count = 0;
-        //schedule_count = 0;
         if( stride == 0) {
             total_iter = (upper - lower) + 1;
         } else if( stride > 0) {
@@ -91,31 +88,25 @@ class loop_data {
             total_iter = (lower - upper) / -stride + 1;
         }
     }
+        loop_data(const loop_data &&other) 
+            : loop_data( other.num_threads, other.lower, other.upper, 
+                         other.stride, other.chunk, other.schedule ) 
+        { }
         void yield(){ hpx::this_thread::yield(); }
-        //void lock(){ loop_mtx.lock(); }
-        //void unlock(){ loop_mtx.unlock();}
-
-        //std::atomic<int> lower{0};
         int lower;
         int upper;
         int stride;
         int chunk;
-        //std::atomic<int> loop_count{0}; //unused inside the loop
-        //std::atomic<int> num_workers{0}; 
-        bool work_remains = true;
-        //std::atomic<int> ordered_count{0};
-        //std::atomic<int> schedule_count{0};
+        //bool work_remains = true;
         int ordered_count{0};
-        int schedule_count{0};
+        atomic<int> schedule_count{0};
+        //int schedule_count{0};//FIXME: I think this needs to be atomic 
         int num_threads;  //Is there ever a case where num_threads would be different than the number of threads in a current team?
         int schedule;
         int total_iter;
         std::vector<int> first_iter;
         std::vector<int> last_iter;
         std::vector<int> iter_count;
-        //int iter_size;
-        //mutex_type loop_mtx{};
-        //bool ordered = false;//do I need this?
 };
 
 //Does this need to keep track of the parallel region it is nested in,
@@ -135,7 +126,6 @@ struct parallel_region {
     mutex_type single_mtx{}; 
     mutex_type crit_mtx{};
     mutex_type thread_mtx{};
-    //loop_data loop_sched;
     int depth;
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};

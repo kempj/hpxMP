@@ -305,8 +305,8 @@ int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size
                       void *data,  void (*reduce)(void *lhs, void *rhs), kmp_critical_name *lck ) {
     //This is 2 because the compiler generates a version where the runtime does the work(0/1 are
     //returned) and a version with calls to atomic operations that is used when 2 is returned.
-    return 2;
-    //return __kmpc_reduce(loc, gtid, num_vars, size, data, reduce, lck);
+    //return 2;
+    return __kmpc_reduce(loc, gtid, num_vars, size, data, reduce, lck);
 }
 
 void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
@@ -327,10 +327,17 @@ void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_critical_name *
 int 
 __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size, 
                void *data, void (*func)(void *lhs, void *rhs), kmp_critical_name *lck ) {
-    /*
+    bool atomic_avail = (loc->flags & 0x10) == 0x10;
+    if( atomic_avail ) {
+        hpx_backend->barrier_wait();
+        return 2;
+    }
+    cout << "warning: can't use atomics, runtime code untested" << endl;
+    //the intel runtime uses a critical region here
     int is_master = __kmpc_single(loc, gtid);
     auto *team = hpx_backend->get_team();
     int num_threads = team->num_threads;
+
     team->reduce_data[gtid] = data;
     hpx_backend->barrier_wait();
     if(is_master) {
@@ -339,16 +346,23 @@ __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
                 func(data, team->reduce_data[i]);
             }
         }
+        __kmpc_end_single(loc, gtid);
     }
     hpx_backend->barrier_wait();
     return is_master;
-    */
-    hpx_backend->barrier_wait();
-    return 2;
 }
 
+//this might be failing on parallel reduce because the data is no longer visible outside
+//thread 0
 void
 __kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
+    //note only master calls this if not using atomics
+    bool atomic_avail = (loc->flags & 0x10) == 0x10;
+    if( atomic_avail ) {
+        hpx_backend->barrier_wait();
+    } else {
+        cout << "warning: can't use atomics, runtime code untested" << endl;
+    }
 }
 
 void __kmpc_init_lock( ident_t *loc, kmp_int32 gtid,  void **lock ){
