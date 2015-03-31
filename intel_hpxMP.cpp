@@ -182,7 +182,6 @@ __kmpc_push_num_threads( ident_t *loc,
     data->set_threads_requested( num_threads );
 }
 
-//W: perf
 void
 __kmpc_barrier(ident_t *loc, kmp_int32 global_tid) {
     hpx_backend->barrier_wait();
@@ -193,7 +192,6 @@ int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
     return 0;
 }
 
-//W: correctness?
 int __kmpc_global_thread_num(ident_t *loc){
     if(hpx_backend)
         return hpx_backend->get_thread_num();
@@ -201,6 +199,7 @@ int __kmpc_global_thread_num(ident_t *loc){
 }
 
 int __kmpc_single(ident_t *loc, int tid){
+    //TODO: does this make sense in the context of a hybrid application?
     if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return 1;
     }
@@ -235,6 +234,9 @@ void __kmpc_end_single(ident_t *loc, int tid){
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){
+    if(!hpx_backend) {
+        start_backend();
+    }
     //TODO: if master can be called from tasks, then this doesn't work.
     if(hpx_backend->get_thread_num() == 0) {
         return 1;
@@ -245,9 +247,11 @@ int __kmpc_master(ident_t *loc, int global_tid){
 void __kmpc_end_master(ident_t *loc, int global_tid){
 }
 
-//W: perf and correctness
 void
 __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit ) {
+    if(!hpx_backend) {
+        start_backend();
+    }
     parallel_region *team = hpx_backend->get_team();
     team->crit_mtx.lock();
 }
@@ -262,7 +266,6 @@ void __kmpc_flush(ident_t *loc, ...){
     __sync_synchronize();
 }
 
-//W: perf and correctness
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
 void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){
     if(!hpx_backend) {
@@ -284,7 +287,6 @@ void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size
     return (*cache)[tid];
 }
 
-//W: perf and correctness
 //Only one of the threads (called the single thread) should have the didit variable set to 1
 //This function copies the copyprivate variable of the task that got ran the single
 // into the other implicit tasks, at the end of the single region
@@ -409,6 +411,14 @@ int __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     return __kmpc_test_lock(loc, gtid, lock);
 }
 
+void __kmpc_serialized_parallel( ident_t *, kmp_int32 global_tid ){
+    //Not sure if this needs to do anything. It is not used in clang, 
+    //only in icc generated code
+}
+
+void __kmpc_end_serialized_parallel ( ident_t *, kmp_int32 global_tid ) {
+}
+
 
 //Library functions:--------------------------------------------------
 int omp_get_thread_num(){
@@ -426,7 +436,6 @@ int omp_get_num_threads(){
     return hpx_backend->get_num_threads();
 }
 
-//W: perf and correctness
 void omp_get_num_threads(int num_threads){
     if(!hpx_backend) {
         start_backend();
@@ -434,7 +443,6 @@ void omp_get_num_threads(int num_threads){
     hpx_backend->set_num_threads(num_threads);
 }
 
-//W: perf and correctness
 int omp_get_max_threads() {
     if(!hpx_backend) {
         start_backend();
@@ -442,14 +450,12 @@ int omp_get_max_threads() {
     return hpx_backend->get_task_data()->icv.nthreads;
 }
 
-//W: perf and correctness
 int omp_get_num_procs(){
     if(!hpx_backend)
         start_backend();
     return hpx_backend->get_num_procs();
 }
 
-//W: perf and correctness
 void omp_set_num_threads(int num_threads) {
     if(!hpx_backend) {
         start_backend();
@@ -490,7 +496,6 @@ int omp_get_dynamic(){
     return hpx_backend->get_task_data()->icv.dyn;
 }
 
-//W: perf and correctness
 void omp_init_lock(omp_lock_t **lock){
     if(!hpx_backend) {
         start_backend();
@@ -498,7 +503,6 @@ void omp_init_lock(omp_lock_t **lock){
     *lock = new omp_lock_t;
 }
 
-//W: perf and correctness
 void omp_init_nest_lock(omp_lock_t **lock){
     if(!hpx_backend) {
         start_backend();
@@ -506,42 +510,35 @@ void omp_init_nest_lock(omp_lock_t **lock){
     *lock = new omp_lock_t;
 }
 
-//W: perf and correctness
 void omp_destroy_lock(omp_lock_t **lock) {
     delete *lock;
 }
-//W: perf and correctness
 void omp_destroy_nest_lock(omp_lock_t **lock) {
     delete *lock;
 }
 
-//W: perf and correctness
 int omp_test_lock(omp_lock_t **lock) {
     if((*lock)->try_lock())
         return 1;
     return 0;
 }
-//W: perf and correctness
 int omp_test_nest_lock(omp_lock_t **lock) {
     if((*lock)->try_lock())
         return 1;
     return 0;
 }
 
-//W: perf and correctness
 void omp_set_lock(omp_lock_t **lock) {
     (*lock)->lock();
 }
-//W: perf and correctness
 void omp_set_nest_lock(omp_lock_t **lock) {
     (*lock)->lock();
 }
 
-//W: perf and correctness
 void omp_unset_lock(omp_lock_t **lock) {
     (*lock)->unlock();
 }
-//W: perf and correctness
+
 void omp_unset_nest_lock(omp_lock_t **lock) {
     (*lock)->unlock();
 }
