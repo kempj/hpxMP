@@ -103,23 +103,22 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
     //TODO: look at the Intel code to see what data checks are done here. :738
     
     int NT = team->num_threads; //Is there ever a case where num_threads would be different than the number of threads in a current team?
-    if(team->loop_list.size() <= task->loop_num) { //first in loop
-        team->loop_mtx.lock(); //making every thread wait here, until the struct is created.
-        if(team->loop_list.size() == task->loop_num) {
-            if( kmp_ord_lower & schedtype ) {
-                schedtype -= (kmp_ord_lower - kmp_sch_lower);
-            }
-            if( stride == 0 ) {
-                stride = 1;
-            }
-            if( chunk == 0 ) { 
-                chunk = 1;
-            }
-            team->loop_list.emplace_back( loop_data(NT, lower, upper, stride, chunk, schedtype) );
-            cout << "loop #" << task->loop_num << ": (" << lower << ", " << upper << "), by " << stride << endl;
+    team->loop_mtx.lock(); //making every thread wait here, until the struct is created.
+    if(team->loop_list.size() == task->loop_num) {//first to loop
+        if( kmp_ord_lower & schedtype ) {
+            schedtype -= (kmp_ord_lower - kmp_sch_lower);
         }
-        team->loop_mtx.unlock();
+        if( stride == 0 ) {
+            stride = 1;
+        }
+        if( chunk == 0 ) {
+            chunk = 1;
+        }
+        team->loop_list.emplace_back( loop_data(NT, lower, upper, stride, chunk, schedtype) );
+        cout << "current num_threads in new loop = " << team->loop_list[task->loop_num].num_threads << endl;
     }
+    team->loop_mtx.unlock();
+    //}
 
     team->loop_list[task->loop_num].first_iter[gtid] = 0;
     team->loop_list[task->loop_num].last_iter[gtid]  = 0;
@@ -231,7 +230,6 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 //loop_sched->num_workers--;
                 return 0;
             }
-            //cout << "\tin next, gtid = " << gtid << " , lower = " << *p_lower << ", upper = " << *p_upper << endl;
 
             return 1;
 
@@ -262,10 +260,6 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 *p_last = 1;
             }
 
-            team->loop_mtx.lock();
-            cout << "Thread # " << hpx_backend->get_thread_num() << " (" 
-                 << *p_lower << " - " << *p_upper << ") by " << *p_stride << endl;
-            team->loop_mtx.unlock();
             return 1;
 
         default:
