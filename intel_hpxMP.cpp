@@ -29,9 +29,7 @@ void __kmpc_end(ident_t *loc) {
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
     vector<void*> argv(argc);
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
 
     va_list     ap;
     va_start(   ap, microtask );
@@ -135,7 +133,7 @@ kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part ){
 
 void __kmpc_taskgroup( ident_t* loc, int gtid ) {
     if( hpx_backend->get_task_data()->num_taskgroup_tasks.use_count() > 0) {
-        cout << "Warning, taskgroup alread active" << endl;
+        cout << "Warning, taskgroup already active" << endl;
     }
     hpx_backend->get_task_data()->num_taskgroup_tasks.reset(new atomic<int>{0});
 }
@@ -223,9 +221,7 @@ void __kmpc_end_single(ident_t *loc, int tid){
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     //TODO: if master can be called from tasks, then this doesn't work.
     if(hpx_backend->get_thread_num() == 0) {
         return 1;
@@ -238,9 +234,7 @@ void __kmpc_end_master(ident_t *loc, int global_tid){
 
 void
 __kmpc_critical( ident_t * loc, kmp_int32 global_tid, kmp_critical_name * crit ) {
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     parallel_region *team = hpx_backend->get_team();
     team->crit_mtx.lock();
 }
@@ -257,9 +251,7 @@ void __kmpc_flush(ident_t *loc, ...){
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
 void* __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     parallel_region *team = hpx_backend->get_team();
     int num_threads = hpx_backend->get_num_threads();
 
@@ -358,9 +350,7 @@ __kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
 }
 
 void __kmpc_init_lock( ident_t *loc, kmp_int32 gtid,  void **lock ){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     *lock = new omp_lock_t;
 }
 
@@ -420,42 +410,32 @@ int omp_get_thread_num(){
 
 //"returns the number of threads in the current team"
 int omp_get_num_threads(){
-    if(!hpx_backend) {
-        start_backend();
-    }                      
+    start_backend();
     return hpx_backend->get_num_threads();
 }
 
 void omp_get_num_threads(int num_threads){
-    if(!hpx_backend) {
-        start_backend();
-    }                      
+    start_backend();
     hpx_backend->set_num_threads(num_threads);
 }
 
 int omp_get_max_threads() {
-    if(!hpx_backend) {
-        start_backend();
-    }                      
+    start_backend();
     return hpx_backend->get_task_data()->icv.nthreads;
 }
 
 int omp_get_num_procs(){
-    if(!hpx_backend)
-        start_backend();
+    start_backend();
     return hpx_backend->get_num_procs();
 }
 
 void omp_set_num_threads(int num_threads) {
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     hpx_backend->get_task_data()->set_threads_requested(num_threads);
 }
 
 double omp_get_wtime(){
-    if(!hpx_backend)
-        start_backend();
+    start_backend();
     return hpx_backend->get_time();
 }
 
@@ -464,39 +444,29 @@ double omp_get_wtick(){
 }
 
 int omp_in_parallel(){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     int active_levels = hpx_backend->get_task_data()->icv.active_levels;
     return (active_levels > 0);
 }
 
 
 void omp_set_dynamic(int dynamic_threads){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     hpx_backend->get_task_data()->icv.dyn = (dynamic_threads != 0);
 }
 
 int omp_get_dynamic(){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     return hpx_backend->get_task_data()->icv.dyn;
 }
 
 void omp_init_lock(omp_lock_t **lock){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     *lock = new omp_lock_t;
 }
 
 void omp_init_nest_lock(omp_lock_t **lock){
-    if(!hpx_backend) {
-        start_backend();
-    }
+    start_backend();
     *lock = new omp_lock_t;
 }
 

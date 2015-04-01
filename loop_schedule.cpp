@@ -1,6 +1,5 @@
 #include <iostream>
 #include "loop_schedule.h"
-//#include "hpx_runtime.h"
 #include <thread>
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
@@ -8,6 +7,7 @@ extern boost::shared_ptr<hpx_runtime> hpx_backend;
 using std::cout;
 using std::endl;
 
+mutex_type print_mtx{};
 
 //D is the signed version of T, for when T is unsigned
 template<typename T, typename D=T>
@@ -22,7 +22,6 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
 
     if (schedtype == kmp_sch_static) {
         *p_last_iter = ( gtid == trip_count - 1 );
-
         stride = (trip_count / team_size + adjustment + 1) * incr;
         block_size = (trip_count / team_size + adjustment) * incr;
         my_lower = *p_lower + gtid * stride;
@@ -31,18 +30,38 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
             my_upper = *p_upper;
         }
     } else { //kmp_sch_static_chunked
-        cout << "executing chunked" << endl;
-        block_size = (chunk - 1) * incr;
-        stride = chunk * incr;
-        my_lower = *p_lower + gtid * stride;
-        my_upper = my_lower + block_size;
-        *p_stride = stride * team_size;
-        if(*p_last_iter) {
-            *p_last_iter = (gtid == (trip_count - 1) / chunk) % team_size;
+        int last_lower = *p_lower + trip_count - (trip_count)%chunk;
+
+        my_lower = *p_lower + gtid * incr * chunk;
+        my_upper = my_lower + incr * chunk - 1;
+        
+        if(trip_count - trip_count%(-chunk*incr) == gtid*incr*chunk + trip_count - trip_count%(chunk*incr*team_size) ) {
+            *p_last_iter = 1;
+        } else {
+            *p_last_iter = 0;
         }
+
+        /*
+                //my_lower + trip_count - (trip_count)%my_stride){
+        if(last_lower == my_upper - chunk ) {
+            if(my_upper > *p_upper) {
+                my_upper = *p_upper;
+            }
+        }
+        if(my_upper > *p_upper) {
+            my_upper -= my_stride;
+        }*/
+        *p_stride = incr*chunk*team_size;
     }
     *p_lower = my_lower;
     *p_upper = my_upper;
+    /*print_mtx.lock();
+    cout << "thread " << hpx_backend->get_thread_num() << " / " << gtid
+         << ", *lower = " << *p_lower << ", *upper = " << *p_upper 
+         << ", *stride = " << *p_stride << ", incr = " << incr 
+         << ", chunk = " << chunk << endl;
+    print_mtx.unlock();
+    */
 }
 
 void
@@ -85,6 +104,7 @@ __kmpc_for_static_init_8u( ident_t *loc, int32_t gtid,
 
 void
 __kmpc_for_static_fini( ident_t *loc, int32_t gtid ){
+    hpx_backend->barrier_wait();
     //Only seems to do internal tracking in intel runtime
 }
 
@@ -98,9 +118,8 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
     auto task = hpx_backend->get_task_data();
     auto team = hpx_backend->get_team();
 
-    //TODO: look at the Intel code to see what data checks are done here. :738
-    
-    int NT = team->num_threads; //Is there ever a case where num_threads would be different than the number of threads in a current team?
+    //Is there ever a case where num_threads would be different than the number of threads in a current team?
+    int NT = team->num_threads;
     team->loop_mtx.lock(); //making every thread wait here, until the struct is created.
     if(team->loop_list.size() == task->loop_num) {//first to loop
         if( kmp_ord_lower & schedtype ) {
@@ -113,10 +132,8 @@ void scheduler_init( int gtid, int schedtype, T lower, T upper, D stride, D chun
             chunk = 1;
         }
         team->loop_list.emplace_back( loop_data(NT, lower, upper, stride, chunk, schedtype) );
-        cout << "current num_threads in new loop = " << team->loop_list[task->loop_num].num_threads << endl;
     }
     team->loop_mtx.unlock();
-    //}
 
     team->loop_list[task->loop_num].first_iter[gtid] = 0;
     team->loop_list[task->loop_num].last_iter[gtid]  = 0;
@@ -155,7 +172,6 @@ __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
 //return one if there is work to be done, zero otherwise
 template<typename T, typename D=T>
 int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
-    //TODO p_last is not touched in this function
     int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[current_loop]);
     int schedule = loop_sched->schedule;
@@ -206,6 +222,9 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             //FIXME: this logic is wrong
             *p_upper  = *p_lower + (*p_stride) * ( loop_sched->chunk - 1 );
 
+            if(p_last && *p_upper == loop_sched->upper) {
+                *p_last = 1;
+            }
             if(*p_upper > loop_sched->upper) {
                 *p_upper = loop_sched->upper;//not sure this is 100% correct
             }
@@ -274,9 +293,7 @@ __kmpc_dispatch_next_8u( ident_t *loc, int32_t gtid, int32_t *p_last,
     return kmp_next<uint64_t, int64_t>(gtid, p_last, p_lb, p_ub, p_st);
 }
 
-
 void __kmpc_dispatch_fini_4( ident_t *loc, kmp_int32 gtid ){
-    //cout << "kmpc_dispatch_fini by thread " << gtid << endl;
 }
 
 void __kmpc_dispatch_fini_8( ident_t *loc, kmp_int32 gtid ){
@@ -292,7 +309,7 @@ void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
     int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[ current_loop ]);
     while( loop_sched->ordered_count < loop_sched->first_iter[global_tid] ||
-            loop_sched->ordered_count > loop_sched->last_iter[global_tid] ) {
+           loop_sched->ordered_count > loop_sched->last_iter[global_tid] ) {
         loop_sched->yield();
     }
 }
