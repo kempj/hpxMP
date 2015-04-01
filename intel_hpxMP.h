@@ -224,6 +224,10 @@ extern "C" void __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **use
 extern "C" int __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **user_lock );
 extern "C" int __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock );
 
+extern "C" void __kmpc_serialized_parallel( ident_t *, kmp_int32 global_tid );
+extern "C" void __kmpc_end_serialized_parallel ( ident_t *, kmp_int32 global_tid );
+
+
 
 //library_calls:
 extern "C" int  omp_get_thread_num();
