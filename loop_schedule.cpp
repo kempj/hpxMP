@@ -41,27 +41,10 @@ void omp_static_init( int gtid, int schedtype, int *p_last_iter,
             *p_last_iter = 0;
         }
 
-        /*
-                //my_lower + trip_count - (trip_count)%my_stride){
-        if(last_lower == my_upper - chunk ) {
-            if(my_upper > *p_upper) {
-                my_upper = *p_upper;
-            }
-        }
-        if(my_upper > *p_upper) {
-            my_upper -= my_stride;
-        }*/
         *p_stride = incr*chunk*team_size;
     }
     *p_lower = my_lower;
     *p_upper = my_upper;
-    /*print_mtx.lock();
-    cout << "thread " << hpx_backend->get_thread_num() << " / " << gtid
-         << ", *lower = " << *p_lower << ", *upper = " << *p_upper 
-         << ", *stride = " << *p_stride << ", incr = " << incr 
-         << ", chunk = " << chunk << endl;
-    print_mtx.unlock();
-    */
 }
 
 void
@@ -104,7 +87,8 @@ __kmpc_for_static_init_8u( ident_t *loc, int32_t gtid,
 
 void
 __kmpc_for_static_fini( ident_t *loc, int32_t gtid ){
-    hpx_backend->barrier_wait();
+    //TODO: do I need this?
+    //hpx_backend->barrier_wait();
     //Only seems to do internal tracking in intel runtime
 }
 
@@ -243,7 +227,6 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             loop_id = loop_sched->schedule_count++;
 
             *p_stride = loop_sched->stride;
-            //*p_lower = loop_sched->lower += ( (*p_stride) * loop_sched->chunk);
             *p_lower = loop_sched->lower + (loop_id * (*p_stride) * loop_sched->chunk);
             *p_upper = *p_lower + (loop_sched->chunk - 1) * (*p_stride);
 
