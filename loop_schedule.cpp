@@ -14,8 +14,6 @@ template<typename T, typename D=T>
 void omp_static_init( int gtid, int schedtype, int *p_last_iter,
                       T *p_lower, T *p_upper,
                       D *p_stride, D incr, D chunk) {
-    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    //int team_size = loop_sched->num_threads;
     int team_size = hpx_backend->get_team()->num_threads;
     int trip_count = (*p_upper - *p_lower) / incr + 1;
     int adjustment = ((trip_count % team_size) == 0) ? -1 : 0;
@@ -155,12 +153,9 @@ __kmpc_dispatch_init_8u( ident_t *loc, int32_t gtid, enum sched_type schedule,
 }
 
 //return one if there is work to be done, zero otherwise
-
 template<typename T, typename D=T>
 int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
     //TODO p_last is not touched in this function
-    //auto loop_sched = get_loop_sched();
-    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
     int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[current_loop]);
     int schedule = loop_sched->schedule;
@@ -173,16 +168,10 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
         case kmp_sch_static:
         case kmp_ord_static:
 
-            //I need to make sure a given thread gets work only once.
             if( loop_sched->iter_count[gtid] > 0 ) {
-                //while( loop_sched->schedule_count < loop_sched->num_threads ) {
-                //    loop_sched->yield();
-                //}
-                //loop_sched->num_workers--;
                 return 0;
             } else {
                 loop_sched->schedule_count++;
-                //loop_sched->work_remains = (loop_sched->schedule_count < loop_sched->num_threads);
             }
             loop_sched->iter_count[gtid] = 1;
 
@@ -220,17 +209,9 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
             if(*p_upper > loop_sched->upper) {
                 *p_upper = loop_sched->upper;//not sure this is 100% correct
             }
-
             if(*p_lower > loop_sched->upper) {
-                //loop_sched->work_remains = ( loop_sched->schedule_count <= loop_sched->total_iter );
-                ////need to keep the first thread from exiting before the last begins
-                //while( loop_sched->work_remains ) { //this waits for all work is handed out. Can probably be done better.
-                //    loop_sched->yield();
-                //}
-                //loop_sched->num_workers--;
                 return 0;
             }
-
             return 1;
 
         case kmp_sch_guided_chunked:
@@ -259,7 +240,6 @@ int kmp_next( int gtid, int *p_last, T *p_lower, T *p_upper, D *p_stride ) {
                 *p_upper = loop_sched->upper;
                 *p_last = 1;
             }
-
             return 1;
 
         default:
@@ -309,24 +289,16 @@ void __kmpc_dispatch_fini_8u( ident_t *loc, kmp_int32 gtid ){
 }
 
 void __kmpc_ordered(ident_t *, kmp_int32 global_tid ) {
-    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    int current_loop  = hpx_backend->get_task_data()->loop_num - 1;
+    int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[ current_loop ]);
     while( loop_sched->ordered_count < loop_sched->first_iter[global_tid] ||
             loop_sched->ordered_count > loop_sched->last_iter[global_tid] ) {
-        //cout << "\tThread " << global_tid << " waiting for ordered count to be " 
-        //     << loop_sched->first_iter[global_tid] 
-        //     << "(" << loop_sched->ordered_count << ")" << endl;
         loop_sched->yield();
     }
-    //cout << "\tThread " << global_tid << " proceeding with ordered count = " 
-    //     << loop_sched->ordered_count << "(" << loop_sched->first_iter[global_tid] 
-    //     << ", " << loop_sched->last_iter[global_tid] << ")" << endl;
 }
 
 void __kmpc_end_ordered(ident_t *, kmp_int32 global_tid ) {
-    //auto loop_sched = &(hpx_backend->get_team()->loop_sched);
-    int current_loop  = hpx_backend->get_task_data()->loop_num - 1;
+    int current_loop = hpx_backend->get_task_data()->loop_num - 1;
     auto loop_sched = &(hpx_backend->get_team()->loop_list[ current_loop ]);
     loop_sched->ordered_count++;
 }

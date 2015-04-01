@@ -203,34 +203,23 @@ int __kmpc_single(ident_t *loc, int tid){
     if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return 1;
     }
-    parallel_region *team = hpx_backend->get_team();
-    int num_threads = hpx_backend->get_num_threads();
+    auto *team = hpx_backend->get_team();
+    auto *task = hpx_backend->get_task_data();
+    int do_work = 0;
 
     team->single_mtx.lock();
-    if(team->current_single_thread == -1 && team->single_counter == 0) {
-        team->current_single_thread = tid;
-        team->single_counter = 1 - num_threads;
-    } else {
+    if(team->single_counter == task->single_counter) {
         team->single_counter++;
+        do_work = 1;
     }
     team->single_mtx.unlock();
-    if(team->current_single_thread == tid) {
-        return 1;
-    }
-    return 0;
+
+    task->single_counter++;
+    return do_work;
 }
 
 //in the intel runtime, only the single thread calls this
 void __kmpc_end_single(ident_t *loc, int tid){
-    if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
-        return;
-    }
-    parallel_region *team = hpx_backend->get_team();
-    team->single_mtx.lock();
-    if(team->single_counter == 0) {
-        team->current_single_thread = -1;
-    }
-    team->single_mtx.unlock();
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){

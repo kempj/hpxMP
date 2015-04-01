@@ -97,11 +97,9 @@ class loop_data {
         int upper;
         int stride;
         int chunk;
-        //bool work_remains = true;
-        int ordered_count{0};
+        atomic<int> ordered_count{0};
         atomic<int> schedule_count{0};
-        //int schedule_count{0};//FIXME: I think this needs to be atomic 
-        int num_threads;  //Is there ever a case where num_threads would be different than the number of threads in a current team?
+        int num_threads;
         int schedule;
         int total_iter;
         std::vector<int> first_iter;
@@ -123,9 +121,9 @@ struct parallel_region {
     int num_threads;
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
-    mutex_type single_mtx{}; 
     mutex_type crit_mtx{};
     mutex_type thread_mtx{};
+    mutex_type single_mtx{}; 
     int depth;
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
@@ -194,6 +192,7 @@ class omp_task_data {
         shared_ptr<atomic<int>> num_taskgroup_tasks;
         shared_ptr<atomic<int>> num_thread_tasks;
         shared_ptr<atomic<int>> num_child_tasks;
+        int single_counter{0};
         int loop_num{0};
 
         omp_icv icv;
