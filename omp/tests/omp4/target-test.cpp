@@ -1,13 +1,16 @@
 #include <stdlib.h>
 
+
 void vec_mult(float *p, float *v1, float *v2, int N)
 {
-    int i;
+
+#pragma omp declare target
+
 #pragma omp target data map(to: v1[0:N], v2[:N]) map(from: p[0:N])
     {
 #pragma omp target
 #pragma omp parallel for
-        for (i=0; i<N; i++) {
+        for(int i=0; i<N; i++) {
             p[i] = v1[i] * v2[i];
         }
     }
