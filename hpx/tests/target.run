@@ -1,0 +1,4 @@
+./target -c -0 -l4 &
+./target -1 -l4 &
+./target -2 -l4 &
+./target -3 -l4 &
