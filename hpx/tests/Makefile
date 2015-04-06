@@ -1,5 +1,8 @@
 all: lu-hpx lu-hpx-dataflow
 
+target: target_test.cpp
+	g++ target_test.cpp -o target `pkg-config --cflags --libs hpx_application`
+
 1d_stencil:
 	clang++ -fopenmp 1d_stencil_3_omp_task.cpp -o omp4 `pkg-config --cflags --libs hpx_application`
 

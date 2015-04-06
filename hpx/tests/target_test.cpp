@@ -1,4 +1,5 @@
 #include <iostream>
+#include <hpx/hpx.hpp>
 
 void foo(int *in_vals, int size, int *out_vals)
 {
@@ -7,7 +8,7 @@ void foo(int *in_vals, int size, int *out_vals)
     }
 }
 
-int main(int argc, char** argv) 
+int hpx_main()
 {
     const int size = 10;
     int in[size], out[size];
@@ -22,4 +23,10 @@ int main(int argc, char** argv)
     }
     std::cout << std::endl;
 
+    return hpx::finalize();
+}
+
+int main(int argc, char** argv) 
+{
+    return hpx::init(argc, argv);
 }
