@@ -1,5 +1,8 @@
+CC=clang
+all: lu-dep lu-task
 
-all: lu-depend
+lu-dep: lu-depends.c
+	$(CC) -O3 -fopenmp -o lu-dep lu-depends.c
 
-lu-depend: lu-depends.c
-	clang -O3 -fopenmp -o lu-dep lu-depends.c
+lu-task: omp-task.c
+	$(CC) -O3 -fopenmp -o lu-dep omp-task.c
