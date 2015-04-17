@@ -22,6 +22,10 @@ int main( int argc, char** argv)
     int delay = 40;
     int total_time;
     struct timeval start, end;
+    if(argc > 1) 
+        num_tasks = atoi(argv[1]);
+    if(argc > 2)
+        delay = atoi(argv[2]);
 #pragma omp parallel
     {
 #pragma omp single
