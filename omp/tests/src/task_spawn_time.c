@@ -2,14 +2,14 @@
 #include <sys/time.h>
 #include <stdio.h>
 
-void worker_timed(int delay_ms)
+void worker_timed(int delay_us)
 {
     struct timeval start, now;
     gettimeofday(&start, NULL);
     while(1)
     {
         gettimeofday(&now, NULL);
-        if(((now.tv_sec - start.tv_sec)*1000) + ((now.tv_usec - start.tv_usec)/1000) >= delay_ms)
+        if(((now.tv_sec - start.tv_sec)*1000000) + ((now.tv_usec - start.tv_usec)) >= delay_us)
             break;
     }
 }
@@ -19,7 +19,7 @@ int main( int argc, char** argv)
 {
     int i = 0;
     int num_tasks=500000;
-    int delay = 0;
+    int delay = 40;
     int total_time;
     struct timeval start, end;
 #pragma omp parallel
