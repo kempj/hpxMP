@@ -135,6 +135,7 @@ int main (int argc, char *argv[])
     printf("Time for LU-decomposition in secs: %f \n", (t2-t1)/1000000);
     printf("Time for the task region in secs: %f \n", (total)/1000000);
     printf("Time for inside tasks in secs: %f \n", (task_total)/1000000);
+    printf("Time spent in taskwait in secs: %f \n", (wait_total)/1000000);
 #ifdef CHECK
     for (i=0;i<N;i++)
         for (j=0;j<N;j++)
