@@ -27,7 +27,7 @@ hpxMP.o: hpxMP.cpp hpxMP.h
 	$(CC) $(FLAGS) -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
 loop_schedule.o: loop_schedule.cpp loop_schedule.h
-	$(CC) $(FLAGS)-fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
+	$(CC) $(FLAGS) -fPIC -c loop_schedule.cpp -o loop_schedule.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
 .PHONY: tests tests-omp tests-omp-clang tests-omp-UH tests-omp-icc
 tests: tests-omp
