@@ -130,12 +130,6 @@ int main (int argc, char *argv[])
                 R=R-sizedim[0];
             }
         } 
-        int begin = 0;
-        while(begin == 0) {
-#pragma omp atomic  read
-            begin = start_flag;
-        }
-        
     }
     ProcessDiagonalBlock(&A[offset*N+offset], N-offset, N);
     t2 = GetTickCount();
@@ -225,8 +219,6 @@ void stage3(double *A, int offset, int *sizedim, int *start, int N, int M)
                 task_total += t2;
             }
         }
-#pragma omp atomic write
-    start_flag = 1;
 
     double w1 = GetTickCount();
 #pragma omp taskwait
