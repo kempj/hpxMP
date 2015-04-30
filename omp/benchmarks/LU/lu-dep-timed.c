@@ -62,6 +62,7 @@ int itr = 0;
 double total = 0;
 double task_total = 0;
 double wait_total = 0;
+int start_flag = 0;
 
 unsigned long GetTickCount()
 {
@@ -129,6 +130,12 @@ int main (int argc, char *argv[])
                 R=R-sizedim[0];
             }
         } 
+        int begin = 0;
+        while(begin == 0) {
+#pragma omp atomic  read
+            begin = start_flag;
+        }
+        
     }
     ProcessDiagonalBlock(&A[offset*N+offset], N-offset, N);
     t2 = GetTickCount();
@@ -218,6 +225,9 @@ void stage3(double *A, int offset, int *sizedim, int *start, int N, int M)
                 task_total += t2;
             }
         }
+#pragma omp atomic write
+    start_flag = 1;
+
     double w1 = GetTickCount();
 #pragma omp taskwait
     double w2 = GetTickCount();
