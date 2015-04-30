@@ -123,6 +123,7 @@ int main (int argc, char *argv[])
                 stage2(A, offset, sizedim, start, N, M);
                 stage3(A, offset, sizedim, start, N, M);
                 t4 = GetTickCount();
+#pragma omp atomic 
                 total += (t4-t3);
                 offset+=sizedim[0];
                 R=R-sizedim[0];
