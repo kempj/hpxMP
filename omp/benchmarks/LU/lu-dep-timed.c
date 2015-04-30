@@ -61,6 +61,7 @@ int itr = 0;
 
 double total = 0;
 double task_total = 0;
+double wait_total = 0;
 
 unsigned long GetTickCount()
 {
@@ -123,7 +124,6 @@ int main (int argc, char *argv[])
                 stage2(A, offset, sizedim, start, N, M);
                 stage3(A, offset, sizedim, start, N, M);
                 t4 = GetTickCount();
-#pragma omp atomic 
                 total += (t4-t3);
                 offset+=sizedim[0];
                 R=R-sizedim[0];
@@ -217,7 +217,11 @@ void stage3(double *A, int offset, int *sizedim, int *start, int N, int M)
                 task_total += t2;
             }
         }
+    double w1 = GetTickCount();
 #pragma omp taskwait
+    double w2 = GetTickCount();
+    wait_total += (w2-w1);
+
 }
 
 void ProcessDiagonalBlock(double *A, int L1, int N)
