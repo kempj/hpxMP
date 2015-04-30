@@ -87,8 +87,6 @@ __kmpc_for_static_init_8u( ident_t *loc, int32_t gtid,
 
 void
 __kmpc_for_static_fini( ident_t *loc, int32_t gtid ){
-    //TODO: do I need this?
-    //hpx_backend->barrier_wait();
     //Only seems to do internal tracking in intel runtime
 }
 

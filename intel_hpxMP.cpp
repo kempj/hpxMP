@@ -160,6 +160,8 @@ __kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps,
 
 void __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * task ){
     task->routine(gtid, task);
+    //FIXME: not sure if this is correct. These only seem to do internal trackin in the intel
+    //runtime
 }
 void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task) {

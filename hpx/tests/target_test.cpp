@@ -37,7 +37,7 @@ int hpx_main()
 
     auto localities = hpx::find_all_localities();
     
-    for( auto node : localities ) {
+    for( auto &node : localities ) {
         auto result = hpx::async(add_action(), node, 2, 3);
         std::cout << result.get() << std::endl;
     }
