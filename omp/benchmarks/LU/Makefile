@@ -3,7 +3,7 @@ CC=g++
 default: lu-dataflow
 
 lu-dataflow: lu-dataflow.cpp lu-local.o lu-utils.o
-	$(CC) -fopenmp --std=c++11 lu-dataflow.cpp lu-local.o lu-utils.o -o serial-lu
+	$(CC) -fopenmp --std=c++11 lu-dataflow.cpp lu-local.o lu-utils.o -o lu-dataflow
 
 serial-lu: lu-dataflow.cpp lu-local.o lu-utils.o
 	$(CC) --std=c++11 lu-dataflow.cpp lu-local.o lu-utils.o -o serial-lu
