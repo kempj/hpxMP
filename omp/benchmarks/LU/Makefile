@@ -17,3 +17,4 @@ lu-utils.o: lu-utils.h lu-utils.cpp
 clean:
 	rm -f *.o
 	rm -f serial-lu
+	rm -f lu-dataflow
