@@ -71,17 +71,13 @@ void InitMatrix3( int size )
 
 void InitMatrix3(int size)
 {
-    long long i,j,k;
-    double *L, *U;
-    //L = (double*) malloc(size*size*sizeof(double));
-    L = new double[size*size];
-    //U = (double*) malloc(size*size*sizeof(double));
-    U = new double[size*size];
-#pragma omp parallel for private(i,j)
-    for (i=0;i<size;i++)
-        for (j=0;j<size;j++){
+    double *L = new double[size*size];
+    double *U = new double[size*size];
+#pragma omp parallel for
+    for(int i=0;i<size;i++)
+        for(int j=0;j<size;j++){
             A[i*size+j]=0;
-            if (i>=j)
+            if(i>=j)
                 L[i*size+j] = i-j+1;
             else
                 L[i*size+j] = 0;
@@ -90,14 +86,15 @@ void InitMatrix3(int size)
             else
                 U[i*size+j] = 0;
         }
-#pragma omp parallel for private(i,j,k)
-    for (i=0;i<size;i++)
-        for (j=0;j<size;j++)
-            for (k=0;k<size;k++)
+#pragma omp parallel for
+    for(int i=0;i<size;i++)
+        for(int j=0;j<size;j++)
+            for(int k=0;k<size;k++)
                 A[i*size+j]+=L[i*size+k]*U[k*size+j];
     delete L;
     delete U;
 }
+
 void Print_Matrix(vector<double> &v, int size)
 {
     printf( "\n" );

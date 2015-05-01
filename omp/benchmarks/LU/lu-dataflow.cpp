@@ -103,7 +103,9 @@ int main(int argc, char *argv[])
     printf("size = %d, numBlocks = %d\n", size, numBlocks);
 
     A.resize(size*size, 0);
+    printf("initializing\n");
     InitMatrix3( size );
+    printf("initialization complete\n");
     if(runCheck) {
         printf("Error checking enabled\n");
         originalA.reserve(size*size);
@@ -114,6 +116,7 @@ int main(int argc, char *argv[])
 
     if(numBlocks == 1) {
         t1 = GetTickCount();
+        printf("starting serial LU\n");
         diag_op( size, block(size, 0, size));
         t2 = GetTickCount();
     } else if( numBlocks > 1) {
