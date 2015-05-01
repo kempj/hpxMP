@@ -62,7 +62,7 @@ void LU( int size, int numBlocks)
         block_list[i%2][i][i] = diag_op( size, block_list[(i-1)%2][i][i] );
         for(int j = i + 1; j < numBlocks; j++){
 #pragma omp task depend( in: block_list[(i-1)%2][i][j], block_list[i%2][i][i]) \
-                 depend(out: ist[i%2][i][j])
+                 depend(out: block_list[i%2][i][j])
             block_list[i%2][i][j] = row_op( size, block_list[(i-1)%2][i][j],
                                                   block_list[ i   %2][i][i] );
         }
