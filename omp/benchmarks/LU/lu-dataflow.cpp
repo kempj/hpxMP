@@ -49,6 +49,10 @@ void LU( int size, int numBlocks)
     //init_df(block_list, numBlocks, size);
     init_df(block_list, numBlocks, size);
 
+#pragma omp parallel
+{
+#pragma omp master
+{
     for(int i = 1; i < numBlocks; i++) {
 #pragma omp task
         block_list[i%2][i][i] = diag_op( size, block_list[(i-1)%2][i][i] );
@@ -70,6 +74,8 @@ void LU( int size, int numBlocks)
         }
     }
 #pragma omp taskwait
+}
+}
 }
 
 int main(int argc, char *argv[])
