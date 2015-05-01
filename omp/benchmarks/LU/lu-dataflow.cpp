@@ -8,16 +8,20 @@ using std::vector;
 vector<double> A;
 
 
-void init_df(vector<vector<vector<block>>> &block_list, int numBlocks, int size) {
+//void init_df(vector<vector<vector<block>>> &block_list, int numBlocks, int size) {
+    //getBlockList(block_list[0], numBlocks, size);
+    //block_list[1].resize(numBlocks);
+void init_df(block ***block_list, int numBlocks, int size) {
     
-    getBlockList(block_list[0], numBlocks, size);
-    block_list[1].resize(numBlocks);
+    block_list[0] = new block*[numBlocks];
+    block_list[1] = new block*[numBlocks];
+    getBlockList(block_list, numBlocks, size);
 
-    for(int i = 0; i < numBlocks; i++){
-        block_list[1][i].resize( numBlocks );
-    }
+    //for(int i = 0; i < numBlocks; i++){
+    //    block_list[1][i].resize( numBlocks );
+    //}
 
-#pragma omp task shared(block_list) depend( in: block_list[0][0][0] )
+#pragma omp task depend(in: block_list[0][0][0])
     block_list[0][0][0] = diag_op( size, block_list[0][0][0] );
     for(int i = 1; i < numBlocks; i++) {
 #pragma omp task shared(block_list)
@@ -39,8 +43,10 @@ void init_df(vector<vector<vector<block>>> &block_list, int numBlocks, int size)
 
 void LU( int size, int numBlocks)
 {
-    vector<vector<vector<block>>> block_list(2);
+    //vector<vector<vector<block>>> block_list(2);
+    block ***block_list = new block**[2];
 
+    //init_df(block_list, numBlocks, size);
     init_df(block_list, numBlocks, size);
 
     for(int i = 1; i < numBlocks; i++) {

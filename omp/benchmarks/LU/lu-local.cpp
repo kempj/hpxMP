@@ -1,3 +1,4 @@
+
 #include "lu-utils.h"
 #include <stdio.h>
 
@@ -5,11 +6,14 @@ extern std::vector<double> A;
 
 using std::vector;
 
-void getBlockList( vector<vector<block>> &blockList, int numBlocks, int size)
+//void getBlockList( vector<vector<block>> &blockList, int numBlocks, int size)
+void getBlockList( block ***blockList, int numBlocks, int size)
 {
     int blockSize, start, height;
     for(int i=0; i < numBlocks; i++) {
-        blockList.push_back(vector<block>());
+        //blockList.push_back(vector<block>());
+        blockList[0][i] = new block[numBlocks];
+        blockList[1][i] = new block[numBlocks];
     }
 
     height = size/numBlocks;
@@ -24,14 +28,19 @@ void getBlockList( vector<vector<block>> &blockList, int numBlocks, int size)
             blockSize = size/numBlocks;
             start = (size/numBlocks+1)*(size%numBlocks) + (size/numBlocks)*(i-size%numBlocks);
         }
-        blockList[0].push_back( block( blockSize, start, height));
+        //blockList[0].push_back( block( blockSize, start, height));
+        blockList[0][0][i] =  block( blockSize, start, height);
     }
     for(int i = 1; i < numBlocks; i++) {
-        height = blockList[0][i].size;
+        //height = blockList[0][i].size;
+        height = blockList[0][0][i].size;
         for(int j = 0; j < numBlocks; j++) {
-            blockSize = blockList[0][j].size;
-            start = blockList[i-1][j].start + blockList[i-1][0].height * size;
-            blockList[i].push_back( block( blockSize, start, height));
+            //blockSize = blockList[0][j].size;
+            //start = blockList[i-1][j].start + blockList[i-1][0].height * size;
+            //blockList[i].push_back( block( blockSize, start, height));
+            blockSize = blockList[0][0][j].size;
+            start = blockList[0][i-1][j].start + blockList[0][i-1][0].height * size;
+            blockList[0][i][j] = block( blockSize, start, height);
         }
     }
 }
