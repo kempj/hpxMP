@@ -21,22 +21,25 @@ void init_df(block ***block_list, int numBlocks, int size) {
     //    block_list[1][i].resize( numBlocks );
     //}
 
-#pragma omp task depend(in: block_list[0][0][0])
+#pragma omp task depend(inout: block_list[0][0][0])
     block_list[0][0][0] = diag_op( size, block_list[0][0][0] );
     for(int i = 1; i < numBlocks; i++) {
-#pragma omp task shared(block_list)
+#pragma omp task depend(  in : block_list[0][0][0]) \
+                 depend(inout: block_list[0][0][i])
         block_list[0][0][i] = row_op( size, block_list[0][0][i], 
-                                           block_list[0][0][0] );
+                                            block_list[0][0][0] );
     }
     for(int i = 1; i < numBlocks; i++) {
-#pragma omp task shared(block_list)
+#pragma omp task depend(  in : block_list[0][0][0]) \
+                 depend(inout: block_list[0][i][0])
         block_list[0][i][0] = col_op( size, block_list[0][i][0], 
-                                           block_list[0][0][0] );
+                                            block_list[0][0][0] );
         for(int j = 1; j < numBlocks; j++) {
-#pragma omp task shared(block_list)
+#pragma omp task depend(  in : block_list[0][0][j], block_list[0][i][0]) \
+                 depend(inout: block_list[0][i][j] )
             block_list[0][i][j] = inner_op( size, block_list[0][i][j],
-                                                 block_list[0][0][j],
-                                                 block_list[0][i][0] );
+                                                  block_list[0][0][j],
+                                                  block_list[0][i][0] );
         }
     }
 }
@@ -54,22 +57,27 @@ void LU( int size, int numBlocks)
 #pragma omp master
 {
     for(int i = 1; i < numBlocks; i++) {
-#pragma omp task
+#pragma omp task depend( in: block_list[(i-1)%2][i][i]) \
+                 depend(out: block_list[i%2][i][i])
         block_list[i%2][i][i] = diag_op( size, block_list[(i-1)%2][i][i] );
         for(int j = i + 1; j < numBlocks; j++){
-#pragma omp task
+#pragma omp task depend( in: block_list[(i-1)%2][i][j], block_list[i%2][i][i]) \
+                 depend(out: ist[i%2][i][j])
             block_list[i%2][i][j] = row_op( size, block_list[(i-1)%2][i][j],
-                                                 block_list[ i   %2][i][i] );
+                                                  block_list[ i   %2][i][i] );
         }
         for(int j = i + 1; j < numBlocks; j++){
-#pragma omp task
+#pragma omp task depend( in: block_list[(i-1)%2][j][i], block_list[i%2][i][i]) \
+                 depend(out: block_list[i%2][j][i])
             block_list[i%2][j][i] = col_op( size, block_list[(i-1)%2][j][i], 
-                                                 block_list[ i   %2][i][i] );
+                                                  block_list[ i   %2][i][i] );
             for(int k = i + 1; k < numBlocks; k++) {
-#pragma omp task
+#pragma omp task depend( in: block_list[(i-1)%2][j][k], \
+                             block_list[i%2][i][k], block_list[i%2][j][i]) \
+                 depend(out: block_list[i%2][j][k])
                 block_list[i%2][j][k] = inner_op( size, block_list[(i-1)%2][j][k], 
-                                                       block_list[ i   %2][i][k],
-                                                       block_list[ i   %2][j][i] );
+                                                        block_list[ i   %2][i][k],
+                                                        block_list[ i   %2][j][i] );
             }
         }
     }
