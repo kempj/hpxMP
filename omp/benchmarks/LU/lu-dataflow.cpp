@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
         diag_op( size, block(size, 0, size));
         t2 = GetTickCount();
     } else if( numBlocks > 1) {
+        printf("starting LU\n");
         t1 = GetTickCount();
         LU( size, numBlocks);
         t2 = GetTickCount();
