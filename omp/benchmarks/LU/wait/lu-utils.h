@@ -10,6 +10,7 @@ struct block {
 
 unsigned long GetTickCount();
 void InitMatrix3(int size);
+void fastInitMatrix(int size);
 void Print_Matrix( std::vector<double> &v, int size);
 void checkResult( std::vector<double> &originalA, int size );
 

@@ -1,6 +1,6 @@
 #include "lu-utils.h"
 #include <sys/time.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <stdio.h>
 
 
@@ -68,6 +68,14 @@ void InitMatrix3( int size )
     hpx::lcos::wait_all(futures);
 }
 */
+
+void fastInitMatrix(int size)
+{
+    std::srand(0);
+    for(int i=0; i < size*size;i++) {
+        A[i] = std::rand();
+    }
+}
 
 void InitMatrix3(int size)
 {
