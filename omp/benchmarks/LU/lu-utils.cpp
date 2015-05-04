@@ -71,21 +71,17 @@ void InitMatrix3( int size )
 
 void InitMatrix3(int size)
 {
-    double *L = new double[size*size];
-    double *U = new double[size*size];
+    double *L = new double[size*size]{0};
+    double *U = new double[size*size]{0};
 #pragma omp parallel for
-    for(int i=0;i<size;i++)
-        for(int j=0;j<size;j++){
-            A[i*size+j]=0;
-            if(i>=j)
-                L[i*size+j] = i-j+1;
-            else
-                L[i*size+j] = 0;
-            if (i<=j)
-                U[i*size+j] = j-i+1;
-            else
-                U[i*size+j] = 0;
+    for(int i=0;i<size;i++) {
+        for(int j=0; j<=i; j++){
+            L[i*size+j] = i-j+1;
         }
+        for(int j=i;j<size;j++){
+            U[i*size+j] = j-i+1;
+        }
+    }
 #pragma omp parallel for
     for(int i=0;i<size;i++)
         for(int j=0;j<size;j++)
