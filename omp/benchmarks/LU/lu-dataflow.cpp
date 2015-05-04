@@ -104,17 +104,19 @@ int main(int argc, char *argv[])
     printf("size = %d, numBlocks = %d\n", size, numBlocks);
 
     A.resize(size*size, 0);
-    printf("initializing\n");
-    printf("initialization complete\n");
     if(runCheck) {
+        printf("initializing\n");
         InitMatrix3( size );
+        printf("initialization complete\n");
         printf("Error checking enabled\n");
         originalA.reserve(size*size);
         for(int i = 0; i < size * size; i++) {
             originalA[i] = A[i];
         }
     } else {
+        printf("fast initialization\n");
         fastInitMatrix(size);
+        printf("initialization complete\n");
     }
 
     if(numBlocks == 1) {
