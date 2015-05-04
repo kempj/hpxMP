@@ -1,6 +1,6 @@
 #include "lu-utils.h"
 #include <sys/time.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <stdio.h>
 
 
@@ -48,26 +48,14 @@ void initLU( vector<double> &L, vector<double> &U, int in, int size, int range)
     }
 }
 
-/*
-void InitMatrix3( int size )
+void fastInitMatrix(int size)
 {
-    vector<double> L, U;
-    L.reserve(size*size);
-    U.reserve(size*size);
-    vector<shared_future<void>> futures, LU_futures;
-    futures.reserve(size);
-    LU_futures.reserve(size);
-    int range = 8;
-
-    for(int i = 0; i < size; i += range) {
-        futures.push_back( async( &initA, std::ref(L), std::ref(U), i, size, range));
+    std::srand(0);
+    for(int i=0; i < size*size;i++) {
+        A[i] = std::rand();
     }
-    if(size % range != 0) {
-	    initA(L, U, size - size % range, size, size % range);
-    }
-    hpx::lcos::wait_all(futures);
 }
-*/
+
 
 void InitMatrix3(int size)
 {

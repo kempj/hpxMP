@@ -105,14 +105,16 @@ int main(int argc, char *argv[])
 
     A.resize(size*size, 0);
     printf("initializing\n");
-    InitMatrix3( size );
     printf("initialization complete\n");
     if(runCheck) {
+        InitMatrix3( size );
         printf("Error checking enabled\n");
         originalA.reserve(size*size);
         for(int i = 0; i < size * size; i++) {
             originalA[i] = A[i];
         }
+    } else {
+        fastInitMatrix(size);
     }
 
     if(numBlocks == 1) {
