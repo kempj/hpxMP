@@ -50,11 +50,11 @@ void LU( int size, int numBlocks)
     block ***block_list = new block**[2];
 
     //init_df(block_list, numBlocks, size);
-    init_df(block_list, numBlocks, size);
 
 #pragma omp parallel
 {
 #pragma omp master
+    init_df(block_list, numBlocks, size);
 {
     for(int i = 1; i < numBlocks; i++) {
 #pragma omp task depend( in: block_list[(i-1)%2][i][i]) \
