@@ -83,6 +83,7 @@ void LU( int size, int numBlocks)
         }
 #pragma omp taskwait
     }
+#pragma omp taskwait
 }
 }
 }

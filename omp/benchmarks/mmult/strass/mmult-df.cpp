@@ -32,6 +32,24 @@ void init(int size) {
 
 }
 
+serial_mmult(block 
+
+block** mmult( block **blockList, int numBlocks, 
+               vector<double> &result,
+               vector<double> &input1,
+               vector<double> &input2 ){
+
+    int numBlocks = size/blocksize;
+
+    for(int i = 0; i < numBlocks; i++) {
+        for(int j = 0; j < numBlocks; j++) {
+            
+        }
+    }
+
+    return blockList;
+}
+
 int main(int argc, char **argv) 
 {
     //for now, everything is square
@@ -43,6 +61,16 @@ int main(int argc, char **argv)
         blocksize = atoi(argv[2]);
 
     init(size);
-    block **blockList = getBlockList(size, blocksize);
+    block **blA = getBlockList(size, blocksize);
+    block **blB = getBlockList(size, blocksize);
+    block **blC = getBlockList(size, blocksize);
+    block **blR1 = getBlockList(size, blocksize);
+    block **blR2 = getBlockList(size, blocksize);
+
+    //this is messy. I need to tie the matrix and it's blockList together better.
+    //mmult(blockList, size/blocksize, R1, A, B);
+    
+    blockList = mmult(blockList, size/blocksize, R2, R1, C);
+
 
 }
