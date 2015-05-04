@@ -1,5 +1,6 @@
-all: strassen.c strassen.h
-	~/openUH/bin/opencc -fopenmp -g strassen.c -o omp-strassen
+CC=clang++
+OPT=-O1
 
-whirl: strassen.c strassen.h
-	~/openUH/bin/opencc -fopenmp strassen.c -o whirl-strassen -CLIST:emit_nested_pu:before_cg
+all: strassen.c strassen.h
+	$(CC) $(OPT) -fopenmp -g strassen.c -o omp-strassen
+
