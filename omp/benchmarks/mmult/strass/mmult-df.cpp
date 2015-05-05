@@ -112,13 +112,8 @@ int main(int argc, char **argv)
     cout << "total time: " <<  total_time << " nanoseconds, "
          << " Gflops = " << (double)4.0*size * size * size / ((double)total_time) << endl;
 
-    cout << "time 1: " <<  time1 << " nanoseconds, "
-         << " Gflops = " << (double)2.0*size * size * size / ((double)time1) << endl;
-
-    cout << "time 2: " <<  time2 << " nanoseconds, "
-         << " Gflops = " << (double)2.0*size * size * size / ((double)time2) << endl;
-
-    cout << "time 3: " <<  time3 << " nanoseconds, "
-         << " Gflops = " << (double)2.0*size * size * size / ((double)time3) << endl;
+    cout << "time 1: " <<  time1 << " nanoseconds" << endl;
+    cout << "time 2: " <<  time2 << " nanoseconds" << endl;
+    cout << "time 3: " <<  time3 << " nanoseconds" << endl;
 }}
 }
