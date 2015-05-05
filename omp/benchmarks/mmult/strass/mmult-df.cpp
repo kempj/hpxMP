@@ -90,21 +90,22 @@ int main(int argc, char **argv)
 {
 #pragma omp single
 {
-
     //this is messy. I need to tie the matrix and it's blockList together better.
     int numBlocks = size/blocksize;
     auto t1 = high_resolution_clock::now();
     mmult(numBlocks, size, &R1, blR1, &A, blA, &B, blB);
+#pragma omp taskwait
     
     auto t2 = high_resolution_clock::now();
     mmult(numBlocks, size, &R2, blR2, &R1, blR1, &C, blC);
+#pragma omp taskwait
 
     auto t3 = high_resolution_clock::now();
     mmult(numBlocks, size, &R3, blR3, &R1, blR1, &R2, blR2);
+#pragma omp taskwait
 
     auto tf = high_resolution_clock::now();
 
-#pragma omp taskwait
     auto total_time = duration_cast<std::chrono::nanoseconds> (tf-t1).count();
     auto time1 = duration_cast<std::chrono::nanoseconds> (t2-t1).count();
     auto time2 = duration_cast<std::chrono::nanoseconds> (t3-t2).count();
