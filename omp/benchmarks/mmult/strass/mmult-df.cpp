@@ -10,7 +10,6 @@ using std::vector;
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
 
-vector<double> A, B, C, R1, R2;
 
 void init_data_matrix(vector<double> &V, int size) {
     V.reserve(size*size);
@@ -27,18 +26,6 @@ void init_result_matrix( vector<double> &R, int size) {
     }
 }
 
-void init(int size) {
-    cout << "beginning initialization" << endl;
-    std::srand(0);
-    init_data_matrix(A, size);
-    init_data_matrix(B, size);
-    init_data_matrix(C, size);
-
-    init_result_matrix(R1, size);
-    init_result_matrix(R2, size);
-    cout << "initialization complete" << endl;
-
-}
 
 void serial_mmult( int numBlocks, int matrix_size, 
             vector<double> *result, const block R,
@@ -71,6 +58,7 @@ void mmult( int numBlocks, int matrix_size,
 int main(int argc, char **argv) 
 {
     //for now, everything is square
+    vector<double> A, B, C, D, R1, R2, R3;
     int size = 1024;
     int blocksize = 256;
     if(argc > 1)
@@ -78,12 +66,25 @@ int main(int argc, char **argv)
     if(argc > 2)
         blocksize = atoi(argv[2]);
 
-    init(size);
+    cout << "beginning initialization" << endl;
+    std::srand(0);
+    init_data_matrix(A, size);
+    init_data_matrix(B, size);
+    init_data_matrix(C, size);
+    init_data_matrix(D, size);
+
+    init_result_matrix(R1, size);
+    init_result_matrix(R2, size);
+    init_result_matrix(R3, size);
+
     block **blA = getBlockList(size, blocksize);
     block **blB = getBlockList(size, blocksize);
     block **blC = getBlockList(size, blocksize);
+    block **blD = getBlockList(size, blocksize);
     block **blR1 = getBlockList(size, blocksize);
     block **blR2 = getBlockList(size, blocksize);
+    block **blR3 = getBlockList(size, blocksize);
+    cout << "initialization complete" << endl;
 
 #pragma omp parallel
 {
@@ -99,11 +100,15 @@ int main(int argc, char **argv)
     mmult(numBlocks, size, &R2, blR2, &R1, blR1, &C, blC);
 
     auto t3 = high_resolution_clock::now();
+    mmult(numBlocks, size, &R3, blR3, &R1, blR1, &R2, blR2);
+
+    auto tf = high_resolution_clock::now();
 
 #pragma omp taskwait
-    auto total_time = duration_cast<std::chrono::nanoseconds> (t3-t1).count();
+    auto total_time = duration_cast<std::chrono::nanoseconds> (tf-t1).count();
     auto time1 = duration_cast<std::chrono::nanoseconds> (t2-t1).count();
     auto time2 = duration_cast<std::chrono::nanoseconds> (t3-t2).count();
+    auto time3 = duration_cast<std::chrono::nanoseconds> (tf-t3).count();
 
     cout << "total time: " <<  total_time << " nanoseconds, "
          << " Gflops = " << (double)4.0*size * size * size / ((double)total_time) << endl;
@@ -113,5 +118,8 @@ int main(int argc, char **argv)
 
     cout << "time 2: " <<  time2 << " nanoseconds, "
          << " Gflops = " << (double)2.0*size * size * size / ((double)time2) << endl;
+
+    cout << "time 3: " <<  time3 << " nanoseconds, "
+         << " Gflops = " << (double)2.0*size * size * size / ((double)time3) << endl;
 }}
 }
