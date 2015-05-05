@@ -39,9 +39,9 @@ void init(int size) {
 }
 
 void serial_mmult( int numBlocks, int matrix_size, 
-            vector<double> &result, block R,
-            vector<double> &input1, block b1,
-            vector<double> &input2, block b2 ){
+            vector<double> &result, const block R,
+            vector<double> &input1, const block b1,
+            vector<double> &input2, const block b2 ){
     int size = R.size;
     for(int i = 0; i < size; i++) {
         for(int j = 0; j < size; j++) {
@@ -50,7 +50,6 @@ void serial_mmult( int numBlocks, int matrix_size,
             }
         }
     }
-
 }
 
 void mmult( int numBlocks, int matrix_size,
@@ -60,6 +59,7 @@ void mmult( int numBlocks, int matrix_size,
     for(int i = 0; i < numBlocks; i++) {
         for(int j = 0; j < numBlocks; j++) {
             for(int k = 0; k < numBlocks; k++) {
+#pragma omp task shared(result, input1, input2) depend(inout: blR[i][j]) depend(  out: bl1[i][k], bl2[k][j])
                 serial_mmult( numBlocks, matrix_size, result, blR[i][j], input1, bl1[i][k], input2, bl2[k][j]);
             }
         }
@@ -83,14 +83,33 @@ int main(int argc, char **argv)
     block **blR1 = getBlockList(size, blocksize);
     block **blR2 = getBlockList(size, blocksize);
 
+#pragma omp parallel
+{
+#pragma omp single
+{
+
     //this is messy. I need to tie the matrix and it's blockList together better.
     int numBlocks = size/blocksize;
     auto t1 = high_resolution_clock::now();
     mmult(numBlocks, size, R1, blR1, A, blA, B, blB);
     
+    auto t2 = high_resolution_clock::now();
     mmult(numBlocks, size, R2, blR2, R1, blR1, C, blC);
 
-    auto t2 = high_resolution_clock::now();
+    auto t3 = high_resolution_clock::now();
 
-    cout << duration_cast<std::chrono::nanoseconds> (t2-t1).count() << " nanoseconds" << endl;
+#pragma omp taskwait
+    auto total_time = duration_cast<std::chrono::nanoseconds> (t3-t1).count();
+    auto time1 = duration_cast<std::chrono::nanoseconds> (t2-t1).count();
+    auto time2 = duration_cast<std::chrono::nanoseconds> (t3-t2).count();
+
+    cout << "total time: " <<  total_time << " nanoseconds, "
+         << " Gflops = " << (double)4.0*size * size * size / ((double)total_time) << endl;
+
+    cout << "time 1: " <<  time1 << " nanoseconds, "
+         << " Gflops = " << (double)2.0*size * size * size / ((double)time1) << endl;
+
+    cout << "time 2: " <<  time2 << " nanoseconds, "
+         << " Gflops = " << (double)2.0*size * size * size / ((double)time2) << endl;
+}}
 }
