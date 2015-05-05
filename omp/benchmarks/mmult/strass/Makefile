@@ -16,3 +16,4 @@ block.o: block.h block.cpp
 clean:
 	rm -f *.o
 	rm -f strass-df
+	rm -f mmult-df

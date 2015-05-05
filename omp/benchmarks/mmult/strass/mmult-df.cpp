@@ -28,6 +28,7 @@ void init_result_matrix( vector<double> &R, int size) {
 }
 
 void init(int size) {
+    cout << "beginning initialization" << endl;
     std::srand(0);
     init_data_matrix(A, size);
     init_data_matrix(B, size);
@@ -35,6 +36,7 @@ void init(int size) {
 
     init_result_matrix(R1, size);
     init_result_matrix(R2, size);
+    cout << "initialization complete" << endl;
 
 }
 
@@ -59,7 +61,7 @@ void mmult( int numBlocks, int matrix_size,
     for(int i = 0; i < numBlocks; i++) {
         for(int j = 0; j < numBlocks; j++) {
             for(int k = 0; k < numBlocks; k++) {
-#pragma omp task depend(inout: blR[i][j]) depend(  out: bl1[i][k], bl2[k][j])
+#pragma omp task depend(inout: blR[i][j]) depend(  in: bl1[i][k], bl2[k][j])
                 serial_mmult( numBlocks, matrix_size, result, blR[i][j], input1, bl1[i][k], input2, bl2[k][j]);
             }
         }
@@ -70,7 +72,7 @@ int main(int argc, char **argv)
 {
     //for now, everything is square
     int size = 1024;
-    int blocksize = 64;
+    int blocksize = 256;
     if(argc > 1)
         size = atoi(argv[1]);
     if(argc > 2)
