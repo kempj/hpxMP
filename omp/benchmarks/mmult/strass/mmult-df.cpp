@@ -66,6 +66,7 @@ int main(int argc, char **argv)
     if(argc > 2)
         blocksize = atoi(argv[2]);
 
+    cout << "size = " << size << ", block size = " << blocksize << endl;
     cout << "beginning initialization" << endl;
     std::srand(0);
     init_data_matrix(A, size);
