@@ -39,27 +39,27 @@ void init(int size) {
 }
 
 void serial_mmult( int numBlocks, int matrix_size, 
-            vector<double> &result, const block R,
-            vector<double> &input1, const block b1,
-            vector<double> &input2, const block b2 ){
+            vector<double> *result, const block R,
+            vector<double> *input1, const block b1,
+            vector<double> *input2, const block b2 ){
     int size = R.size;
     for(int i = 0; i < size; i++) {
         for(int j = 0; j < size; j++) {
             for(int k = 0; k < size; k++) {
-                result[R.start + matrix_size*i + j] += input1[b1.start + matrix_size*i + k] + input2[b2.start + matrix_size*k + j];
+                (*result)[R.start + matrix_size*i + j] += (*input1)[b1.start + matrix_size*i + k] + (*input2)[b2.start + matrix_size*k + j];
             }
         }
     }
 }
 
 void mmult( int numBlocks, int matrix_size,
-            vector<double> &result, block **blR,
-            vector<double> &input1, block **bl1,
-            vector<double> &input2, block **bl2 ){
+            vector<double> *result, block **blR,
+            vector<double> *input1, block **bl1,
+            vector<double> *input2, block **bl2 ){
     for(int i = 0; i < numBlocks; i++) {
         for(int j = 0; j < numBlocks; j++) {
             for(int k = 0; k < numBlocks; k++) {
-#pragma omp task shared(result, input1, input2) depend(inout: blR[i][j]) depend(  out: bl1[i][k], bl2[k][j])
+#pragma omp task depend(inout: blR[i][j]) depend(  out: bl1[i][k], bl2[k][j])
                 serial_mmult( numBlocks, matrix_size, result, blR[i][j], input1, bl1[i][k], input2, bl2[k][j]);
             }
         }
@@ -91,10 +91,10 @@ int main(int argc, char **argv)
     //this is messy. I need to tie the matrix and it's blockList together better.
     int numBlocks = size/blocksize;
     auto t1 = high_resolution_clock::now();
-    mmult(numBlocks, size, R1, blR1, A, blA, B, blB);
+    mmult(numBlocks, size, &R1, blR1, &A, blA, &B, blB);
     
     auto t2 = high_resolution_clock::now();
-    mmult(numBlocks, size, R2, blR2, R1, blR1, C, blC);
+    mmult(numBlocks, size, &R2, blR2, &R1, blR1, &C, blC);
 
     auto t3 = high_resolution_clock::now();
 
