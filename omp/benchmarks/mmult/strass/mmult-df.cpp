@@ -41,6 +41,20 @@ void serial_mmult( int numBlocks, int matrix_size,
     }
 }
 
+void RC_mult(int numBlocks, int matrix_size,
+        vector<double> *result, const block R,
+        vector<double> *input1, const block b1,
+        vector<double> *input2, const block b2 ){
+
+    int size = R.size;
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
+            for(int k = 0; k < size; k++) {
+                (*result)[R.start + matrix_size*i + j] += (*input1)[b1.start + matrix_size*i + k] + (*input2)[b2.start + matrix_size*k + j];
+            }
+        }
+    }
+}
 void mmult( int numBlocks, int matrix_size,
             vector<double> *result, block **blR,
             vector<double> *input1, block **bl1,

@@ -12,6 +12,9 @@ mmult-df: mmult-df.cpp block.o
 block.o: block.h block.cpp
 	$(CC) $(OPT) -fopenmp -c block.cpp -std=c++11 -o block.o
 
+mkl: mmult-mkl.cpp
+	$(CC) $(OPT) mmult-mkl.cpp -std=c++11 -o mmult-mkl -liomp5 -lpthread -ldl -lm -mkl
+
 
 clean:
 	rm -f *.o
