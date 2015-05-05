@@ -110,7 +110,7 @@ int main(int argc, char **argv)
     auto time3 = duration_cast<std::chrono::nanoseconds> (tf-t3).count();
 
     cout << "total time: " <<  total_time << " nanoseconds, "
-         << " Gflops = " << (double)4.0*size * size * size / ((double)total_time) << endl;
+         << " Gflops = " << (double)3*2.0*size * size * size / ((double)total_time) << endl;
 
     cout << "time 1: " <<  time1 << " nanoseconds" << endl;
     cout << "time 2: " <<  time2 << " nanoseconds" << endl;
