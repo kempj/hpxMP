@@ -101,14 +101,18 @@ int hpx_main(int argc, char *argv[])
     printf("size = %d, numBlocks = %d\n", size, numBlocks);
 
     A.resize(size*size, 0);
-    InitMatrix3( size );
     if(runCheck) {
         printf("Error checking enabled\n");
+        InitMatrix3( size );
         originalA.reserve(size*size);
         for(int i = 0; i < size * size; i++) {
             originalA[i] = A[i];
         }
+    } else {
+        printf("fast initialization\n");
+        fastInitMatrix(size);
     }
+    printf("initialization complete\n");
 
     if(numBlocks == 1) {
         t1 = GetTickCount();

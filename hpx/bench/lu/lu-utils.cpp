@@ -51,6 +51,15 @@ void initLU( vector<double> &L, vector<double> &U, int in, int size, int range)
     }
 }
 
+void fastInitMatrix(int size)
+{
+    std::srand(0);
+    for(int i=0; i < size*size;i++) {
+        A[i] = std::rand();
+    }
+}
+
+
 void InitMatrix3( int size )
 {
     vector<double> L, U;
