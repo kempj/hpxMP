@@ -32,3 +32,7 @@ startup: hpx-startup.cpp
 
 spawn: timed_task_spawn.cpp
 	g++ timed_task_spawn.cpp -o spawn `pkg-config --cflags --libs hpx_application`
+
+chain: task-chain.cpp
+	g++ task-chain.cpp -o chain `pkg-config --cflags --libs hpx_application`
+
