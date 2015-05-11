@@ -22,7 +22,7 @@ asm_functions.o: asm_functions.s
 	$(cc) $(FLAGS) -c -x assembler-with-cpp -o asm_functions.o asm_functions.s 
 
 hpx_runtime.o: hpx_runtime.cpp hpx_runtime.h 
-	$(CC) $(CFLAGS) -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)` 
+	$(CC) $(FLAGS) -fPIC -c hpx_runtime.cpp -o hpx_runtime.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)` 
 
 hpxMP.o: hpxMP.cpp hpxMP.h
 	$(CC) $(FLAGS) -fPIC -c hpxMP.cpp -o hpxMP.o `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
