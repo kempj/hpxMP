@@ -136,7 +136,15 @@ __tid = -24
 	movq	%rcx, %rax	// Stack alignment calculation begins; argc -> %rax
 	movq	$0, %rbx	// constant for cmovs later
 	subq	$4, %rax	// subtract four args passed in registers to pkfn
+#if __MIC__ || __MIC2__
+    js  KMP_LABEL(kmp_0)    // jump to movq
+    jmp KMP_LABEL(kmp_0_exit)   // jump ahead
+KMP_LABEL(kmp_0):
+    movq    %rbx, %rax  // zero negative value in %rax <- max(0, argc-4)
+KMP_LABEL(kmp_0_exit):
+#else
 	cmovsq	%rbx, %rax	// zero negative value in %rax <- max(0, argc-4)
+#endif
 
 	movq	%rax, %rsi	// save max(0, argc-4) -> %rsi for later
 	shlq 	$3, %rax	// Number of bytes used on stack: max(0, argc-4)*8

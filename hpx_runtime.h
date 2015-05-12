@@ -88,10 +88,14 @@ class loop_data {
             total_iter = (lower - upper) / -stride + 1;
         }
     }
-        loop_data(const loop_data &&other) 
+        loop_data(const loop_data &other) 
             : loop_data( other.num_threads, other.lower, other.upper, 
                          other.stride, other.chunk, other.schedule ) 
         { }
+
+        loop_data operator=(const loop_data &other) {
+            return loop_data(other);
+        }
 
         void yield(){ hpx::this_thread::yield(); }
         int lower;
