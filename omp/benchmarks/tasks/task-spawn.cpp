@@ -96,8 +96,9 @@ int main(int argc, char ** argv) {
     
     auto dep_total = duration_cast<nanoseconds> (t2-t1).count();
 
-    int64_t theory = num_tasks * delay_time;
+    int64_t theory = num_tasks;
     theory /= num_threads; 
+    theory *= delay_time;
     cout << "theory time = " << theory    / 1000000.0 << " ms (" << num_tasks * delay_time << " * " << num_threads << " threads)" << endl;
     cout << "spawn time  = " << total     / 1000000.0 << " ms : " << (    total - theory) / 1000000.0 << " ms overhead " << endl;
     cout << "depend time = " << dep_total / 1000000.0 << " ms : " << (dep_total - theory) / 1000000.0 << " ms overhead " << endl;
