@@ -1,6 +1,3 @@
-hpxMP
-=====
-
 
 =====
 Code summary
