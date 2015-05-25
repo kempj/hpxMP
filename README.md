@@ -1,6 +1,15 @@
 hpxMP
 =====
 
+
+Code summary
+
+The intel openMP runtime calls are implemented in intel_hpxMP.cpp.
+The bulk of the work is donein hpx_runtime.cpp.
+All of the structs/classes of interest are defined in hpx_runtime.h.
+This is a different hpx_runtime than the one defined in the hpx implementation, and will eventually
+need to be replaced.
+
 requires HPX, which can be found at https://github.com/STEllAR-GROUP/hpx
 
 In addition to the other cmake options, HPX must be built with the following option:
@@ -38,5 +47,4 @@ http://svn.open64.net/svnroot/open64/branches/OpenUH
 
 Directives not implemented:
 threadprivate, copyprivate, and copyin 
-ordered 
 

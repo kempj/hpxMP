@@ -193,6 +193,7 @@ void hpx_runtime::task_wait() {
     }
 }
 
+    //FIXME: are the arguments num_taskgroup_tasks and num_child taks correct?
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
                        shared_ptr<atomic<int>> parent_task_counter,
                        shared_ptr<atomic<int>> task_counter,
@@ -213,6 +214,8 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
     auto *current_task = get_task_data();
     *(current_task->num_child_tasks) += 1;
 
+    //does num_taskgroup_tasks go out of scope and get de-allocated?
+    //FIXME: are the arguments num_taskgroup_tasks and num_child taks correct?
     if(current_task->num_taskgroup_tasks.use_count() > 0) {
         *(current_task->num_taskgroup_tasks) += 1;
         hpx::apply( task_setup, gtid, thunk, current_task->icv, 
