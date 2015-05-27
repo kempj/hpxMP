@@ -9,6 +9,11 @@ using std::endl;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 //mutex_type print_mtx{};
 
+vector<double> df_time;
+vector<int > num_tasks;
+
+
+
 void start_backend(){
     if(!hpx_backend) {
         hpx_backend.reset(new hpx_runtime());
@@ -81,6 +86,10 @@ kmp_int32
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
+    int OS_id = hpx::get_worker_thread_num();
+    hpx::util::high_resolution_timer clock;
+    auto start = clock.now();
+
     if(ndeps == 0 && ndeps_noalias == 0) {
         //TODO:how to I handle immediate tasks, read them from flags?
         hpx_backend->create_task(new_task->routine, gtid, new_task);
@@ -108,6 +117,9 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
         }
         hpx_backend->create_df_task(gtid, new_task, in_deps, out_deps);
     }
+    auto end = clock.now();
+    df_time[OS_id] += (start-end);
+
     return 1;
 }
 

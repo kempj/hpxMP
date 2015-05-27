@@ -11,6 +11,9 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
+extern vector<double> df_time;
+extern vector<int > num_tasks;
+
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
     {   // Let the main thread know that we're done.
@@ -316,6 +319,13 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
                   omp_task_data *parent) {
 
+    if(df_time.size() == 0) {
+        df_time.resize(parent->threads_requested);
+    }
+    if(num_tasks.size() == 0) {
+        num_tasks.resize(parent->threads_requested);
+    }
+
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
 
@@ -323,6 +333,11 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
     }
     hpx::wait_all(threads);
+
+    for(int i = 0; i < df_time.size(); i++ ) {
+        cout << "df_time[" << i << "] = " <<  df_time[i] << endl; 
+        cout << "num_tasks[" << i << "] = " <<  num_tasks[i] << endl; 
+    }
 }
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 
@@ -342,6 +357,7 @@ void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
 void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
 { 
+
     omp_task_data *current_task = get_task_data();
     if( hpx::threads::get_self_ptr() ) {
         fork_worker(kmp_invoke, thread_func, argc, argv, current_task);
