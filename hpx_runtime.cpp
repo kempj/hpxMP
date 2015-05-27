@@ -193,20 +193,20 @@ void hpx_runtime::task_wait() {
     }
 }
 
-    //FIXME: are the arguments num_taskgroup_tasks and num_child taks correct?
+// container_task_counter can be either num_taskgroup_tasks or num_thread_tasks
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
-                       shared_ptr<atomic<int>> parent_task_counter,
-                       shared_ptr<atomic<int>> task_counter,
+                       shared_ptr<atomic<int>> container_task_counter,
+                       shared_ptr<atomic<int>> sibling_task_counter,
                        parallel_region *team) {
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
-    task_data.num_thread_tasks = task_counter;
+    task_data.num_thread_tasks = container_task_counter;
 
     task_func(gtid, task);
 
-    *(task_data.num_thread_tasks) -= 1;
-    *(parent_task_counter) -= 1;
+    *(sibling_task_counter) -= 1;
+    *(container_task_counter) -= 1;
     delete[] (char*)task;
 }
 
@@ -214,8 +214,6 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
     auto *current_task = get_task_data();
     *(current_task->num_child_tasks) += 1;
 
-    //does num_taskgroup_tasks go out of scope and get de-allocated?
-    //FIXME: are the arguments num_taskgroup_tasks and num_child taks correct?
     if(current_task->num_taskgroup_tasks.use_count() > 0) {
         *(current_task->num_taskgroup_tasks) += 1;
         hpx::apply( task_setup, gtid, thunk, current_task->icv, 
@@ -227,11 +225,6 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
                     current_task->num_thread_tasks, current_task->num_child_tasks,
                     current_task->team );
     }
-}
-
-// did I try changing the wrapper function to take a vector?
-void df_sync_func(future<vector<shared_future<void>>> deps) {
-    deps.wait();
 }
 
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
@@ -338,6 +331,7 @@ void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
     }
 }
  
+//TODO: This can make main an HPX high priority thread
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
 void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
 { 
