@@ -11,10 +11,11 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
+/*
 vector<double> df_time;
 vector<int > num_tasks_start;
 vector<int > num_tasks_end;
-
+*/
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
@@ -203,13 +204,13 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
                        shared_ptr<atomic<int>> container_task_counter,
                        shared_ptr<atomic<int>> sibling_task_counter,
                        parallel_region *team) {
-
+/*
     hpx::util::high_resolution_timer clock;
 
     int OS_id = hpx::get_worker_thread_num();
     num_tasks_start[OS_id]++;
     auto start = clock.now();
-
+*/
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
@@ -220,12 +221,13 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     *(sibling_task_counter) -= 1;
     *(container_task_counter) -= 1;
     delete[] (char*)task;
-
+/*
     auto end = clock.now();
 
     OS_id = hpx::get_worker_thread_num();
     df_time[OS_id] += (end - start);
     num_tasks_end[OS_id]++;
+*/
 }
 
 //shared_ptr is used for these counters, because the parent/calling task may terminate at any time,
@@ -334,6 +336,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
                   omp_task_data *parent) {
 
+/*
     if(df_time.size() == 0) {
         df_time.resize(parent->threads_requested);
     }
@@ -343,7 +346,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     }
 
     cout << "running on " << df_time.size() << " num threads" << endl;
-
+*/
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
 
@@ -351,7 +354,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
     }
     hpx::wait_all(threads);
-
+/*
     int task_min = num_tasks_start[0]; 
     int task_max = num_tasks_start[0];
     int64_t total = 0;
@@ -374,6 +377,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     cout << "most tasks per thread = " << task_max << endl;
     cout << "least tasks per thread = " << task_min << endl;
     cout << "average tasks per thread = " << (total / num_tasks_start.size()) << endl;
+*/
 }
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 

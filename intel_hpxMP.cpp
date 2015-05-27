@@ -9,7 +9,10 @@ using std::endl;
 boost::shared_ptr<hpx_runtime> hpx_backend;
 //mutex_type print_mtx{};
 
-
+double task_creation_time = 0;
+double df_creation_time = 0;
+int num_tasks = 0;
+int num_df = 0;
 
 void start_backend(){
     if(!hpx_backend) {
@@ -43,6 +46,17 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
     void ** args = argv.data();
 
     hpx_backend->fork(__kmp_invoke_microtask, microtask, argc, args);
+
+    if(num_df > 0) {
+        cout << "dataflow tasks spawned: " << num_df << endl;
+        cout << "total creation time: " << df_creation_time << ", and average time/task = " 
+             << ((double)df_creation_time/(double)num_df) << endl;
+    }
+    if(num_tasks > 0) {
+        cout << "normal tasks spawned: " << num_tasks << endl;
+        cout << "total creation time: " << task_creation_time << ", and average time/task = " 
+             << ((double)task_creation_time/(double)num_tasks) << endl;
+    }
 }
 
 // ----- Tasks -----
@@ -84,9 +98,14 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
 
+    hpx::util::high_resolution_timer clock;
+    auto start = clock.now();
     if(ndeps == 0 && ndeps_noalias == 0) {
         //TODO:how to I handle immediate tasks, read them from flags?
         hpx_backend->create_task(new_task->routine, gtid, new_task);
+        auto end = clock.now();
+        num_tasks++;
+        task_creation_time += (end-start);
     } else {
         vector<int64_t> in_deps;
         vector<int64_t> out_deps;
@@ -110,6 +129,9 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
             }
         }
         hpx_backend->create_df_task(gtid, new_task, in_deps, out_deps);
+        auto end = clock.now();
+        num_df++;
+        df_creation_time += (end-start);
     }
     return 1;
 }
