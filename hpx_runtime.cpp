@@ -334,6 +334,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     }
     hpx::wait_all(threads);
 
+    cout << "running on " << df_time.size() << " num threads" << endl;
     for(int i = 0; i < df_time.size(); i++ ) {
         cout << "df_time[" << i << "] = " <<  df_time[i] << endl; 
         cout << "num_tasks[" << i << "] = " <<  num_tasks[i] << endl; 
