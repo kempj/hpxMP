@@ -205,6 +205,9 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
                        parallel_region *team) {
 
     hpx::util::high_resolution_timer clock;
+
+    int OS_id = hpx::get_worker_thread_num();
+    num_tasks_start[OS_id]++;
     auto start = clock.now();
 
     auto task_func = task->routine;
@@ -220,9 +223,9 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 
     auto end = clock.now();
 
-    int OS_id = hpx::get_worker_thread_num();
+    OS_id = hpx::get_worker_thread_num();
     df_time[OS_id] += (end - start);
-    num_tasks[OS_id]++;
+    num_tasks_end[OS_id]++;
 }
 
 //shared_ptr is used for these counters, because the parent/calling task may terminate at any time,
