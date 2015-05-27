@@ -236,6 +236,10 @@ void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
 task_setup( gtid, task, icv, parent_task_counter, task_counter, team);
 }
 
+//The input on the Intel call is a pair of pointers to arrays of dep structs, and the length of
+//these arrays.
+//The structs contain a pointer and a flag for in or out dep
+//I need dep_futures vector, so I can do a wait_all on it.
 void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
     auto task = get_task_data();
     vector<shared_future<void>> dep_futures;
