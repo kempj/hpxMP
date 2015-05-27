@@ -87,6 +87,8 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     } else {
         vector<int64_t> in_deps;
         vector<int64_t> out_deps;
+        in_deps.reserve(ndeps);
+        out_deps.reserve(ndeps);
 
         for(int i = 0; i < ndeps; i++) {
             if(dep_list[i].flags.in) {
