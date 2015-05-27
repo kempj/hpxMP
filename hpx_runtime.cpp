@@ -352,11 +352,28 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     }
     hpx::wait_all(threads);
 
+    int task_min = num_tasks_start[0]; 
+    int task_max = num_tasks_start[0];
+    int64_t total = 0;
+
     for(int i = 0; i < df_time.size(); i++ ) {
         cout << "df_time[" << i << "] = " <<  df_time[i] << endl; 
-        cout << "num_tasks_start[" << i << "] = " <<  num_tasks_start[i] 
-             << ", num_tasks_end[" << i << "] = " <<  num_tasks_end[i] << endl; 
+        cout << "num_tasks[" << i << "] = " <<  num_tasks_start[i];
+        if(num_tasks_start[i] != num_tasks_end[i]) {
+             cout << ", num_tasks_end[" << i << "] = " <<  num_tasks_end[i];
+        }
+        cout << endl; 
+        if(num_tasks_start[i] > task_max) {
+            task_max = num_tasks_start[i];
+        }
+        if(num_tasks_start[i] < task_min) {
+            task_min = num_tasks_start[i];
+        }
+        total += num_tasks_start[i];
     }
+    cout << "most tasks per thread = " << task_max << endl;
+    cout << "least tasks per thread = " << task_min << endl;
+    cout << "average tasks per thread = " << (total / num_tasks_start.size()) << endl;
 }
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 
