@@ -11,8 +11,10 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-extern vector<double> df_time;
-extern vector<int > num_tasks;
+vector<double> df_time;
+vector<int > num_tasks_start;
+vector<int > num_tasks_end;
+
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
@@ -201,6 +203,10 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
                        shared_ptr<atomic<int>> container_task_counter,
                        shared_ptr<atomic<int>> sibling_task_counter,
                        parallel_region *team) {
+
+    hpx::util::high_resolution_timer clock;
+    auto start = clock.now();
+
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
@@ -211,6 +217,12 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     *(sibling_task_counter) -= 1;
     *(container_task_counter) -= 1;
     delete[] (char*)task;
+
+    auto end = clock.now();
+
+    int OS_id = hpx::get_worker_thread_num();
+    df_time[OS_id] += (end - start);
+    num_tasks[OS_id]++;
 }
 
 //shared_ptr is used for these counters, because the parent/calling task may terminate at any time,
@@ -322,8 +334,9 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     if(df_time.size() == 0) {
         df_time.resize(parent->threads_requested);
     }
-    if(num_tasks.size() == 0) {
-        num_tasks.resize(parent->threads_requested);
+    if(num_tasks_start.size() == 0) {
+        num_tasks_start.resize(parent->threads_requested);
+        num_tasks_end.resize(parent->threads_requested);
     }
 
     cout << "running on " << df_time.size() << " num threads" << endl;
@@ -338,7 +351,8 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 
     for(int i = 0; i < df_time.size(); i++ ) {
         cout << "df_time[" << i << "] = " <<  df_time[i] << endl; 
-        cout << "num_tasks[" << i << "] = " <<  num_tasks[i] << endl; 
+        cout << "num_tasks_start[" << i << "] = " <<  num_tasks_start[i] 
+             << ", num_tasks_end[" << i << "] = " <<  num_tasks_end[i] << endl; 
     }
 }
 
