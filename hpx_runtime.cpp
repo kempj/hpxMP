@@ -210,6 +210,8 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     delete[] (char*)task;
 }
 
+//shared_ptr is used for these counters, because the parent/calling task may terminate at any time,
+//causing its omp_task_data to be deallocated.
 void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk){
     auto *current_task = get_task_data();
     *(current_task->num_child_tasks) += 1;
@@ -237,6 +239,7 @@ task_setup( gtid, task, icv, parent_task_counter, task_counter, team);
 void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
     auto task = get_task_data();
     vector<shared_future<void>> dep_futures;
+    dep_futures.reserve( in_deps.size() + out_deps.size() );
 
     //Populating a vector of futures that the task depends on
     for(int i = 0; i < in_deps.size(); i++) {

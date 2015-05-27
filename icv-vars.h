@@ -18,13 +18,11 @@ struct omp_icv {
     bool dyn{false};
     bool nest{false};
     int nthreads;
-    //not used:
     //int run_sched{0};//static schedule
     //bool bind{false};
     //int thread_limit{std::numeric_limits<int>::max()};
     int active_levels{0};
     int levels{0};
-    //not used:
     //int default_device{0};
     //scoped to implicit task
     //int place_partition;//set to all threads
