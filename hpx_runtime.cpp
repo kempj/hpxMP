@@ -221,9 +221,9 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     delete[] (char*)task;
     
     auto end2 = clock.now();
-    time1[OS_id] = (end-start);
-    time2[OS_id] = (end2-start2);
-    time3[OS_id] = (end2 - start);
+    time1[OS_id] += (end-start);
+    time2[OS_id] += (end2-start2);
+    time3[OS_id] += (end2 - start);
 
 }
 
