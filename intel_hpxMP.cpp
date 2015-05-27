@@ -118,7 +118,8 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
         hpx_backend->create_df_task(gtid, new_task, in_deps, out_deps);
     }
     auto end = clock.now();
-    df_time[OS_id] += (start-end);
+    df_time[OS_id] += (end - start);
+    num_tasks[OS_id]++;
 
     return 1;
 }
