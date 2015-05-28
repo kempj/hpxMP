@@ -30,7 +30,7 @@ namespace hpx { namespace threads { namespace policies
 {
 
     ///////////////////////////////////////////////////////////////////////////
-    /// The local_priority_queue_scheduler maintains exactly one queue of work
+    /// The omp_dual_queue_scheduler maintains exactly one queue of work
     /// items (threads) per OS thread, where this OS thread pulls its next work
     /// from. Additionally it maintains separate queues: several for high
     /// priority threads and one for low priority threads.
@@ -42,7 +42,7 @@ namespace hpx { namespace threads { namespace policies
             , typename StagedQueuing
             , typename TerminatedQueuing
              >
-    class local_priority_queue_scheduler : public scheduler_base
+    class omp_dual_queue_scheduler : public scheduler_base
     {
     protected:
         // The maximum number of active threads this thread manager should
@@ -69,7 +69,6 @@ namespace hpx { namespace threads { namespace policies
             init_parameter()
               : num_queues_(1),
                 max_queue_thread_count_(max_thread_count),
-                numa_sensitive_(false)
             {}
 
             init_parameter(std::size_t num_queues,
@@ -81,17 +80,15 @@ namespace hpx { namespace threads { namespace policies
                     num_high_priority_queues == std::size_t(-1) ?
                         num_queues : num_high_priority_queues),
                 max_queue_thread_count_(max_queue_thread_count),
-                numa_sensitive_(numa_sensitive)
             {}
 
             std::size_t num_queues_;
             std::size_t num_high_priority_queues_;
             std::size_t max_queue_thread_count_;
-            bool numa_sensitive_;
         };
         typedef init_parameter init_parameter_type;
 
-        local_priority_queue_scheduler(init_parameter_type const& init,
+        omp_dual_queue_scheduler(init_parameter_type const& init,
                 bool deferred_initialization = true)
           : scheduler_base(init.num_queues_),
             max_queue_thread_count_(init.max_queue_thread_count_),
@@ -99,7 +96,6 @@ namespace hpx { namespace threads { namespace policies
             high_priority_queues_(init.num_high_priority_queues_),
             low_priority_queue_(init.max_queue_thread_count_),
             curr_queue_(0),
-            numa_sensitive_(init.numa_sensitive_),
 #if !defined(HPX_WITH_MORE_THAN_64_THREADS) || defined(HPX_MAX_CPU_COUNT)
             numa_domain_masks_(init.num_queues_),
             outside_numa_domain_masks_(init.num_queues_)
@@ -123,7 +119,7 @@ namespace hpx { namespace threads { namespace policies
             }
         }
 
-        virtual ~local_priority_queue_scheduler()
+        virtual ~omp_dual_queue_scheduler()
         {
             for (std::size_t i = 0; i != queues_.size(); ++i)
                 delete queues_[i];
@@ -131,7 +127,7 @@ namespace hpx { namespace threads { namespace policies
                 delete high_priority_queues_[i];
         }
 
-        bool numa_sensitive() const { return numa_sensitive_; }
+        bool numa_sensitive() const { return false; }
 
 
         ///////////////////////////////////////////////////////////////////////
@@ -170,16 +166,6 @@ namespace hpx { namespace threads { namespace policies
             thread_state_enum initial_state, bool run_now, error_code& ec,
             std::size_t num_thread)
         {
-#ifdef HPX_THREAD_MAINTAIN_TARGET_ADDRESS
-            // try to figure out the NUMA node where the data lives
-            if (numa_sensitive_ && std::size_t(-1) == num_thread) {
-                mask_cref_type mask =
-                    topology_.get_thread_affinity_mask_from_lva(data.lva);
-                if (any(mask)) {
-                    num_thread = find_first(mask);
-                }
-            }
-#endif
             std::size_t queue_size = queues_.size();
 
             if (std::size_t(-1) == num_thread)
@@ -252,45 +238,7 @@ namespace hpx { namespace threads { namespace policies
                     return false;
             }
 
-            if (numa_sensitive_)
-            {
-                mask_cref_type this_numa_domain = numa_domain_masks_[num_thread];
-                mask_cref_type numa_domain = outside_numa_domain_masks_[num_thread];
-
-                // steal thread from other queue
-                for (std::size_t i = 1; i != queues_size; ++i)
-                {
-                    // FIXME: Do a better job here.
-                    std::size_t const idx = (i + num_thread) % queues_size;
-
-                    HPX_ASSERT(idx != num_thread);
-
-                    if (!test(this_numa_domain, idx) && !test(numa_domain, idx)) //-V560 //-V600 //-V111
-                        continue;
-
-                    if (idx < high_priority_queues &&
-                        num_thread < high_priority_queues)
-                    {
-                        thread_queue_type* q = high_priority_queues_[idx];
-                        if (q->get_next_thread(thrd))
-                        {
-                            q->increment_num_stolen_from_pending();
-                            high_priority_queues_[num_thread]->
-                                increment_num_stolen_to_pending();
-                            return true;
-                        }
-                    }
-
-                    if (queues_[idx]->get_next_thread(thrd))
-                    {
-                        queues_[idx]->increment_num_stolen_from_pending();
-                        queues_[num_thread]->increment_num_stolen_to_pending();
-                        return true;
-                    }
-                }
-            }
-
-            else // not NUMA-sensitive
+            // not NUMA-sensitive
             {
                 for (std::size_t i = 1; i != queues_size; ++i)
                 {
@@ -470,7 +418,7 @@ namespace hpx { namespace threads { namespace policies
                 case thread_priority_unknown:
                     {
                         HPX_THROW_EXCEPTION(bad_parameter,
-                            "local_priority_queue_scheduler::get_thread_count",
+                            "omp_dual_queue_scheduler::get_thread_count",
                             "unknown thread priority value (thread_priority_unknown)");
                         return 0;
                     }
@@ -515,7 +463,7 @@ namespace hpx { namespace threads { namespace policies
             case thread_priority_unknown:
                 {
                     HPX_THROW_EXCEPTION(bad_parameter,
-                        "local_priority_queue_scheduler::get_thread_count",
+                        "omp_dual_queue_scheduler::get_thread_count",
                         "unknown thread priority value (thread_priority_unknown)");
                     return 0;
                 }
@@ -523,104 +471,6 @@ namespace hpx { namespace threads { namespace policies
             return count;
         }
 
-#ifdef HPX_THREAD_MAINTAIN_QUEUE_WAITTIME
-        ///////////////////////////////////////////////////////////////////////
-        // Queries the current average thread wait time of the queues.
-        boost::int64_t get_average_thread_wait_time(
-            std::size_t num_thread = std::size_t(-1)) const
-        {
-            // Return average thread wait time of one specific queue.
-            boost::uint64_t wait_time = 0;
-            boost::uint64_t count = 0;
-            if (std::size_t(-1) != num_thread)
-            {
-                HPX_ASSERT(num_thread < queues_.size());
-
-                if (num_thread < high_priority_queues_.size())
-                {
-                    wait_time = high_priority_queues_[num_thread]->
-                        get_average_thread_wait_time();
-                    ++count;
-                }
-
-                if (queues_.size()-1 == num_thread)
-                {
-                    wait_time += low_priority_queue_.
-                        get_average_thread_wait_time();
-                    ++count;
-                }
-
-                wait_time += queues_[num_thread]->get_average_thread_wait_time();
-                return wait_time / (count + 1);
-            }
-
-            // Return the cumulative average thread wait time for all queues.
-            for (std::size_t i = 0; i != high_priority_queues_.size(); ++i)
-            {
-                wait_time += high_priority_queues_[i]->get_average_thread_wait_time();
-                ++count;
-            }
-
-            wait_time += low_priority_queue_.get_average_thread_wait_time();
-
-            for (std::size_t i = 0; i != queues_.size(); ++i)
-            {
-                wait_time += queues_[i]->get_average_thread_wait_time();
-                ++count;
-            }
-
-            return wait_time / (count + 1);
-        }
-
-        ///////////////////////////////////////////////////////////////////////
-        // Queries the current average task wait time of the queues.
-        boost::int64_t get_average_task_wait_time(
-            std::size_t num_thread = std::size_t(-1)) const
-        {
-            // Return average task wait time of one specific queue.
-            boost::uint64_t wait_time = 0;
-            boost::uint64_t count = 0;
-            if (std::size_t(-1) != num_thread)
-            {
-                HPX_ASSERT(num_thread < queues_.size());
-
-                if (num_thread < high_priority_queues_.size())
-                {
-                    wait_time = high_priority_queues_[num_thread]->
-                        get_average_task_wait_time();
-                    ++count;
-                }
-
-                if (queues_.size()-1 == num_thread)
-                {
-                    wait_time += low_priority_queue_.
-                        get_average_task_wait_time();
-                    ++count;
-                }
-
-                wait_time += queues_[num_thread]->get_average_task_wait_time();
-                return wait_time / (count + 1);
-            }
-
-            // Return the cumulative average task wait time for all queues.
-            for (std::size_t i = 0; i != high_priority_queues_.size(); ++i)
-            {
-                wait_time += high_priority_queues_[i]->
-                    get_average_task_wait_time();
-                ++count;
-            }
-
-            wait_time += low_priority_queue_.get_average_task_wait_time();
-
-            for (std::size_t i = 0; i != queues_.size(); ++i)
-            {
-                wait_time += queues_[i]->get_average_task_wait_time();
-                ++count;
-            }
-
-            return wait_time / (count + 1);
-        }
-#endif
 
         /// This is a function which gets called periodically by the thread
         /// manager to allow for maintenance tasks to be executed in the
@@ -648,106 +498,8 @@ namespace hpx { namespace threads { namespace policies
 
             std::size_t high_priority_queues = high_priority_queues_.size();
 
-            if (numa_sensitive_)
-            {
-                // steal work items: first try to steal from other cores in
-                // the same NUMA node
-
-#if !defined(HPX_NATIVE_MIC)        // we know that the MIC has one NUMA domain only
-                if (test(steals_in_numa_domain_, num_thread)) //-V600 //-V111
-#endif
-                {
-                    mask_cref_type numa_domain_mask =
-                        numa_domain_masks_[num_thread];
-                    for (std::size_t i = 1; i != queues_size; ++i)
-                    {
-                        // FIXME: Do a better job here.
-                        std::size_t const idx = (i + num_thread) % queues_size;
-
-                        HPX_ASSERT(idx != num_thread);
-
-                        if (!test(numa_domain_mask, topology_.get_pu_number(idx))) //-V600
-                            continue;
-
-                        if (idx < high_priority_queues &&
-                            num_thread < high_priority_queues)
-                        {
-                            result = high_priority_queues_[num_thread]->
-                                wait_or_add_new(running, idle_loop_count,
-                                    added, high_priority_queues_[idx])
-                              && result;
-
-                            if (0 != added)
-                            {
-                                high_priority_queues_[idx]->
-                                    increment_num_stolen_from_staged(added);
-                                high_priority_queues_[num_thread]->
-                                    increment_num_stolen_to_staged(added);
-                                return result;
-                            }
-                        }
-
-                        result = queues_[num_thread]->wait_or_add_new(running,
-                            idle_loop_count, added, queues_[idx]) && result;
-                        if (0 != added)
-                        {
-                            queues_[idx]->increment_num_stolen_from_staged(added);
-                            queues_[num_thread]->increment_num_stolen_to_staged(added);
-                            return result;
-                        }
-                    }
-                }
-
-#if !defined(HPX_NATIVE_MIC)        // we know that the MIC has one NUMA domain only
-                // if nothing found, ask everybody else
-                if (test(steals_outside_numa_domain_, num_thread)) //-V600 //-V111
-                {
-                    mask_cref_type numa_domain_mask =
-                        outside_numa_domain_masks_[num_thread];
-                    for (std::size_t i = 1; i != queues_size; ++i)
-                    {
-                        // FIXME: Do a better job here.
-                        std::size_t const idx = (i + num_thread) % queues_size;
-
-                        HPX_ASSERT(idx != num_thread);
-
-                        if (!test(numa_domain_mask, topology_.get_pu_number(idx))) //-V600
-                            continue;
-
-                        if (idx < high_priority_queues &&
-                            num_thread < high_priority_queues)
-                        {
-                            result = high_priority_queues_[num_thread]->
-                                wait_or_add_new(running, idle_loop_count,
-                                    added, high_priority_queues_[idx])
-                               && result;
-                            if (0 != added)
-                            {
-                                high_priority_queues_[idx]->
-                                    increment_num_stolen_from_staged(added);
-                                high_priority_queues_[num_thread]->
-                                    increment_num_stolen_to_staged(added);
-                                return result;
-                            }
-                        }
-
-                        result = queues_[num_thread]->wait_or_add_new(running,
-                            idle_loop_count, added, queues_[idx]) && result;
-                        if (0 != added)
-                        {
-                            queues_[idx]->increment_num_stolen_from_staged(added);
-                            queues_[num_thread]->increment_num_stolen_to_staged(added);
-                            return result;
-                        }
-                    }
-                }
-#endif
-            }
-
-            else // not NUMA-sensitive
-            {
-                for (std::size_t i = 1; i != queues_size; ++i)
-                {
+            { // not NUMA-sensitive
+                for (std::size_t i = 1; i != queues_size; ++i) {
                     // FIXME: Do a better job here.
                     std::size_t const idx = (i + num_thread) % queues_size;
 
@@ -781,31 +533,6 @@ namespace hpx { namespace threads { namespace policies
                 }
             }
 
-#ifdef HPX_THREAD_MINIMAL_DEADLOCK_DETECTION
-            // no new work is available, are we deadlocked?
-            if (HPX_UNLIKELY(minimal_deadlock_detection && LHPX_ENABLED(error)))
-            {
-                bool suspended_only = true;
-
-                for (std::size_t i = 0; suspended_only && i != queues_.size(); ++i) {
-                    suspended_only = queues_[i]->dump_suspended_threads(
-                        i, idle_loop_count, running);
-                }
-
-                if (HPX_UNLIKELY(suspended_only)) {
-                    if (running) {
-                        LTM_(error) //-V128
-                            << "queue(" << num_thread << "): "
-                            << "no new work available, are we deadlocked?";
-                    }
-                    else {
-                        LHPX_CONSOLE_(hpx::util::logging::level::error) << "  [TM] " //-V128
-                              << "queue(" << num_thread << "): "
-                              << "no new work available, are we deadlocked?\n";
-                    }
-                }
-            }
-#endif
 
             result = low_priority_queue_.wait_or_add_new(running,
                 idle_loop_count, added) && result;
@@ -841,14 +568,11 @@ namespace hpx { namespace threads { namespace policies
             std::size_t num_pu = get_pu_num(num_thread);
             mask_cref_type machine_mask = topology_.get_machine_affinity_mask();
             mask_cref_type core_mask =
-                topology_.get_thread_affinity_mask(num_pu, numa_sensitive_);
+                topology_.get_thread_affinity_mask(num_pu, false);
             mask_cref_type node_mask =
-                topology_.get_numa_node_affinity_mask(num_pu, numa_sensitive_);
+                topology_.get_numa_node_affinity_mask(num_pu, false);
 
             if (any(core_mask) && any(node_mask)) {
-#if !defined(HPX_NATIVE_MIC)        // we know that the MIC has one NUMA domain only
-                set(steals_in_numa_domain_, num_thread);
-#endif
                 numa_domain_masks_[num_thread] = node_mask;
             }
 
@@ -863,9 +587,6 @@ namespace hpx { namespace threads { namespace policies
                 first_mask = core_mask;
 
             if (any(first_mask & core_mask)) {
-#if !defined(HPX_NATIVE_MIC)        // we know that the MIC has one NUMA domain only
-                set(steals_outside_numa_domain_, num_thread);
-#endif
                 outside_numa_domain_masks_[num_thread] = not_(node_mask) & machine_mask;
             }
         }
@@ -894,14 +615,10 @@ namespace hpx { namespace threads { namespace policies
         std::size_t max_queue_thread_count_;
         std::vector<thread_queue_type*> queues_;
         std::vector<thread_queue_type*> high_priority_queues_;
+        std::vector<thread_queue_type*> tied_queues_;
         thread_queue_type low_priority_queue_;
         boost::atomic<std::size_t> curr_queue_;
-        bool numa_sensitive_;
 
-#if !defined(HPX_NATIVE_MIC)        // we know that the MIC has one NUMA domain only
-        mask_type steals_in_numa_domain_;
-        mask_type steals_outside_numa_domain_;
-#endif
         std::vector<mask_type> numa_domain_masks_;
         std::vector<mask_type> outside_numa_domain_masks_;
     };
