@@ -4,11 +4,14 @@ CC=g++
 default: jacobi
 
 jacobi: jacobi_hpx.o jacobi.cpp jacobi.hpp
-	$(CC) -O3 -o jacobi jacobi.cpp jacobi_hpx.o `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=jacobi
+	$(CC) -o jacobi jacobi.cpp jacobi_hpx.o --std=c++11 `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=jacobi
+	#/home/jeremy/packages/boost/lib/libboost_program_options.so
 
 
 jacobi_hpx.o: jacobi_hpx.cpp jacobi.hpp
-	$(CC) -O3 -o jacobi_hpx.o jacobi_hpx.cpp `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=jacobi_hpx.o
+	$(CC) -c -o jacobi_hpx.o jacobi_hpx.cpp --std=c++11 `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=jacobi_hpx.o 
+
+#/home/jeremy/packages/boost/lib/libboost_program_options.so
 
 
 clean:

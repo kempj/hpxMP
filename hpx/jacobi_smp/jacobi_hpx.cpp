@@ -11,57 +11,45 @@
 #include <hpx/lcos/local/dataflow.hpp>
 #include <hpx/util/high_resolution_timer.hpp>
 
+using boost::shared_ptr;
+using std::min;
+using std::vector;
+using hpx::make_ready_future;
+
 namespace jacobi_smp {
 
-    void jacobi_kernel_wrap(range const & y_range, std::size_t n, std::vector<double> & dst, std::vector<double> const & src)
-    {
-        for(std::size_t y = y_range.begin(); y < y_range.end(); ++y)
-        {
+    void jacobi_kernel_wrap(range const & y_range, size_t n, vector<double> & dst, vector<double> const & src) {
+        for(size_t y = y_range.begin(); y < y_range.end(); ++y) {
                   double * dst_ptr = &dst[y * n];
             const double * src_ptr = &src[y * n];
-            jacobi_kernel(
-                dst_ptr
-              , src_ptr
-              , n
-            );
+            jacobi_kernel( dst_ptr, src_ptr, n );
         }
     }
 
-    void jacobi(
-        std::size_t n
-      , std::size_t iterations, std::size_t block_size
-      , std::string output_filename)
-    {
-        typedef std::vector<double> vector;
+    void jacobi( size_t n , size_t iterations, size_t block_size, std::string output_filename) {
+        shared_ptr<vector<double>> grid_new(new vector<double>(n * n, 1));
+        shared_ptr<vector<double>> grid_old(new vector<double>(n * n, 1));
 
-        boost::shared_ptr<vector> grid_new(new vector(n * n, 1));
-        boost::shared_ptr<vector> grid_old(new vector(n * n, 1));
+        typedef vector<hpx::shared_future<void> > deps_vector;
 
-        typedef std::vector<hpx::shared_future<void> > deps_vector;
-
-        std::size_t n_block = static_cast<std::size_t>(std::ceil(double(n)/block_size));
-
+        size_t n_block = static_cast<size_t>(std::ceil(double(n)/block_size));
         
-        boost::shared_ptr<deps_vector> deps_new(
-            new deps_vector(n_block, hpx::make_ready_future()));
-        boost::shared_ptr<deps_vector> deps_old(
-            new deps_vector(n_block, hpx::make_ready_future()));
+        shared_ptr<deps_vector> deps_new( new deps_vector(n_block, make_ready_future()) );
+        shared_ptr<deps_vector> deps_old( new deps_vector(n_block, make_ready_future()) );
 
         hpx::util::high_resolution_timer t;
-        for(std::size_t i = 0; i < iterations; ++i)
-        {
-            for(std::size_t y = 1, j = 0; y < n -1; y += block_size, ++j)
-            {
-                std::size_t y_end = (std::min)(y + block_size, n - 1);
-                std::vector<hpx::shared_future<void> > trigger;
+        for(size_t i = 0; i < iterations; ++i) {
+            for(size_t y = 1, j = 0; y < n -1; y += block_size, ++j) {
+                size_t y_end = min(y + block_size, n - 1);
+                vector<hpx::shared_future<void> > trigger;
                 trigger.reserve(3);
                 trigger.push_back((*deps_old)[j]);
-                if(j > 0) trigger.push_back((*deps_old)[j-1]);
-                if(j + 1 < n_block) trigger.push_back((*deps_old)[j+1]);
+                if(j > 0)
+                    trigger.push_back((*deps_old)[j-1]);
+                if(j + 1 < n_block) 
+                    trigger.push_back((*deps_old)[j+1]);
 
-                /*
-                 * FIXME: dataflow seems to have some raceconditions
-                 * left
+                /* FIXME: dataflow seems to have some raceconditions left
                 (*deps_new)[j]
                     = hpx::lcos::local::dataflow(
                         hpx::util::bind(

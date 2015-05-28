@@ -31,11 +31,8 @@ namespace jacobi_smp {
 #pragma vector always
 #pragma unroll(4)
 #endif
-        for(std::size_t x = 1; x < n-1; ++x)
-        {
-            dst[x]
-                = (src[x-n] + src[x+n] + src[x] + src[x-1] + src[x+1])
-                * 0.2;
+        for(std::size_t x = 1; x < n-1; ++x) {
+            dst[x] = (src[x-n] + src[x+n] + src[x] + src[x-1] + src[x+1]) * 0.2;
         }
     }
 }
