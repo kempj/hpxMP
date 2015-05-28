@@ -49,7 +49,7 @@ namespace jacobi_smp {
                 if(j + 1 < n_block) 
                     trigger.push_back((*deps_old)[j+1]);
 
-                /* FIXME: dataflow seems to have some raceconditions left
+                // FIXME: dataflow seems to have some raceconditions left
                 (*deps_new)[j]
                     = hpx::lcos::local::dataflow(
                         hpx::util::bind(
@@ -61,8 +61,8 @@ namespace jacobi_smp {
                         )
                       , trigger
                     );
-                */
                 
+                /*
                 (*deps_new)[j] = hpx::when_all(boost::move(trigger)).then(
                     hpx::launch::async,
                     hpx::util::bind(
@@ -72,7 +72,7 @@ namespace jacobi_smp {
                       , boost::ref(*grid_new)
                       , boost::cref(*grid_old)
                     )
-                );
+                );*/
             }
 
             std::swap(grid_new, grid_old);
