@@ -68,7 +68,7 @@ namespace hpx { namespace threads { namespace policies
         {
             init_parameter()
               : num_queues_(1),
-                max_queue_thread_count_(max_thread_count),
+                max_queue_thread_count_(max_thread_count)
             {}
 
             init_parameter(std::size_t num_queues,
@@ -182,7 +182,7 @@ namespace hpx { namespace threads { namespace policies
             // now create the thread
             
             //JK: TODO: is this the (only) place where suspended tasks are added to the queue?
-            if (initial_state == suspend) {
+            if (initial_state == suspended) {
                 std::size_t num = num_thread % tied_queues_.size();
                 tied_queues_[num]->create_thread(data, id, initial_state, run_now, ec);
                 return;
