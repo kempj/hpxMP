@@ -1,5 +1,8 @@
 all: lu-hpx lu-hpx-dataflow
 
+tied-test: omp_queue_test.cpp
+	g++ omp_queue_test.cpp -o tied-test `pkg-config --cflags --libs hpx_application`
+
 target: target_test.cpp
 	g++ target_test.cpp -o target `pkg-config --cflags --libs hpx_application`
 
