@@ -11,7 +11,7 @@
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
-vector<double> time1, time2, time3;
+//vector<double> time1, time2, time3;
 
 void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     cout << "HPX OpenMP runtime has started" << endl;
@@ -200,30 +200,30 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
                        shared_ptr<atomic<int>> container_task_counter,
                        shared_ptr<atomic<int>> sibling_task_counter,
                        parallel_region *team) {
-    hpx::util::high_resolution_timer clock;
+    //hpx::util::high_resolution_timer clock;
 
-    int OS_id = hpx::get_worker_thread_num();
-    auto start = clock.now();
+    //int OS_id = hpx::get_worker_thread_num();
+    //auto start = clock.now();
 
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
     task_data.num_thread_tasks = container_task_counter;
 
-    auto end = clock.now();
+    //auto end = clock.now();
 
     task_func(gtid, task);
 
-    auto start2 = clock.now();
+    //auto start2 = clock.now();
 
     *(sibling_task_counter) -= 1;
     *(container_task_counter) -= 1;
     delete[] (char*)task;
     
-    auto end2 = clock.now();
-    time1[OS_id] += (end-start);
-    time2[OS_id] += (end2-start2);
-    time3[OS_id] += (end2 - start);
+    //auto end2 = clock.now();
+    //time1[OS_id] += (end-start);
+    //time2[OS_id] += (end2-start2);
+    //time3[OS_id] += (end2 - start);
 
 }
 
@@ -333,11 +333,11 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
                   omp_task_data *parent) {
 
-    if(time1.size() == 0) {
-        time1.resize(parent->threads_requested);
-        time2.resize(parent->threads_requested);
-        time3.resize(parent->threads_requested);
-    }
+    //if(time1.size() == 0) {
+    //    time1.resize(parent->threads_requested);
+    //    time2.resize(parent->threads_requested);
+    //    time3.resize(parent->threads_requested);
+    //}
 
 
     parallel_region team(parent->team, parent->threads_requested);
@@ -348,7 +348,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     }
     hpx::wait_all(threads);
 
-    double total_overhead = 0;
+    /*double total_overhead = 0;
     double total_work = 0;
     cout << "total time in setup, time after task, time before task" << endl;
     for(int i=0; i < time1.size(); i++) {
@@ -357,6 +357,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         total_work += time3[i] - (time2[i] + time1[i]);
     }
     cout << "total work = " << total_work << ", total overhead = " << total_overhead << endl;
+    */
 }
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 
