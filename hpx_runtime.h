@@ -149,7 +149,7 @@ class omp_task_data {
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads) 
             : team(T), num_child_tasks(new atomic<int>{0}), 
               num_thread_tasks(new atomic<int>{0}) {
-            thread_num = 0;
+            local_thread_num = 0;
             icv.device = global;
             icv.nthreads = init_num_threads;
             threads_requested = icv.nthreads;
@@ -168,7 +168,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int>{0})
+            : local_thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int>{0})
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -189,7 +189,7 @@ class omp_task_data {
             }
         }
         
-        int thread_num;
+        int local_thread_num;
         int threads_requested;
         parallel_region *team;
         mutex_type thread_mutex;

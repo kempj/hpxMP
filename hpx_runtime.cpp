@@ -129,7 +129,6 @@ hpx_runtime::hpx_runtime() {
     //char const* omp_stack_size = getenv("OMP_STACKSIZE");
 }
 
-
 //This isn't really a thread team, it's a region. I think.
 parallel_region* hpx_runtime::get_team(){
     auto task_data = get_task_data();
@@ -171,7 +170,8 @@ void hpx_runtime::set_num_threads(int nthreads) {
 
 int hpx_runtime::get_thread_num() {
     auto *data = get_task_data();
-    return get_task_data()->thread_num;
+    return hpx::get_worker_thread_num();
+    //return get_task_data()->local_thread_num;
 }
 
 // this should only be called from implicit tasks
