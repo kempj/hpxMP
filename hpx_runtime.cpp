@@ -298,10 +298,18 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
 
 void thread_setup( invoke_func kmp_invoke, microtask_t thread_func, 
                    int argc, void **argv, int tid,
-                   parallel_region *team, omp_task_data *parent ) {
+                   parallel_region *team, omp_task_data *parent,
+                   mutex_type& mtx,
+                   hpx::lcos::local::condition_variable& cond,
+                   atomic<int>& running_threads
+                   ) {
     omp_task_data task_data(tid, team, parent);
-    auto thread_id = get_self_id();
-    set_thread_data( thread_id, reinterpret_cast<size_t>(&task_data));
+    int gtid = hpx::get_worker_thread_num();
+
+    team->thread_map[tid] = gtid;
+
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+
     if(argc == 0) { //note: kmp_invoke segfaults iff argc == 0
         thread_func(&tid, &tid);
     } else {
@@ -309,6 +317,11 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
     while(*(task_data.num_thread_tasks) > 0) {
         hpx::this_thread::yield();
+    }
+
+    if(running_threads-- == 0) {
+        hpx::lcos::local::spinlock::scoped_lock lk(mtx);
+        cond.notify_all();
     }
 }
 
@@ -321,10 +334,26 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
 
+    hpx::lcos::local::condition_variable cond;
+    mutex_type mtx;
+    atomic<int> running_threads;
+    running_threads = parent->threads_requested;
+
     for( int i = 0; i < parent->threads_requested; i++ ) {
-        threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
+        team.thread_map[i] = -1;
+        //threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
+        hpx::applier::register_thread_nullary(
+                std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent, 
+                           boost::ref(mtx), boost::ref(cond), boost::ref(running_threads) ),
+                "omp_implicit_task", hpx::threads::pending,
+                true, hpx::threads::thread_priority_normal, i );
     }
-    hpx::wait_all(threads);
+    //hpx::wait_all(threads);
+    {
+        hpx::lcos::local::spinlock::scoped_lock lk(mtx);
+        while( running_threads > 0 )
+            cond.wait(lk);
+    }
 }
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 

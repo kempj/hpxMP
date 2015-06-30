@@ -117,13 +117,14 @@ class loop_data {
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N), 
-                               //loop_sched(N), 
+                               thread_map(N),
                                depth(0), reduce_data(N) {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
         depth = parent->depth + 1; 
     }
     int num_threads;
+    vector<int> thread_map;
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type crit_mtx{};
@@ -190,6 +191,7 @@ class omp_task_data {
         }
         
         int local_thread_num;
+        int global_thread_num;
         int threads_requested;
         parallel_region *team;
         mutex_type thread_mutex;
