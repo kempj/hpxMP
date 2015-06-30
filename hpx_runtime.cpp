@@ -304,9 +304,9 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    atomic<int>& running_threads
                    ) {
     omp_task_data task_data(tid, team, parent);
-    int gtid = hpx::get_worker_thread_num();
+    //int gtid = hpx::get_worker_thread_num();
 
-    team->thread_map[tid] = gtid;
+    //team->thread_map[tid] = gtid;
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
@@ -337,7 +337,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     hpx::lcos::local::condition_variable cond;
     mutex_type mtx;
     atomic<int> running_threads;
-    running_threads = parent->threads_requested;
+    running_threads = ( parent->threads_requested - 1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         team.thread_map[i] = -1;
@@ -351,7 +351,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     //hpx::wait_all(threads);
     {
         hpx::lcos::local::spinlock::scoped_lock lk(mtx);
-        while( running_threads > 0 )
+        if( running_threads > 0 )
             cond.wait(lk);
     }
 }
