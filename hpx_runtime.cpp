@@ -56,6 +56,7 @@ void start_hpx(int initial_num_threads) {
         for (boost::uint64_t i = 0; i < hpx_args.size(); ++i) {
             argv[i + 1] = const_cast<char*>(hpx_args[i].c_str());
         }
+        //--hpx:queuing=static
     } else {
         argc = 1;
         argv = new char*[argc];
@@ -169,7 +170,7 @@ void hpx_runtime::set_num_threads(int nthreads) {
 }
 
 int hpx_runtime::get_thread_num() {
-    auto *data = get_task_data();
+    //auto *data = get_task_data();
     return hpx::get_worker_thread_num();
     //return get_task_data()->local_thread_num;
 }
