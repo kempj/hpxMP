@@ -3,18 +3,28 @@
 #include <hpx/hpx.hpp>
 //#include <hpx/parallel/executors/thread_pool_executors.hpp>
 
+#include <hpx/runtime/threads/policies/static_priority_queue_scheduler.hpp>
 #include <hpx/runtime/threads/executors/thread_pool_executors.hpp>
-//#include <hpx/hpx_fwd.hpp>
-//#include <hpx/runtime/threads/thread_executor.hpp>
-//#include <hpx/exception.hpp>
+
+//#include <hpx/runtime/threads/detail/set_thread_state.hpp>
+#include <hpx/runtime/threads/detail/create_thread.hpp>
+
+#include <hpx/util/bind.hpp>
 
 #include <cstdlib>
 #include <vector>
 
 using std::cout;
 using std::endl;
+using hpx::threads::thread_init_data;
 
 typedef hpx::threads::executors::static_priority_queue_executor static_executor;
+
+
+
+typedef hpx::threads::executors::detail::thread_pool_executor<hpx::threads::policies::static_priority_queue_scheduler<>> tp_namespace;
+
+//TODO: implement thread_function_nullary here, and make sure it makes sense.
 
 struct implicit_task_executor : public static_executor
 {
@@ -22,10 +32,15 @@ struct implicit_task_executor : public static_executor
         : static_executor(max_punits, min_punits)
     {}
 
-     void add(closure_type && f, char const* description,
+     void add(closure_type && f, char const* desc,
              hpx::threads::thread_state_enum initial_state, bool run_now,
              hpx::threads::thread_stacksize stacksize, hpx::error_code& ec,
-             std::size_t os_thread) {
+             std::size_t os_thread)
+     {
+         thread_init_data data(hpx::util::bind(
+                                 hpx::util::one_shot( &tp_namespace::thread_function_nullary),
+                                             this, std::move(f)), desc);
+                 data.stacksize = hpx::threads::get_stack_size(stacksize);
      }
 
 };
