@@ -353,7 +353,6 @@ void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
 //TODO: according to the spec, the current thread should be thread 0 of the new team, and execute the new work.
 void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc, void** argv)
 { 
-
     omp_task_data *current_task = get_task_data();
     if( hpx::threads::get_self_ptr() ) {
         fork_worker(kmp_invoke, thread_func, argc, argv, current_task);

@@ -125,7 +125,7 @@ struct parallel_region {
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
     {
         depth = parent->depth + 1; 
-        exec.reset(new local_priority_queue_executor(parent->num_threads));
+        exec.reset(new local_priority_queue_executor(threads_requested));
     }
     int num_threads;
     //vector<int> thread_map;
