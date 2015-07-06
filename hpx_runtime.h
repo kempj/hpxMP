@@ -139,11 +139,9 @@ struct parallel_region {
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
     vector<void*> reduce_data;
-    //atomic<int> num_tasks{0};
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
     shared_ptr<local_priority_queue_executor> exec;
-    //local_priority_queue_executor exec;
 };
 
 
@@ -155,7 +153,6 @@ class omp_task_data {
         //This constructor should only be used once for the implicit task
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads) 
             : team(T), num_child_tasks(new atomic<int>{0})
-              //, num_thread_tasks(new atomic<int>{0})
               {
             local_thread_num = 0;
             icv.device = global;
@@ -167,7 +164,6 @@ class omp_task_data {
         omp_task_data(int tid, parallel_region *T, omp_task_data *P )
             : omp_task_data(tid, T, P->icv)
         {
-            //num_thread_tasks.reset(new atomic<int>{0});
             icv.levels++;
             if(team->num_threads > 1) {
                 icv.active_levels++;
@@ -203,8 +199,6 @@ class omp_task_data {
         parallel_region *team;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
-        //shared_ptr<atomic<int>> num_taskgroup_tasks;
-        //shared_ptr<atomic<int>> num_thread_tasks;
         shared_ptr<atomic<int>> num_child_tasks;
         int single_counter{0};
         int loop_num{0};
