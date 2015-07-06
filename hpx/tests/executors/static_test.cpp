@@ -20,17 +20,19 @@ using hpx::threads::thread_init_data;
 
 typedef hpx::threads::executors::static_priority_queue_executor static_executor;
 
-
-
-typedef hpx::threads::executors::detail::thread_pool_executor<hpx::threads::policies::static_priority_queue_scheduler<>> tp_namespace;
-
-//TODO: implement thread_function_nullary here, and make sure it makes sense.
-
 struct implicit_task_executor : public static_executor
 {
     implicit_task_executor(std::size_t max_punits, std::size_t min_punits = 1)
         : static_executor(max_punits, min_punits)
     {}
+    
+    hpx::threads::thread_state_enum thread_function_nullary( closure_type func)
+    {
+        func ();
+        ++tasks_completed_;
+        hpx::util::force_error_on_lock();
+        return hpx::threads::terminated;
+    }
 
      void add(closure_type && f, char const* desc,
              hpx::threads::thread_state_enum initial_state, bool run_now,
@@ -38,7 +40,7 @@ struct implicit_task_executor : public static_executor
              std::size_t os_thread)
      {
          thread_init_data data(hpx::util::bind(
-                                 hpx::util::one_shot( &tp_namespace::thread_function_nullary),
+                                 hpx::util::one_shot( &thread_function_nullary),
                                              this, std::move(f)), desc);
                  data.stacksize = hpx::threads::get_stack_size(stacksize);
      }

@@ -14,6 +14,7 @@
 #include <hpx/include/lcos.hpp>
 #include <hpx/lcos/local/condition_variable.hpp>
 
+#include <hpx/parallel/executors/thread_pool_executors.hpp>
 
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/classification.hpp>
@@ -117,14 +118,17 @@ class loop_data {
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N), 
-                               thread_map(N),
-                               depth(0), reduce_data(N) {};
+                               //thread_map(N),
+                               depth(0), reduce_data(N),
+                               //exec(new local_priority_queue_executor(N))
+                               exec(N)
+    {};
 
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
         depth = parent->depth + 1; 
     }
     int num_threads;
-    vector<int> thread_map;
+    //vector<int> thread_map;
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type crit_mtx{};
@@ -135,9 +139,11 @@ struct parallel_region {
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
     vector<void*> reduce_data;
-    atomic<int> num_tasks{0};
+    //atomic<int> num_tasks{0};
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
+    //shared_ptr<local_priority_queue_executor> exec;
+    local_priority_queue_executor exec;
 };
 
 
@@ -148,8 +154,9 @@ class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads) 
-            : team(T), num_child_tasks(new atomic<int>{0}), 
-              num_thread_tasks(new atomic<int>{0}) {
+            : team(T), num_child_tasks(new atomic<int>{0})
+              //, num_thread_tasks(new atomic<int>{0})
+              {
             local_thread_num = 0;
             icv.device = global;
             icv.nthreads = init_num_threads;
@@ -160,7 +167,7 @@ class omp_task_data {
         omp_task_data(int tid, parallel_region *T, omp_task_data *P )
             : omp_task_data(tid, T, P->icv)
         {
-            num_thread_tasks.reset(new atomic<int>{0});
+            //num_thread_tasks.reset(new atomic<int>{0});
             icv.levels++;
             if(team->num_threads > 1) {
                 icv.active_levels++;
@@ -196,8 +203,8 @@ class omp_task_data {
         parallel_region *team;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
-        shared_ptr<atomic<int>> num_taskgroup_tasks;
-        shared_ptr<atomic<int>> num_thread_tasks;
+        //shared_ptr<atomic<int>> num_taskgroup_tasks;
+        //shared_ptr<atomic<int>> num_thread_tasks;
         shared_ptr<atomic<int>> num_child_tasks;
         int single_counter{0};
         int loop_num{0};
@@ -228,6 +235,8 @@ class hpx_runtime {
         void env_init();
         bool nesting_enabled();
         void** get_threadprivate();
+        bool start_taskgroup();
+        void end_taskgroup();
 
     private:
         shared_ptr<parallel_region> implicit_region;
