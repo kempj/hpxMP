@@ -180,10 +180,10 @@ void hpx_runtime::barrier_wait(){
     auto *team = get_team();
     auto *task = get_task_data();
     task_wait();
-    team->exec->num_pending_closures();
+    while(team->exec->num_pending_closures() > 0 ) {
     //while(*(task->num_thread_tasks) > 0){
-    //    hpx::this_thread::yield();
-    //}
+        hpx::this_thread::yield();
+    }
     if(team->num_threads > 1) {
         team->globalBarrier.wait();
     }
@@ -210,7 +210,7 @@ void hpx_runtime::task_wait() {
 // container_task_counter can be either num_taskgroup_tasks or num_thread_tasks
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
                        //shared_ptr<atomic<int>> container_task_counter,
-                       shared_ptr<atomic<int>> sibling_task_counter,
+                       shared_ptr<atomic<int>> parent_task_counter,
                        parallel_region *team) {
 
     auto task_func = task->routine;
@@ -220,7 +220,7 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 
     task_func(gtid, task);
 
-    *(sibling_task_counter) -= 1;
+    *(parent_task_counter) -= 1;
 //    *(container_task_counter) -= 1;
     delete[] (char*)task;
 }
@@ -305,8 +305,9 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
 //            f_counter= hpx::make_ready_future( task->num_thread_tasks );
 //        }
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
-                             //f_parent_counter, 
-                             f_counter, f_team, hpx::when_all(dep_futures) );
+                             f_parent_counter, 
+                             //f_counter, 
+                             f_team, hpx::when_all(dep_futures) );
     }
     for(int i = 0 ; i < out_deps.size(); i++) {
         task->df_map[out_deps[i]] = new_task;
@@ -331,9 +332,9 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     } else {
         kmp_invoke(thread_func, tid, tid, argc, argv);
     }
-//    while(*(task_data.num_thread_tasks) > 0) {
-//        hpx::this_thread::yield();
-//    }
+    //while(*(task_data.num_child_tasks) > 0) {
+    //    hpx::this_thread::yield();
+    //}
 
     if(running_threads-- == 0) {
         hpx::lcos::local::spinlock::scoped_lock lk(mtx);
@@ -357,14 +358,12 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         //team.thread_map[i] = -1;
-        //threads.push_back( hpx::async( thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent ) );
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent, 
                            boost::ref(mtx), boost::ref(cond), boost::ref(running_threads) ),
                 "omp_implicit_task", hpx::threads::pending,
                 true, hpx::threads::thread_priority_normal, i );
     }
-    //hpx::wait_all(threads);
     {
         hpx::lcos::local::spinlock::scoped_lock lk(mtx);
         if( running_threads > 0 )
