@@ -180,7 +180,7 @@ void hpx_runtime::barrier_wait(){
     auto *team = get_team();
     auto *task = get_task_data();
     task_wait();
-    team->exec.num_pending_closures();
+    team->exec->num_pending_closures();
     //while(*(task->num_thread_tasks) > 0){
     //    hpx::this_thread::yield();
     //}
@@ -238,7 +238,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 //                                    current_task->team );
 //    } else {
 //        *(current_task->num_thread_tasks) += 1;
-        hpx::apply( current_task->team->exec, task_setup, gtid, thunk, current_task->icv,
+        hpx::apply( *(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
                     //current_task->num_thread_tasks, 
                     current_task->num_child_tasks,
                     current_task->team );
@@ -287,7 +287,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
 //            new_task = hpx::async( task_setup, gtid, thunk, task->icv, 
 //                    task->num_child_tasks, task->num_taskgroup_tasks, task->team);
 //        } else {
-            new_task = hpx::async( task->team->exec, task_setup, gtid, thunk, task->icv,
+            new_task = hpx::async( *(task->team->exec), task_setup, gtid, thunk, task->icv,
                                     task->num_child_tasks, 
                                     //task->num_thread_tasks, 
                                     task->team);

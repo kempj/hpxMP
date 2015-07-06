@@ -119,13 +119,13 @@ struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N), 
                                //thread_map(N),
-                               depth(0), reduce_data(N),
-                               //exec(new local_priority_queue_executor(N))
-                               exec(N)
+                               depth(0), reduce_data(N)
     {};
 
-    parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested) {
+    parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
+    {
         depth = parent->depth + 1; 
+        exec.reset(new local_priority_queue_executor(parent->num_threads));
     }
     int num_threads;
     //vector<int> thread_map;
@@ -142,8 +142,8 @@ struct parallel_region {
     //atomic<int> num_tasks{0};
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
-    //shared_ptr<local_priority_queue_executor> exec;
-    local_priority_queue_executor exec;
+    shared_ptr<local_priority_queue_executor> exec;
+    //local_priority_queue_executor exec;
 };
 
 
