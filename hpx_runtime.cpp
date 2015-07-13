@@ -275,13 +275,15 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
     shared_future<void> new_task;
 
     *(task->num_child_tasks) += 1;
+    if(!task->team->exec) {
+        task->team->num_tasks++;
+    }
 
     if(dep_futures.size() == 0) {
         if(task->team->exec) {
             new_task = hpx::async( *(task->team->exec), task_setup, gtid, thunk, task->icv,
                                     task->num_child_tasks, task->team);
         } else {
-            task->team->num_tasks++;
             new_task = hpx::async( task_setup, gtid, thunk, task->icv,
                                     task->num_child_tasks, task->team);
         }
@@ -293,7 +295,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         shared_future<shared_ptr<atomic<int>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
         shared_future<shared_ptr<atomic<int>>> f_counter;
 
-        task->team->num_tasks++;
 
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
