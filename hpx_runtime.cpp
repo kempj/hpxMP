@@ -177,8 +177,14 @@ int hpx_runtime::get_thread_num() {
 void hpx_runtime::barrier_wait(){
     auto *team = get_team();
     task_wait();
-    while(team->exec->num_pending_closures() > 0 ) {
-        hpx::this_thread::yield();
+    if(team->exec) {
+        while(team->exec->num_pending_closures() > 0 ) {
+            hpx::this_thread::yield();
+        }
+    } else {
+        while(hpx::threads::default_executor().num_pending_closures() > 0) {
+            hpx::this_thread::yield();
+        }
     }
     if(team->num_threads > 1) {
         team->globalBarrier.wait();
@@ -224,8 +230,13 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
     auto *current_task = get_task_data();
     *(current_task->num_child_tasks) += 1;
 
-    hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
-                current_task->num_child_tasks, current_task->team );
+    if(current_task->team->exec) {
+        hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
+                    current_task->num_child_tasks, current_task->team );
+    } else {
+        hpx::apply(task_setup, gtid, thunk, current_task->icv,
+                    current_task->num_child_tasks, current_task->team );
+    }
 }
 
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
@@ -262,8 +273,13 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
     *(task->num_child_tasks) += 1;
 
     if(dep_futures.size() == 0) {
-        new_task = hpx::async( *(task->team->exec), task_setup, gtid, thunk, task->icv,
-                                task->num_child_tasks, task->team);
+        if(task->team->exec) {
+            new_task = hpx::async( *(task->team->exec), task_setup, gtid, thunk, task->icv,
+                                    task->num_child_tasks, task->team);
+        } else {
+            new_task = hpx::async( task_setup, gtid, thunk, task->icv,
+                                    task->num_child_tasks, task->team);
+        }
     } else {
         shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
         shared_future<int>              f_gtid  = make_ready_future( gtid );
@@ -313,11 +329,14 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
                   omp_task_data *parent) {
 
+    //parallel_region<hpx::threads::scheduled_executor> team(parent->team, parent->threads_requested);
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
     
     //TODO: use default executor if not enabling strict spec adherance.
     //team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
+    //auto global_exec =  hpx::threads::default_executor() ;
+
 
     hpx::lcos::local::condition_variable cond;
     mutex_type mtx;

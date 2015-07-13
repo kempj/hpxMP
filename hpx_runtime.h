@@ -115,6 +115,7 @@ class loop_data {
 
 //Does this need to keep track of the parallel region it is nested in,
 // the omp_task_data of the parent thread, or both?
+//template<typename scheduler>
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N), 
@@ -125,7 +126,7 @@ struct parallel_region {
     parallel_region( parallel_region *parent, int threads_requested ) : parallel_region(threads_requested)
     {
         depth = parent->depth + 1; 
-        exec.reset(new local_priority_queue_executor(threads_requested));
+        //exec.reset(new local_priority_queue_executor(threads_requested));
     }
     int num_threads;
     //vector<int> thread_map;
@@ -142,6 +143,7 @@ struct parallel_region {
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
     shared_ptr<local_priority_queue_executor> exec;
+    //shared_ptr<scheduler> exec;
 };
 
 
