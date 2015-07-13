@@ -333,10 +333,8 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
     
-    //TODO: use default executor if not enabling strict spec adherance.
     //team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
     //auto global_exec =  hpx::threads::default_executor() ;
-
 
     hpx::lcos::local::condition_variable cond;
     mutex_type mtx;
@@ -355,6 +353,9 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         hpx::lcos::local::spinlock::scoped_lock lk(mtx);
         if( running_threads > 0 )
             cond.wait(lk);
+    }
+    while(hpx::threads::default_executor().num_pending_closures() > 1) {
+        hpx::this_thread::yield();
     }
 }
 
