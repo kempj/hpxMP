@@ -182,7 +182,7 @@ void hpx_runtime::barrier_wait(){
             hpx::this_thread::yield();
         }
     } else {
-        while(hpx::threads::default_executor().num_pending_closures() > 0) {
+        while(hpx::threads::default_executor().num_pending_closures() > team->num_threads) {
             hpx::this_thread::yield();
         }
     }
