@@ -24,8 +24,6 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
 void fini_runtime() {
     cout << "Stopping HPX OpenMP runtime" << endl;
     //this should only be done if this runtime started hpx
-    //task_exec.reset();
-    hpx_backend.reset();
     hpx::get_runtime().stop();
 }
 
@@ -129,8 +127,6 @@ hpx_runtime::hpx_runtime() {
     if(!external_hpx) {
         start_hpx(initial_num_threads);
     }
-
-    task_exec.reset(new local_priority_queue_executor( initial_num_threads ));
 
     //char const* omp_stack_size = getenv("OMP_STACKSIZE");
 }

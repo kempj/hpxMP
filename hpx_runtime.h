@@ -243,8 +243,6 @@ class hpx_runtime {
         bool external_hpx;
         omp_device_icv device_icv;
 
-        shared_ptr<local_priority_queue_executor> task_exec;
-
         //atomic<int> threads_running{0};//ThreadsBusy
 };
 
