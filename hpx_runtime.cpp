@@ -123,11 +123,12 @@ hpx_runtime::hpx_runtime() {
     implicit_region.reset(new parallel_region(1));
     initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv, initial_num_threads));
     walltime.reset(new high_resolution_timer);
-    task_exec.reset(new local_priority_queue_executor( initial_num_threads ));
 
     if(!external_hpx) {
         start_hpx(initial_num_threads);
     }
+
+    task_exec.reset(new local_priority_queue_executor( initial_num_threads ));
 
     //char const* omp_stack_size = getenv("OMP_STACKSIZE");
 }
