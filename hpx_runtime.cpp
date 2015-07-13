@@ -315,6 +315,9 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
+    
+    //TODO: use default executor if not enabling strict spec adherance.
+    //team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 
     hpx::lcos::local::condition_variable cond;
     mutex_type mtx;
