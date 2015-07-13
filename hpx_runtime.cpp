@@ -293,6 +293,8 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         shared_future<shared_ptr<atomic<int>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
         shared_future<shared_ptr<atomic<int>>> f_counter;
 
+        task->team->num_tasks++;
+
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
                              //f_counter, 
