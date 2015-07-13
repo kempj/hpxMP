@@ -136,6 +136,7 @@ struct parallel_region {
     mutex_type thread_mtx{};
     mutex_type single_mtx{}; 
     int depth;
+    atomic<int> num_tasks{0};
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;

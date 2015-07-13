@@ -182,7 +182,7 @@ void hpx_runtime::barrier_wait(){
             hpx::this_thread::yield();
         }
     } else {
-        while(hpx::threads::default_executor().num_pending_closures() > team->num_threads) {
+        while(team->num_tasks > 0) {
             hpx::this_thread::yield();
         }
     }
@@ -221,6 +221,9 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     task_func(gtid, task);
 
     *(parent_task_counter) -= 1;
+    if( !team->exec ) {
+        team->num_tasks--;
+    }
     delete[] (char*)task;
 }
 
@@ -234,6 +237,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
         hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
                     current_task->num_child_tasks, current_task->team );
     } else {
+        current_task->team->num_tasks++;
         hpx::apply(task_setup, gtid, thunk, current_task->icv,
                     current_task->num_child_tasks, current_task->team );
     }
@@ -277,6 +281,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
             new_task = hpx::async( *(task->team->exec), task_setup, gtid, thunk, task->icv,
                                     task->num_child_tasks, task->team);
         } else {
+            task->team->num_tasks++;
             new_task = hpx::async( task_setup, gtid, thunk, task->icv,
                                     task->num_child_tasks, task->team);
         }
@@ -354,8 +359,10 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         if( running_threads > 0 )
             cond.wait(lk);
     }
-    while(hpx::threads::default_executor().num_pending_closures() > 1) {
-        hpx::this_thread::yield();
+    if( !team.exec ) {
+        while(team.num_tasks > 0) {
+            hpx::this_thread::yield();
+        }
     }
 }
 
