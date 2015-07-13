@@ -122,6 +122,7 @@ hpx_runtime::hpx_runtime() {
     implicit_region.reset(new parallel_region(1));
     initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv, initial_num_threads));
     walltime.reset(new high_resolution_timer);
+    task_exec.reset(new local_priority_queue_executor( initial_num_threads ));
 
     if(!external_hpx) {
         start_hpx(initial_num_threads);
@@ -233,14 +234,19 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
     auto *current_task = get_task_data();
     *(current_task->num_child_tasks) += 1;
 
-    if(current_task->team->exec) {
-        hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
-                    current_task->num_child_tasks, current_task->team );
+    if(current_task->team->num_threads > 1) {
+        if(current_task->team->exec) {
+            hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
+                        current_task->num_child_tasks, current_task->team );
+        } else {
+            current_task->team->num_tasks++;
+            hpx::apply(task_setup, gtid, thunk, current_task->icv,
+                        current_task->num_child_tasks, current_task->team );
+        }
     } else {
-        current_task->team->num_tasks++;
-        hpx::apply(task_setup, gtid, thunk, current_task->icv,
-                    current_task->num_child_tasks, current_task->team );
+        task_setup(gtid, thunk, current_task->icv, current_task->num_child_tasks, current_task->team);
     }
+
 }
 
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
@@ -257,6 +263,9 @@ void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
 //I need dep_futures vector, so I can do a wait_all on it.
 void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
     auto task = get_task_data();
+    if(task->team->num_threads == 1 ) {
+        create_task(thunk->routine, gtid, thunk);
+    }
     vector<shared_future<void>> dep_futures;
     dep_futures.reserve( in_deps.size() + out_deps.size() );
 
