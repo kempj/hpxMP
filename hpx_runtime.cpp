@@ -28,6 +28,7 @@ void fini_runtime() {
 }
 
 void start_hpx(int initial_num_threads) {
+    int num_hard_coded_args = 2;
     std::vector<std::string> cfg;
     int argc;
     char ** argv;
@@ -48,21 +49,21 @@ void start_hpx(int initial_num_threads) {
             boost::algorithm::is_any_of(";"),
                 boost::algorithm::token_compress_on);
 
+
         // FIXME: For correctness check for signed overflow.
-        argc = hpx_args.size() + 1;
+        argc = hpx_args.size() + num_hard_coded_args;
         argv = new char*[argc];
 
         // FIXME: Should we do escaping?    
         for (boost::uint64_t i = 0; i < hpx_args.size(); ++i) {
-            argv[i + 1] = const_cast<char*>(hpx_args[i].c_str());
+            argv[i + num_hard_coded_args] = const_cast<char*>(hpx_args[i].c_str());
         }
-        //--hpx:queuing=static
     } else {
-        argc = 1;
+        argc = num_hard_coded_args;
         argv = new char*[argc];
     }
     argv[0] = const_cast<char*>("hpxMP");
-
+    argv[1] = const_cast<char*>("--hpx:queuing=static");
 
     hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
