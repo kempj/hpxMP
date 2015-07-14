@@ -186,15 +186,15 @@ int hpx_runtime::get_thread_num() {
 void hpx_runtime::barrier_wait(){
     auto *team = get_team();
     task_wait();
-    if(team->exec) {
-        while(team->exec->num_pending_closures() > 0 ) {
-            hpx::this_thread::yield();
-        }
-    } else {
-        while(team->num_tasks > 0) {
-            hpx::this_thread::yield();
-        }
+#ifdef OMP_COMPLIANT
+    while(team->exec->num_pending_closures() > 0 ) {
+        hpx::this_thread::yield();
     }
+#else
+    while(team->num_tasks > 0) {
+        hpx::this_thread::yield();
+    }
+#endif
     if(team->num_threads > 1) {
         team->globalBarrier.wait();
     }
@@ -230,9 +230,9 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     task_func(gtid, task);
 
     *(parent_task_counter) -= 1;
-    if( !team->exec ) {
-        team->num_tasks--;
-    }
+#ifndef OMP_COMPLIANT
+    team->num_tasks--;
+#endif
     delete[] (char*)task;
 }
 
@@ -243,14 +243,14 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
     *(current_task->num_child_tasks) += 1;
 
     if(current_task->team->num_threads > 1) {
-        if(current_task->team->exec) {
-            hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
-                        current_task->num_child_tasks, current_task->team );
-        } else {
-            current_task->team->num_tasks++;
-            hpx::apply(task_setup, gtid, thunk, current_task->icv,
-                        current_task->num_child_tasks, current_task->team );
-        }
+#ifdef OMP_COMPLIANT
+        hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
+                    current_task->num_child_tasks, current_task->team );
+#else
+        current_task->team->num_tasks++;
+        hpx::apply(task_setup, gtid, thunk, current_task->icv,
+                    current_task->num_child_tasks, current_task->team );
+#endif
     } else {
         task_setup(gtid, thunk, current_task->icv, current_task->num_child_tasks, current_task->team);
     }
@@ -292,18 +292,17 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
     shared_future<void> new_task;
 
     *(task->num_child_tasks) += 1;
-    if(!team->exec) {
-        team->num_tasks++;
-    }
-
+#ifndef OMP_COMPLIANT
+    team->num_tasks++;
+#endif
     if(dep_futures.size() == 0) {
-        if(team->exec) {
-            new_task = hpx::async( *(team->exec), task_setup, gtid, thunk, task->icv,
-                                    task->num_child_tasks, team);
-        } else {
-            new_task = hpx::async( task_setup, gtid, thunk, task->icv,
-                                    task->num_child_tasks, team);
-        }
+#ifdef OMP_COMPLIANT
+        new_task = hpx::async( *(team->exec), task_setup, gtid, thunk, task->icv,
+                                task->num_child_tasks, team);
+#else
+        new_task = hpx::async( task_setup, gtid, thunk, task->icv,
+                                task->num_child_tasks, team);
+#endif
     } else {
         shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
         shared_future<int>              f_gtid  = make_ready_future( gtid );
@@ -330,7 +329,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    atomic<int>& running_threads
                    ) {
     omp_task_data task_data(tid, team, parent);
-    //int gtid = hpx::get_worker_thread_num();
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
@@ -356,7 +354,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
     
-#ifdef USE_EXECUTORS
+#ifdef OMP_COMPLIANT
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 #endif
 
@@ -378,19 +376,19 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         if( running_threads > 0 )
             cond.wait(lk);
     }
-    if( !team.exec ) {
-        while(team.num_tasks > 0) {
-            hpx::this_thread::yield();
-        }
+#ifndef OMP_COMPLIANT
+    while(team.num_tasks > 0) {
+        hpx::this_thread::yield();
     }
+#endif
 }
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 
                     int argc, void **argv,
                     omp_task_data *parent, boost::mutex& mtx, 
-                    boost::condition& cond, bool& running ) {
+                    boost::condition& cond, bool& running ) 
+{
     fork_worker(kmp_invoke, thread_func, argc, argv, parent);
-
     {
         boost::mutex::scoped_lock lk(mtx);
         running = true;

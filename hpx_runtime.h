@@ -131,7 +131,9 @@ struct parallel_region {
     vector<void*> reduce_data;
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
+#ifdef OMP_COMPLIANT
     shared_ptr<local_priority_queue_executor> exec;
+#endif
 };
 
 
