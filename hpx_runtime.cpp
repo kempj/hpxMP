@@ -4,10 +4,19 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-
 #define  HPX_LIMIT 9
-
 #include "hpx_runtime.h"
+
+using std::cout;
+using std::endl;
+
+using hpx::lcos::local::dataflow;
+using hpx::util::unwrapped;
+using hpx::make_ready_future;
+using hpx::threads::set_thread_data;
+using hpx::threads::get_thread_data;
+using hpx::threads::get_self_id;
+
 
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
@@ -28,7 +37,11 @@ void fini_runtime() {
 }
 
 void start_hpx(int initial_num_threads) {
+#ifdef OMP_COMPLIANT
     int num_hard_coded_args = 2;
+#else
+    int num_hard_coded_args = 1;
+#endif
     std::vector<std::string> cfg;
     int argc;
     char ** argv;
@@ -49,7 +62,6 @@ void start_hpx(int initial_num_threads) {
             boost::algorithm::is_any_of(";"),
                 boost::algorithm::token_compress_on);
 
-
         // FIXME: For correctness check for signed overflow.
         argc = hpx_args.size() + num_hard_coded_args;
         argv = new char*[argc];
@@ -63,8 +75,9 @@ void start_hpx(int initial_num_threads) {
         argv = new char*[argc];
     }
     argv[0] = const_cast<char*>("hpxMP");
+#ifdef OMP_COMPLIANT
     argv[1] = const_cast<char*>("--hpx:queuing=static");
-
+#endif
     hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 
@@ -96,18 +109,15 @@ hpx_runtime::hpx_runtime() {
     } else { 
         initial_num_threads = num_procs;
     }
-    //TODO:
+    //char const* omp_stack_size = getenv("OMP_STACKSIZE");
     //OMP_NESTED -> initial_nest_var
     //cancel_var
     //stacksize_var
-    /*
-    char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
-    if(omp_max_levels != NULL) { max_active_levels_var = atoi(omp_max_levels); }
-    
-    //Not device specific, so it needs to move to parallel region:
-    char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
-    if(omp_thread_limit != NULL) { thread_limit_var = atoi(omp_thread_limit); }
-    */
+    //char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
+    //if(omp_max_levels != NULL) { max_active_levels_var = atoi(omp_max_levels); }
+    ////Not device specific, so it needs to move to parallel region:
+    //char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
+    //if(omp_thread_limit != NULL) { thread_limit_var = atoi(omp_thread_limit); }
 
     external_hpx = hpx::get_runtime_ptr();
     if(external_hpx){
@@ -127,8 +137,6 @@ hpx_runtime::hpx_runtime() {
     if(!external_hpx) {
         start_hpx(initial_num_threads);
     }
-
-    //char const* omp_stack_size = getenv("OMP_STACKSIZE");
 }
 
 //This isn't really a thread team, it's a region. I think.
@@ -246,7 +254,6 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
     } else {
         task_setup(gtid, thunk, current_task->icv, current_task->num_child_tasks, current_task->team);
     }
-
 }
 
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
@@ -263,7 +270,8 @@ void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
 //I need dep_futures vector, so I can do a wait_all on it.
 void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
     auto task = get_task_data();
-    if(task->team->num_threads == 1 ) {
+    auto team = task->team;
+    if(team->num_threads == 1 ) {
         create_task(thunk->routine, gtid, thunk);
     }
     vector<shared_future<void>> dep_futures;
@@ -284,30 +292,29 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
     shared_future<void> new_task;
 
     *(task->num_child_tasks) += 1;
-    if(!task->team->exec) {
-        task->team->num_tasks++;
+    if(!team->exec) {
+        team->num_tasks++;
     }
 
     if(dep_futures.size() == 0) {
-        if(task->team->exec) {
-            new_task = hpx::async( *(task->team->exec), task_setup, gtid, thunk, task->icv,
-                                    task->num_child_tasks, task->team);
+        if(team->exec) {
+            new_task = hpx::async( *(team->exec), task_setup, gtid, thunk, task->icv,
+                                    task->num_child_tasks, team);
         } else {
             new_task = hpx::async( task_setup, gtid, thunk, task->icv,
-                                    task->num_child_tasks, task->team);
+                                    task->num_child_tasks, team);
         }
     } else {
         shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
         shared_future<int>              f_gtid  = make_ready_future( gtid );
         shared_future<omp_icv>          f_icv   = make_ready_future( task->icv );
-        shared_future<parallel_region*> f_team  = make_ready_future( task->team );
+        shared_future<parallel_region*> f_team  = make_ready_future( team );
         shared_future<shared_ptr<atomic<int>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
         shared_future<shared_ptr<atomic<int>>> f_counter;
 
 
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
-                             //f_counter, 
                              f_team, hpx::when_all(dep_futures) );
     }
     for(int i = 0 ; i < out_deps.size(); i++) {
@@ -324,7 +331,6 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    ) {
     omp_task_data task_data(tid, team, parent);
     //int gtid = hpx::get_worker_thread_num();
-    //team->thread_map[tid] = gtid;
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 

@@ -7,15 +7,12 @@ using std::cout;
 using std::endl;
 
 boost::shared_ptr<hpx_runtime> hpx_backend;
-//mutex_type print_mtx{};
 
-/*
-double task_creation_time = 0;
-double df_creation_time = 0;
-int num_tasks = 0;
-int num_df = 0;
-*/
 
+//This is called where the library calls can potentially be executed
+// outside a parallel region. If the function is not able to be called from
+// outside a parallel region, it makes this check and generates it's own 
+// output, but does not start the runtime.
 void start_backend(){
     if(!hpx_backend) {
         hpx_backend.reset(new hpx_runtime());
@@ -48,18 +45,6 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
     void ** args = argv.data();
 
     hpx_backend->fork(__kmp_invoke_microtask, microtask, argc, args);
-/*
-    if(num_df > 0) {
-        cout << "dataflow tasks spawned: " << num_df << endl;
-        cout << "total creation time: " << df_creation_time << ", and average time/task = " 
-             << ((double)df_creation_time/(double)num_df) << endl;
-    }
-    if(num_tasks > 0) {
-        cout << "normal tasks spawned: " << num_tasks << endl;
-        cout << "total creation time: " << task_creation_time << ", and average time/task = " 
-             << ((double)task_creation_time/(double)num_tasks) << endl;
-    }
-*/
 }
 
 // ----- Tasks -----
@@ -72,7 +57,6 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
 
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
     //TODO: do I need to do something with these flags?
-    
     int task_size = sizeof_kmp_task_t + (-sizeof_kmp_task_t%8);
 
     kmp_task_t *task = (kmp_task_t*)new char[task_size + sizeof_shareds]; 
@@ -94,21 +78,15 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
     return 1;
 }
 
-
 // return 1 if suspended and queued the current task to be resumed later, 0 if not.
 kmp_int32 
 __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task,
                            kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                            kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list ){
 
-    //hpx::util::high_resolution_timer clock;
-    //auto start = clock.now();
     if(ndeps == 0 && ndeps_noalias == 0) {
         //TODO:how to I handle immediate tasks, read them from flags?
         hpx_backend->create_task(new_task->routine, gtid, new_task);
-        //auto end = clock.now();
-        //num_tasks++;
-        //task_creation_time += (end-start);
     } else {
         vector<int64_t> in_deps;
         vector<int64_t> out_deps;
@@ -132,9 +110,6 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
             }
         }
         hpx_backend->create_df_task(gtid, new_task, in_deps, out_deps);
-        //auto end = clock.now();
-        //num_df++;
-        //df_creation_time += (end-start);
     }
     return 1;
 }
@@ -193,8 +168,8 @@ __kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps,
 
 void __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * task ){
     task->routine(gtid, task);
-    //FIXME: not sure if this is correct. These only seem to do internal trackin in the intel
-    //runtime
+    //FIXME: not sure if this is correct. These only seem to do internal 
+    //tracking in the intel runtime
 }
 void
 __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task) {
@@ -209,8 +184,6 @@ __kmpc_push_num_threads( ident_t *loc,
                          kmp_int32 global_tid, 
                          kmp_int32 num_threads ){
     start_backend();
-    //TODO: this needs to be local to the task
-    //hpx_backend->set_num_threads(num_threads);
     omp_task_data *data = hpx_backend->get_task_data();
     data->set_threads_requested( num_threads );
 }
@@ -236,8 +209,8 @@ int __kmpc_single(ident_t *loc, int tid){
     if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return 1;
     }
-    auto *team = hpx_backend->get_team();
     auto *task = hpx_backend->get_task_data();
+    auto *team = task->team;
     int do_work = 0;
 
     team->single_mtx.lock();

@@ -2,7 +2,8 @@ CC=g++
 cc=gcc
 #most work is done with 4.8
 HPX_BUILD_TYPE=hpx_application
-FLAGS= -O3
+OPT= -O3
+FLAGS= -DOMP_COMPLIANT $(OPT)
 CFLAGS=
 #ATOMIC_FLAGS=-Qoption,cpp,--extended_float_type
 

@@ -28,6 +28,15 @@
 
 #include "icv-vars.h"
 
+using std::atomic;
+using boost::shared_ptr;
+using hpx::threads::executors::local_priority_queue_executor;
+using hpx::lcos::local::barrier;
+using hpx::lcos::shared_future;
+using hpx::lcos::future;
+using std::vector;
+using hpx::util::high_resolution_timer;
+
 
 typedef void (*microtask_t)( int *gtid, int *npr, ... );
 typedef int (*invoke_func)( microtask_t , int , int , int , void**);
@@ -53,25 +62,6 @@ typedef struct kmp_task {
     kmp_routine_entry_t destructors;
 #endif
 } kmp_task_t;
-
-
-using std::atomic;
-using boost::shared_ptr;
-using hpx::threads::executors::local_priority_queue_executor;
-using hpx::lcos::local::barrier;
-using hpx::lcos::shared_future;
-using hpx::lcos::future;
-using std::cout;
-using std::endl;
-using std::vector;
-//using std::map;
-using hpx::util::high_resolution_timer;
-using hpx::threads::set_thread_data;
-using hpx::threads::get_thread_data;
-using hpx::threads::get_self_id;
-using hpx::lcos::local::dataflow;
-using hpx::util::unwrapped;
-using hpx::make_ready_future;
 
 
 class loop_data {
@@ -119,7 +109,6 @@ class loop_data {
 struct parallel_region {
 
     parallel_region( int N ) : num_threads(N), globalBarrier(N), 
-                               //thread_map(N),
                                depth(0), reduce_data(N)
     {};
 
@@ -129,7 +118,6 @@ struct parallel_region {
         //exec.reset(new local_priority_queue_executor(threads_requested));
     }
     int num_threads;
-    //vector<int> thread_map;
     hpx::lcos::local::condition_variable cond;
     barrier globalBarrier;
     mutex_type crit_mtx{};
@@ -144,7 +132,6 @@ struct parallel_region {
     vector<loop_data> loop_list;
     mutex_type loop_mtx;
     shared_ptr<local_priority_queue_executor> exec;
-    //shared_ptr<scheduler> exec;
 };
 
 
