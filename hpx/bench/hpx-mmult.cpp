@@ -11,7 +11,7 @@ using std::cout;
 using std::endl;
 
 
-const int blocksize = 64;
+const int blocksize = 8;
 
 void print(block A) {
     for(int i = 0; i < A.height; i++) {
@@ -87,11 +87,13 @@ block rec_mult(block A, block B, block C) {
 
 
 int hpx_main(boost::program_options::variables_map& vm) {
-    int niter = 1, N = 100, block_size = 10;
+    int niter = 1, N = 64;
     srand((unsigned long)time(NULL));
 
-    block a(N*N);
-    block b(N*N);
+    block a(N);
+    print(a);
+    block b(N);
+    print(b);
     block c(new double[N*N]{0}, N);
 
     rec_mult(a, b, c);

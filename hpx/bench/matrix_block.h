@@ -21,9 +21,13 @@ struct block {
         height = size;
         width = size;
     }
-    block(int size) : data(size)
+    block(int size) : data(size*size)
     {
+        stride = size;
+        width = size;
+        height = size;
         ptr = data.data();
+
         const int RM = 100;
         double rv1 = (rand() % RM) / ((double)RM);
         double rv2 = (rand() % RM) / ((double)RM);
