@@ -1,6 +1,6 @@
 all: micro taskbench hpx-startup
 
-mmult:
+mmult: hpx-mmult.cpp matrix_block.h
 	g++ -g hpx-mmult.cpp -o hpx-mmult `pkg-config --cflags --libs hpx_application`
 
 1d_stencil:

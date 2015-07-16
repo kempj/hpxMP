@@ -4,7 +4,10 @@
 using std::vector;
 
 struct block {
-    block(const block& other) : ptr(other.ptr), stride(other.stride), width(other.width), height(other.height), data(other.stride * other.stride)
+    block(const block& other) : ptr(other.ptr), stride(other.stride), 
+                                //row(other.row), col(other.col),
+                                width(other.width), height(other.height), 
+                                data(other.stride * other.stride)
     {
         /*
         for(int i = 0; i < height; i++) {
@@ -31,7 +34,7 @@ struct block {
         const int RM = 100;
         double rv1 = (rand() % RM) / ((double)RM);
         double rv2 = (rand() % RM) / ((double)RM);
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < size*size; i++) {
             data[i] = ((i+1) * rv1) / ((i+1) * rv2);
         }
     }
