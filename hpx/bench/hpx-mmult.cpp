@@ -13,6 +13,16 @@ using std::endl;
 
 const int blocksize = 64;
 
+void print(block A) {
+    for(int i = 0; i < A.height; i++) {
+        for(int j = 0; j < A.width; j++) {
+            cout << A[i][j] << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
 block rec_mult(block A, block B, block C);
 
 block serial_mult(block A, block B, block C) {
@@ -77,7 +87,7 @@ block rec_mult(block A, block B, block C) {
 
 
 int hpx_main(boost::program_options::variables_map& vm) {
-    int niter = 1, N = 1000, block_size = 128;
+    int niter = 1, N = 100, block_size = 10;
     srand((unsigned long)time(NULL));
 
     block a(N*N);
@@ -85,6 +95,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
     block c(new double[N*N]{0}, N);
 
     rec_mult(a, b, c);
+    print(c);
 
     return hpx::finalize();
 }
