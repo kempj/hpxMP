@@ -13,6 +13,7 @@ using std::endl;
 
 const int blocksize = 64;
 
+block rec_mult(block A, block B, block C);
 
 block serial_mult(block A, block B, block C) {
     for (int i = 0; i < C.width; i++) {
@@ -35,7 +36,8 @@ block add_blocks(block A, block B, block result) {
 }
 
 block calc_c11(block A, block B, block C) {
-    block tempC(C.block11());
+    block C11 = C.block11();
+    block tempC(C11);
     block A11B11 = rec_mult(A.block11(), B.block11(), C.block11());
     block A12B21 = rec_mult(A.block12(), B.block21(), tempC);
     return add_blocks(A11B11, A12B21, C.block11());
@@ -66,10 +68,10 @@ block rec_mult(block A, block B, block C) {
     if(C.width < blocksize || C.height < blocksize ) {
         return serial_mult(A, B, C);
     } 
-    C11 = calc_c11(A, B, C);
-    C12 = calc_c12(A, B, C);
-    C21 = calc_c21(A, B, C);
-    C22 = calc_c22(A, B, C);
+    block C11 = calc_c11(A, B, C);
+    block C12 = calc_c12(A, B, C);
+    block C21 = calc_c21(A, B, C);
+    block C22 = calc_c22(A, B, C);
     return C;
 }
 

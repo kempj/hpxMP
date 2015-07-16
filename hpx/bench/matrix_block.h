@@ -4,13 +4,15 @@
 using std::vector;
 
 struct block {
-    block(block &other) : stride(other.stride), width(other.width), height(other.height), data(other.stride)
+    block(const block& other) : ptr(other.ptr), stride(other.stride), width(other.width), height(other.height), data(other.stride * other.stride)
     {
+        /*
         for(int i = 0; i < height; i++) {
             for(int j = 0; j < width; j++) {
                 data[i*stride + j] = other[i][j];
             }
         }
+        */
     }
 
     block(double *matrix, int size) {
@@ -40,7 +42,7 @@ struct block {
     int height{0};
     vector<double> data;
 
-    double* operator[](int idx) {
+    double* operator[](int idx) const {
         return &(ptr[row*stride + col + idx]);
     }
     block block11(){

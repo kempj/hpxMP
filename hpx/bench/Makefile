@@ -1,7 +1,8 @@
 all: micro taskbench hpx-startup
 
 mmult:
-	g++ hpx-mmult.cpp -o hpx-mmult `pkg-config --cflags --libs hpx_application`
+	g++ -g hpx-mmult.cpp -o hpx-mmult `pkg-config --cflags --libs hpx_application`
+
 1d_stencil:
 	clang++ -fopenmp 1d_stencil_3_omp_task.cpp -o omp4 `pkg-config --cflags --libs hpx_application`
 
