@@ -11,7 +11,7 @@ using std::cout;
 using std::endl;
 
 
-const int blocksize = 2;
+const int blocksize = 10;
 
 void print(block A) {
     for(int i = 0; i < A.height; i++) {
@@ -26,15 +26,15 @@ void print(block A) {
 block rec_mult(block A, block B, block C);
 
 block serial_mult(block A, block B, block C) {
-    cout << "serial_mult: C:" << C.height << ", " << C.width << endl;
+    //cout << "serial_mult: C:" << C.height << ", " << C.width << endl;
     for (int i = 0; i < C.height; i++) {
         for (int j = 0; j < C.width; j++) {
-            cout << "C[" << i << "][" << j << "] : (" << &(C[i][j]) << ")" << endl;
-            cout << "\t From " << C[i][j];
+            //cout << "C[" << i << "][" << j << "] : (" << &(C[i][j]) << ")" << endl;
+            //cout << "\t From " << C[i][j];
             for (int k = 0; k < A.width;k++) {
                 C[i][j] += A[i][k] * B[k][j];
             }
-            cout << " to " << C[i][j] << endl;
+            //cout << " to " << C[i][j] << endl;
         }
     }
     return C;
@@ -47,13 +47,13 @@ block add_blocks(block A, block B, block result) {
     cout << "\tB :" << B.row << ", " << B.col << endl;
     cout << "\tC :" << result.row << ", " << result.col << endl;
     */
-    cout << "adding" << endl;
+    //cout << "adding" << endl;
     for(int i = 0; i < A.height; i++){
         for(int j = 0; j < A.width; j++) {
-            cout << "result[" << i << "][" << j << "] : (" << &(result[i][j]) << ")" << endl;
-            cout << "\t From " << result[i][j];
+            //cout << "result[" << i << "][" << j << "] : (" << &(result[i][j]) << ")" << endl;
+            //cout << "\t From " << result[i][j];
             result[i][j] = A[i][j] + B[i][j];
-            cout << " to " << result[i][j] << endl;
+            //cout << " to " << result[i][j] << endl;
         }
     }
     return result;
@@ -98,7 +98,7 @@ block rec_mult(block A, block B, block C) {
     if(C.width <= blocksize || C.height <= blocksize ) {
         return serial_mult(A, B, C);
     } 
-    cout << "calling calc_c11" << endl;
+    //cout << "calling calc_c11" << endl;
     block C11 = calc_c11(A, B, C);
     block C12 = calc_c12(A, B, C);
     block C21 = calc_c21(A, B, C);
@@ -114,7 +114,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
     block a(N);
     block b(N);
     block c(new double[N*N], N);
-    cout << "&C = " << c.ptr << endl;
+    //cout << "&C = " << c.ptr << endl;
 
     rec_mult(a, b, c);
     cout << " c (final)" << endl;
