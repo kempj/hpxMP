@@ -59,33 +59,33 @@ block add_blocks(block A, block B, block result) {
 block calc_c11(block A, block B, block C) {
     block tempC = C.block11();//scratch space
     tempC.add_scratch();
-    block A11B11 = rec_mult(A.block11(), B.block11(), C.block11());
-    block A12B21 = rec_mult(A.block12(), B.block21(), tempC);
-    return add_blocks(A11B11, A12B21, C.block11());
+    future<block> A11B11 = async(rec_mult, A.block11(), B.block11(), C.block11());
+    future<block> A12B21 = async(rec_mult, A.block12(), B.block21(), tempC);
+    return add_blocks(A11B11.get(), A12B21.get(), C.block11());
 }
 
 block calc_c12(block A, block B, block C) {
     block tempC = C.block12();
     tempC.add_scratch();
-    block A11B12 = rec_mult(A.block11(), B.block12(), C.block12());
-    block A12B22 = rec_mult(A.block12(), B.block22(), tempC);
-    return add_blocks(A11B12, A12B22, C.block12());
+    future<block> A11B12 = async(rec_mult, A.block11(), B.block12(), C.block12());
+    future<block> A12B22 = async(rec_mult, A.block12(), B.block22(), tempC);
+    return add_blocks(A11B12.get(), A12B22.get(), C.block12());
 }
 
 block calc_c21(block A, block B, block C) {
     block tempC = C.block21();
     tempC.add_scratch();
-    block A21B11 = rec_mult(A.block21(), B.block11(), C.block21());
-    block A22B21 = rec_mult(A.block22(), B.block21(), tempC);
-    return add_blocks(A21B11, A22B21, C.block21());
+    future<block> A21B11 = async(rec_mult, A.block21(), B.block11(), C.block21());
+    future<block> A22B21 = async(rec_mult, A.block22(), B.block21(), tempC);
+    return add_blocks(A21B11.get(), A22B21.get(), C.block21());
 }
 
 block calc_c22(block A, block B, block C) {
     block tempC = C.block22();
     tempC.add_scratch();
-    block A21B12 = rec_mult(A.block21(), B.block12(), C.block22());
-    block A22B22 = rec_mult(A.block22(), B.block22(), tempC);
-    return add_blocks(A21B12, A22B22, C.block22());
+    future<block> A21B12 = async(rec_mult, A.block21(), B.block12(), C.block22());
+    future<block> A22B22 = async(rec_mult, A.block22(), B.block22(), tempC);
+    return add_blocks(A21B12.get(), A22B22.get(), C.block22());
 }
 
 block combine_blocks(block b1, block b2, block b3, block b4, block C) {
