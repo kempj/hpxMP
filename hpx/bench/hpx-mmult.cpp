@@ -2,6 +2,8 @@
 #include <hpx/runtime/threads/topology.hpp>
 #include <boost/format.hpp>
 
+#include <sys/time.h>
+
 #include <matrix_block.h>
 
 using hpx::lcos::shared_future;
@@ -9,9 +11,11 @@ using hpx::lcos::future;
 using std::vector;
 using std::cout;
 using std::endl;
+using std::chrono::high_resolution_clock;
+using time_point = std::chrono::system_clock::time_point;
 
 
-const int blocksize = 10;
+int blocksize;
 
 void print(block A) {
     for(int i = 0; i < A.height; i++) {
@@ -89,16 +93,32 @@ block rec_mult(block A, block B, block C) {
     return C;
 }
 
-int hpx_main(boost::program_options::variables_map& vm) {
-    int niter = 1, N = blocksize * blocksize;
+int hpx_main(int argc, char **argv) {
+    blocksize = 100;
+    int niter = 1, N = 1000;
+    time_point time1, time2;
     srand(1);
+    if(argc > 1)
+        N = atoi(argv[1]);
+    if(argc > 2)
+        blocksize = atoi(argv[2]);
+    if(argc > 3)
+        niter = atoi(argv[3]);
+     cout << "Recursive matrix multiplication" << endl;
+     cout << "size " << N << endl;
+     cout << "block size " << blocksize << endl;
+     cout << "Number of iterations " << niter << endl;
 
     block a(N);
     block b(N);
     block c(new double[N*N], N);
 
+    time1 = high_resolution_clock::now();
     rec_mult(a, b, c);
+    time2 = high_resolution_clock::now();
 
+     auto time = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+     cout << "time "<< time << " microseconds" << endl;
     return hpx::finalize();
 }
 
