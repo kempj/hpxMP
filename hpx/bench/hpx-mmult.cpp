@@ -1,13 +1,20 @@
 #include <hpx/hpx_init.hpp>
+#include <hpx/hpx.hpp>
 #include <hpx/runtime/threads/topology.hpp>
+//#include <hpx/lcos/local/dataflow.hpp>
+
 #include <boost/format.hpp>
 
 #include <sys/time.h>
 
 #include <matrix_block.h>
 
-using hpx::lcos::shared_future;
 using hpx::lcos::future;
+using hpx::util::unwrapped;
+using hpx::async;
+using hpx::lcos::local::dataflow;
+using hpx::make_ready_future;
+
 using std::vector;
 using std::cout;
 using std::endl;
@@ -81,15 +88,34 @@ block calc_c22(block A, block B, block C) {
     return add_blocks(A21B12, A22B22, C.block22());
 }
 
+block combine_blocks(block b1, block b2, block b3, block b4, block C) {
+    return C;
+}
+
 block rec_mult(block A, block B, block C) {
     if(C.width <= blocksize || C.height <= blocksize ) {
         return serial_mult(A, B, C);
     } 
-    block C11 = calc_c11(A, B, C);
-    block C12 = calc_c12(A, B, C);
-    block C21 = calc_c21(A, B, C);
-    block C22 = calc_c22(A, B, C);
+    future<block> C11 = async(calc_c11, A, B, C);
+    future<block> C12 = async(calc_c12, A, B, C);
+    future<block> C21 = async(calc_c21, A, B, C);
+    future<block> C22 = async(calc_c22, A, B, C);
 
+    C11.wait();
+    C12.wait();
+    C21.wait();
+    C22.wait();
+    /*
+       auto f_A = make_ready_future(A);
+       auto f_B = make_ready_future(B);
+       auto f_C = make_ready_future(C);
+       future<block> C11 = dataflow(unwrapped(calc_c11), f_A, f_B, f_C);
+       future<block> C12 = dataflow(unwrapped(calc_c12), f_A, f_B, f_C);
+       future<block> C21 = dataflow(unwrapped(calc_c21), f_A, f_B, f_C);
+       future<block> C22 = dataflow(unwrapped(calc_c22), f_A, f_B, f_C);
+
+       future<block> result = dataflow(unwrapped(combine_blocks), C11, C12, C21, C22, f_C);
+       */
     return C;
 }
 
@@ -104,10 +130,10 @@ int hpx_main(int argc, char **argv) {
         blocksize = atoi(argv[2]);
     if(argc > 3)
         niter = atoi(argv[3]);
-     cout << "Recursive matrix multiplication" << endl;
-     cout << "size " << N << endl;
-     cout << "block size " << blocksize << endl;
-     cout << "Number of iterations " << niter << endl;
+    cout << "Recursive matrix multiplication" << endl;
+    cout << "size " << N << endl;
+    cout << "block size " << blocksize << endl;
+    cout << "Number of iterations " << niter << endl;
 
     block a(N);
     block b(N);
@@ -117,8 +143,8 @@ int hpx_main(int argc, char **argv) {
     rec_mult(a, b, c);
     time2 = high_resolution_clock::now();
 
-     auto time = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
-     cout << "time "<< time << " microseconds" << endl;
+    auto time = std::chrono::duration_cast<std::chrono::microseconds>(time2 - time1).count();
+    cout << "time "<< time << " microseconds" << endl;
     return hpx::finalize();
 }
 
