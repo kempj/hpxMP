@@ -222,7 +222,7 @@ void hpx_runtime::task_wait() {
 
 // container_task_counter can be either num_taskgroup_tasks or num_thread_tasks
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
-                       shared_ptr<atomic<int>> parent_task_counter,
+                       shared_ptr<atomic<int64_t>> parent_task_counter,
                        parallel_region *team) {
 
     auto task_func = task->routine;
@@ -259,7 +259,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 }
 
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
-                       shared_ptr<atomic<int>> task_counter,
+                       shared_ptr<atomic<int64_t>> task_counter,
                        parallel_region *team, 
                        vector<shared_future<void>> deps) 
 {
@@ -310,8 +310,8 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         shared_future<int>              f_gtid  = make_ready_future( gtid );
         shared_future<omp_icv>          f_icv   = make_ready_future( task->icv );
         shared_future<parallel_region*> f_team  = make_ready_future( team );
-        shared_future<shared_ptr<atomic<int>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
-        shared_future<shared_ptr<atomic<int>>> f_counter;
+        shared_future<shared_ptr<atomic<int64_t>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
+        shared_future<shared_ptr<atomic<int64_t>>> f_counter;
 
 
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 

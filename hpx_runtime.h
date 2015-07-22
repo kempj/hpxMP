@@ -123,7 +123,7 @@ struct parallel_region {
     mutex_type thread_mtx{};
     mutex_type single_mtx{}; 
     int depth;
-    atomic<int> num_tasks{0};
+    atomic<int64_t> num_tasks{0};
     atomic<int> single_counter{0};
     atomic<int> current_single_thread{-1};
     void *copyprivate_data;
@@ -143,7 +143,7 @@ class omp_task_data {
     public:
         //This constructor should only be used once for the implicit task
         omp_task_data( parallel_region *T, omp_device_icv *global, int init_num_threads) 
-            : team(T), num_child_tasks(new atomic<int>{0})
+            : team(T), num_child_tasks(new atomic<int64_t>{0})
               {
             local_thread_num = 0;
             icv.device = global;
@@ -163,7 +163,7 @@ class omp_task_data {
 
         //This is for explicit tasks
         omp_task_data(int tid, parallel_region *T, omp_icv icv_vars)
-            : local_thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int>{0})
+            : local_thread_num(tid), team(T), icv(icv_vars), num_child_tasks(new atomic<int64_t>{0})
         {
             threads_requested = icv.nthreads;
             icv_vars.device = icv.device;
@@ -190,7 +190,7 @@ class omp_task_data {
         parallel_region *team;
         mutex_type thread_mutex;
         hpx::lcos::local::condition_variable thread_cond;
-        shared_ptr<atomic<int>> num_child_tasks;
+        shared_ptr<atomic<int64_t>> num_child_tasks;
         int single_counter{0};
         int loop_num{0};
 
