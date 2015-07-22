@@ -356,7 +356,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   omp_task_data *parent) 
 {
     parallel_region team(parent->team, parent->threads_requested);
-    vector<hpx::lcos::future<void>> threads;
     
 #ifdef OMP_COMPLIANT
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
