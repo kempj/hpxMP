@@ -335,7 +335,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     } else {
         kmp_invoke(thread_func, tid, tid, argc, argv);
     }
-    while (task_data.num_child_tasks > 0) {
+    while (task_data.num_child_tasks != 0) {
         hpx::this_thread::yield();
     }
 
