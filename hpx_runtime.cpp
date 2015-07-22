@@ -177,7 +177,11 @@ void hpx_runtime::set_num_threads(int nthreads) {
 }
 
 int hpx_runtime::get_thread_num() {
+#ifdef OMP_COMPLIANT
     return hpx::get_worker_thread_num();
+#else
+    return get_task_data()->local_thread_num;
+#endif
 }
 
 // this should only be called from implicit tasks
