@@ -62,11 +62,9 @@ void start_hpx(int initial_num_threads) {
             boost::algorithm::is_any_of(";"),
                 boost::algorithm::token_compress_on);
 
-        // FIXME: For correctness check for signed overflow.
         argc = hpx_args.size() + num_hard_coded_args;
         argv = new char*[argc];
 
-        // FIXME: Should we do escaping?    
         for (boost::uint64_t i = 0; i < hpx_args.size(); ++i) {
             argv[i + num_hard_coded_args] = const_cast<char*>(hpx_args[i].c_str());
         }
@@ -337,6 +335,9 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     } else {
         kmp_invoke(thread_func, tid, tid, argc, argv);
     }
+    while (task_data.num_child_tasks > 0) {
+        hpx::this_thread::yield();
+    }
 
     if(running_threads-- == 0) {
         hpx::lcos::local::spinlock::scoped_lock lk(mtx);
@@ -348,9 +349,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
 //That data is not initialized for the new hpx threads yet.
 void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
-                  omp_task_data *parent) {
-
-    //parallel_region<hpx::threads::scheduled_executor> team(parent->team, parent->threads_requested);
+                  omp_task_data *parent) 
+{
     parallel_region team(parent->team, parent->threads_requested);
     vector<hpx::lcos::future<void>> threads;
     
@@ -364,7 +364,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     running_threads = ( parent->threads_requested - 1);
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
-        //team.thread_map[i] = -1;
         hpx::applier::register_thread_nullary(
                 std::bind( &thread_setup, kmp_invoke, thread_func, argc, argv, i, &team, parent, 
                            boost::ref(mtx), boost::ref(cond), boost::ref(running_threads) ),
@@ -373,8 +372,9 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     }
     {
         hpx::lcos::local::spinlock::scoped_lock lk(mtx);
-        if( running_threads > 0 )
+        while( running_threads > 0 ) {
             cond.wait(lk);
+        }
     }
 #ifndef OMP_COMPLIANT
     while(team.num_tasks > 0) {

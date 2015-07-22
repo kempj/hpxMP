@@ -230,7 +230,6 @@ void __kmpc_end_single(ident_t *loc, int tid){
 
 int __kmpc_master(ident_t *loc, int global_tid){
     start_backend();
-    //TODO: if master can be called from tasks, then this doesn't work.
     if(hpx_backend->get_thread_num() == 0) {
         return 1;
     }
