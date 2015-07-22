@@ -377,7 +377,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
         }
     }
 #ifndef OMP_COMPLIANT
-    task_wait();
     while(team.num_tasks > 0) {
         hpx::this_thread::yield();
     }
