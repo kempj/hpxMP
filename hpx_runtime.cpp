@@ -193,7 +193,7 @@ void hpx_runtime::barrier_wait(){
         hpx::this_thread::yield();
     }
 #else
-    while(team->num_tasks > 0) {
+    while(team->num_tasks > team->num_threads) {
         hpx::this_thread::yield();
     }
 #endif
@@ -343,10 +343,13 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
         hpx::this_thread::yield();
     }
 
-    if(running_threads-- == 0) {
+    if(--running_threads == 0) {
         hpx::lcos::local::spinlock::scoped_lock lk(mtx);
         cond.notify_all();
     }
+#ifndef OMP_COMPLIANT
+    team->num_tasks--;
+#endif
 }
 
 //This is the only place where I can't call get_thread.
@@ -364,7 +367,8 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     hpx::lcos::local::condition_variable cond;
     mutex_type mtx;
     atomic<int> running_threads;
-    running_threads = ( parent->threads_requested - 1);
+    running_threads = parent->threads_requested;
+    team.num_tasks = running_threads;
 
     for( int i = 0; i < parent->threads_requested; i++ ) {
         hpx::applier::register_thread_nullary(
