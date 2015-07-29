@@ -52,7 +52,7 @@ void fastInitMatrix(int size)
 {
     std::srand(0);
     for(int i=0; i < size*size;i++) {
-        A[i] = std::rand();
+        A[i] = std::rand() / (RAND_MAX / 10);
     }
 }
 
