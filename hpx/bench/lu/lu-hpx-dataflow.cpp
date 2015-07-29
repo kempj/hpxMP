@@ -9,6 +9,8 @@
 
 #include "lu-local.h"
 
+#include <boost/assign.hpp>
+
 using std::vector;
 using hpx::util::unwrapped;
 using hpx::lcos::shared_future;
