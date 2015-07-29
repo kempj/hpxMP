@@ -44,17 +44,19 @@ void init_df(block ***block_list, int numBlocks, int size) {
     }
 }
 
-void LU( int size, int numBlocks)
+unsigned long LU( int size, int numBlocks)
 {
     //vector<vector<vector<block>>> block_list(2);
     block ***block_list = new block**[2];
 
     //init_df(block_list, numBlocks, size);
 
+    unsigned long t1, t2;
 #pragma omp parallel
 {
 #pragma omp master
 {
+    t1 = GetTickCount();
     init_df(block_list, numBlocks, size);
 
     for(int i = 1; i < numBlocks; i++) {
@@ -83,8 +85,10 @@ void LU( int size, int numBlocks)
         }
     }
 #pragma omp taskwait
+    t2 = GetTickCount();
 }
 }
+    return (t2 - t1);
 }
 
 int main(int argc, char *argv[])
@@ -92,7 +96,7 @@ int main(int argc, char *argv[])
     vector<double> originalA;
     int size = 1000;
     int numBlocks = 10;
-    unsigned long t1, t2;
+    unsigned long t1, t2, time;
     bool runCheck = false;
 
     if( argc > 1 )
@@ -124,16 +128,15 @@ int main(int argc, char *argv[])
         printf("starting serial LU\n");
         diag_op( size, block(size, 0, size));
         t2 = GetTickCount();
+        time = t2 - t1;
     } else if( numBlocks > 1) {
         printf("starting LU\n");
-        t1 = GetTickCount();
-        LU( size, numBlocks);
-        t2 = GetTickCount();
+        time = LU( size, numBlocks);
     } else { 
         printf("Error: numBlocks must be greater than 0.\n");
         return 0;
     }
-    printf("Time for LU-decomposition in secs: %f \n", (t2-t1)/1000000.0);
+    printf("Time for LU-decomposition in secs: %f \n", time / 1000000.0);
     
     if(runCheck) {
         checkResult( originalA,  size );
