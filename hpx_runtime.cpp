@@ -221,6 +221,7 @@ void hpx_runtime::end_taskgroup() {
 
 void hpx_runtime::task_wait() {
     auto *task = get_task_data();
+    task->last_df_task.wait();
     while( *(task->num_child_tasks) > 0 ) {
         hpx::this_thread::yield();
     }
@@ -238,7 +239,9 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     task_func(gtid, task);
 
     *(parent_task_counter) -= 1;
+#ifndef OMP_COMPLIANT
     team->num_tasks--;
+#endif
 
     delete[] (char*)task;
 }
@@ -284,11 +287,19 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
 }
 
 void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
-                       shared_ptr<atomic<int64_t>> task_counter,
-                       parallel_region *team, 
-                       vector<shared_future<void>> deps) 
+                      shared_ptr<atomic<int64_t>> task_counter,
+                      parallel_region *team, 
+                      vector<shared_future<void>> deps) 
 {
     task_setup( gtid, task, icv, task_counter, team);
+}
+
+void df_tg_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
+                        shared_ptr<local_priority_queue_executor> tg_exec,
+                        parallel_region *team, 
+                        vector<shared_future<void>> deps) 
+{
+    tg_task_setup( gtid, task, icv, tg_exec, team);
 }
 
 //The input on the Intel call is a pair of pointers to arrays of dep structs, and the length of
@@ -318,14 +329,22 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
 
     shared_future<void> new_task;
 
-    *(task->num_child_tasks) += 1;
+    if(task->in_taskgroup) {
+    } else {
+        *(task->num_child_tasks) += 1;
+    }
 #ifndef OMP_COMPLIANT
     team->num_tasks++;
 #endif
     if(dep_futures.size() == 0) {
 #ifdef OMP_COMPLIANT
-        new_task = hpx::async( *(team->exec), task_setup, gtid, thunk, task->icv,
-                                task->num_child_tasks, team);
+        if(task->in_taskgroup) {
+            new_task = hpx::async( *(task->tg_exec), tg_task_setup, gtid, thunk, task->icv,
+                                    task->tg_exec, team);
+        } else {
+            new_task = hpx::async( *(team->exec), task_setup, gtid, thunk, task->icv,
+                                    task->num_child_tasks, team);
+        }
 #else
         new_task = hpx::async( task_setup, gtid, thunk, task->icv,
                                 task->num_child_tasks, team);
@@ -339,14 +358,26 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         shared_future<shared_ptr<atomic<int64_t>>> f_counter;
 
 
-        //TODO: add taskgroup support for df tasks
+#ifdef OMP_COMPLIANT
+        if(task->in_taskgroup) {
+            //new_task = dataflow( unwrapped(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
+            //                     make_ready_future(task->tg_exec),
+            //                     f_team, hpx::when_all(dep_futures) );
+        } else {
+            new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
+                                 f_parent_counter, 
+                                 f_team, hpx::when_all(dep_futures) );
+        }
+#else
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
                              f_team, hpx::when_all(dep_futures) );
+#endif
     }
     for(int i = 0 ; i < out_deps.size(); i++) {
         task->df_map[out_deps[i]] = new_task;
     }
+    task->last_df_task = new_task;
 }
 
 void thread_setup( invoke_func kmp_invoke, microtask_t thread_func, 

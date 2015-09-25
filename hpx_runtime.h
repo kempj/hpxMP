@@ -194,6 +194,8 @@ class omp_task_data {
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
+        shared_future<void> last_df_task;
+
 #ifdef OMP_COMPLIANT
         shared_ptr<local_priority_queue_executor> tg_exec;
 #endif
