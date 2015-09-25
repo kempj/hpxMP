@@ -185,7 +185,7 @@ class omp_task_data {
         }
         
         int local_thread_num;
-        int global_thread_num;
+        //int global_thread_num;
         int threads_requested;
         parallel_region *team;
         mutex_type thread_mutex;
@@ -193,6 +193,10 @@ class omp_task_data {
         shared_ptr<atomic<int64_t>> num_child_tasks;
         int single_counter{0};
         int loop_num{0};
+        bool in_taskgroup{false};
+#ifdef OMP_COMPLIANT
+        shared_ptr<local_priority_queue_executor> tg_exec;
+#endif
 
         omp_icv icv;
         depends_map df_map;

@@ -203,14 +203,20 @@ void hpx_runtime::barrier_wait(){
 }
 
 bool hpx_runtime::start_taskgroup(){
-    //TODO: swap parallel region executor with taskgroup executor
-    //TODP: swap task counter with taskgroup counter
-    return false;
+    auto *task = get_task_data();
+    task->in_taskgroup = true;
+#ifdef OMP_COMPLIANT
+    task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
+#endif
+    return true;
 }
 
 void hpx_runtime::end_taskgroup() {
-    //TODO: swap taskgroup executor with parallel region executor
-    //TODO: swap taskgroup counter with task counter
+    auto *task = get_task_data();
+#ifdef OMP_COMPLIANT
+    task->tg_exec.reset();
+#endif
+    task->in_taskgroup = false;
 }
 
 void hpx_runtime::task_wait() {
@@ -222,8 +228,8 @@ void hpx_runtime::task_wait() {
 
 // container_task_counter can be either num_taskgroup_tasks or num_thread_tasks
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
-                       shared_ptr<atomic<int64_t>> parent_task_counter,
-                       parallel_region *team) {
+                 shared_ptr<atomic<int64_t>> parent_task_counter,
+                 parallel_region *team) {
 
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
@@ -232,9 +238,21 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     task_func(gtid, task);
 
     *(parent_task_counter) -= 1;
-#ifndef OMP_COMPLIANT
     team->num_tasks--;
-#endif
+
+    delete[] (char*)task;
+}
+
+void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
+                 shared_ptr<local_priority_queue_executor> tg_exec,
+                 parallel_region *team) {
+    auto task_func = task->routine;
+    omp_task_data task_data(gtid, team, icv);
+    task_data.in_taskgroup = true;
+    set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
+
+    task_func(gtid, task);
+
     delete[] (char*)task;
 }
 
@@ -242,18 +260,25 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 //causing its omp_task_data to be deallocated.
 void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk){
     auto *current_task = get_task_data();
-    *(current_task->num_child_tasks) += 1;
 
     if(current_task->team->num_threads > 1) {
 #ifdef OMP_COMPLIANT
-        hpx::apply(*(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
-                    current_task->num_child_tasks, current_task->team );
+        if(current_task->in_taskgroup) { 
+            hpx::apply( *(current_task->tg_exec), tg_task_setup, gtid, thunk, current_task->icv,
+                        current_task->tg_exec, current_task->team );
+        } else {
+            *(current_task->num_child_tasks) += 1;
+            hpx::apply( *(current_task->team->exec), task_setup, gtid, thunk, current_task->icv,
+                        current_task->num_child_tasks, current_task->team );
+        }
 #else
+        //TODO: add taskgroups in non compliant version
         current_task->team->num_tasks++;
         hpx::apply(task_setup, gtid, thunk, current_task->icv,
                     current_task->num_child_tasks, current_task->team );
 #endif
     } else {
+        *(current_task->num_child_tasks) += 1;
         task_setup(gtid, thunk, current_task->icv, current_task->num_child_tasks, current_task->team);
     }
 }
@@ -314,6 +339,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
         shared_future<shared_ptr<atomic<int64_t>>> f_counter;
 
 
+        //TODO: add taskgroup support for df tasks
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
                              f_team, hpx::when_all(dep_futures) );
