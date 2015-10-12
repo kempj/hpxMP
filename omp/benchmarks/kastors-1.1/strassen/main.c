@@ -160,7 +160,8 @@ int main(int argc, char* argv[])
     double max_ = -1;
     double* all_times = (double*)malloc(sizeof(double) * params.niter); 
 
-    for (int i=0; i<params.niter; ++i)
+    int i;
+    for (i=0; i<params.niter; ++i)
     {
       double cur_time = run(&params);
       all_times[i] = cur_time;
