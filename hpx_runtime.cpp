@@ -222,7 +222,9 @@ void hpx_runtime::end_taskgroup() {
 
 void hpx_runtime::task_wait() {
     auto *task = get_task_data();
-    task->last_df_task.wait();
+    if(task->df_map.size() > 0) {
+        task->last_df_task.wait();
+    }
     while( *(task->num_child_tasks) > 0 ) {
         hpx::this_thread::yield();
     }
