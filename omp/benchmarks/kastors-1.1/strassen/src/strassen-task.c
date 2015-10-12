@@ -103,7 +103,8 @@ static void OptimizedStrassenMultiply_par(double *C, double *A, double *B,
   C22 = C21 + QuadrantSize;
 
   /* Allocate Heap Space Here */
-  StartHeap = Heap = malloc(QuadrantSizeInBytes * NumberOfVariables);
+  Heap = (char*)malloc(QuadrantSizeInBytes * NumberOfVariables);
+  StartHeap = Heap;
 
   /* Distribute the heap space over the variables */
   S1 = (double*) Heap; Heap += QuadrantSizeInBytes;
