@@ -88,6 +88,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
         //TODO:how to I handle immediate tasks, read them from flags?
         hpx_backend->create_task(new_task->routine, gtid, new_task);
     } else {
+        /*
         vector<int64_t> in_deps;
         vector<int64_t> out_deps;
         in_deps.reserve(ndeps);
@@ -110,6 +111,9 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
             }
         }
         hpx_backend->create_df_task(gtid, new_task, in_deps, out_deps);
+        */
+        hpx_backend->create_df_task( gtid, new_task, ndeps, dep_list,
+                                     ndeps_noalias, noalias_dep_list);
     }
     return 1;
 }

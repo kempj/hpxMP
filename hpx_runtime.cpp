@@ -309,24 +309,28 @@ void df_tg_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
 //these arrays.
 //The structs contain a pointer and a flag for in or out dep
 //I need dep_futures vector, so I can do a wait_all on it.
-void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
+//void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
+void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, 
+                           int ndeps, kmp_depend_info_t *dep_list,
+                           int ndeps_noalias, kmp_depend_info_t *noalias_dep_list )
+{
     auto task = get_task_data();
     auto team = task->team;
     if(team->num_threads == 1 ) {
         create_task(thunk->routine, gtid, thunk);
     }
     vector<shared_future<void>> dep_futures;
-    dep_futures.reserve( in_deps.size() + out_deps.size() );
+    dep_futures.reserve( ndeps + ndeps_noalias);
 
     //Populating a vector of futures that the task depends on
-    for(int i = 0; i < in_deps.size(); i++) {
-        if(task->df_map.count( in_deps[i] ) > 0) {
-            dep_futures.push_back(task->df_map[in_deps[i]]);
+    for(int i = 0; i < ndeps;i++) {
+        if(task->df_map.count( dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(task->df_map[dep_list[i].base_addr]);
         }
     }
-    for(int i = 0; i < out_deps.size(); i++) {
-        if(task->df_map.count( out_deps[i] ) > 0) {
-            dep_futures.push_back(task->df_map[out_deps[i]]);
+    for(int i = 0; i < ndeps_noalias;i++) {
+        if(task->df_map.count( noalias_dep_list[i].base_addr) > 0) {
+            dep_futures.push_back(task->df_map[noalias_dep_list[i].base_addr]);
         }
     }
 
@@ -380,8 +384,15 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
                              f_team, hpx::when_all(dep_futures) );
 #endif
     }
-    for(int i = 0 ; i < out_deps.size(); i++) {
-        task->df_map[out_deps[i]] = new_task;
+    for(int i = 0 ; i < ndeps; i++) {
+        if(dep_list[i].flags.out) {
+            task->df_map[dep_list[i].base_addr] = new_task;
+        }
+    }
+    for(int i = 0 ; i < ndeps_noalias; i++) {
+        if(noalias_dep_list[i].flags.out) {
+            task->df_map[noalias_dep_list[i].base_addr] = new_task;
+        }
     }
     task->last_df_task = new_task;
 }

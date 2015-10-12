@@ -13,7 +13,7 @@ typedef int  (*launch_t)( int gtid );
 typedef void (*kmpc_micro)  ( kmp_int32 * global_tid, kmp_int32 * bound_tid, ... );
 
 typedef kmp_int32 kmp_critical_name[8];
-
+/*
 typedef struct kmp_depend_info {
     int64_t                    base_addr;
     size_t                     len;
@@ -22,7 +22,7 @@ typedef struct kmp_depend_info {
         bool                   out:1;
     } flags;
 } kmp_depend_info_t;
-
+*/
 
 extern "C" int __kmp_invoke_microtask( microtask_t pkfn, int gtid, int tid, int argc, void **argv );
 

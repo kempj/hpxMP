@@ -64,6 +64,15 @@ typedef struct kmp_task {
 } kmp_task_t;
 
 
+typedef struct kmp_depend_info {
+    int64_t   base_addr;
+    size_t    len;
+    struct {
+        bool  in:1;
+        bool  out:1;
+    } flags;
+} kmp_depend_info_t;
+
 class loop_data {
     public:
         loop_data(int NT, int L, int U, int S, int C, int sched) 
@@ -218,7 +227,10 @@ class hpx_runtime {
         void create_task( omp_task_func taskfunc, void *frame_pointer,
                           void *firstprivates, int is_tied, int blocks_parent);
         void create_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
-        void create_df_task( int gtid, kmp_task_t *task, vector<int64_t> in, vector<int64_t> out);
+        //void create_df_task( int gtid, kmp_task_t *task, vector<int64_t> in, vector<int64_t> out);
+        void create_df_task( int gtid, kmp_task_t *thunk, 
+                             int ndeps, kmp_depend_info_t *dep_list,
+                             int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
         void task_exit();
         void task_wait();
         double get_time();
