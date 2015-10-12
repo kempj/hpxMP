@@ -214,6 +214,7 @@ bool hpx_runtime::start_taskgroup(){
 void hpx_runtime::end_taskgroup() {
     auto *task = get_task_data();
 #ifdef OMP_COMPLIANT
+    //FIXME: This currently doesn't wait on dataflow tasks.
     task->tg_exec.reset();
 #endif
     task->in_taskgroup = false;
@@ -359,15 +360,16 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> i
 
 
 #ifdef OMP_COMPLIANT
-        if(task->in_taskgroup) {
-            //new_task = dataflow( unwrapped(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
-            //                     make_ready_future(task->tg_exec),
-            //                     f_team, hpx::when_all(dep_futures) );
-        } else {
+        //if(task->in_taskgroup) {
+            //FIXME: This isn't being added to the taskgroup executor.
+        //    new_task = dataflow( unwrapped(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
+        //                         make_ready_future(task->tg_exec),
+        //                         f_team, hpx::when_all(dep_futures) );
+        //} else {
             new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                                  f_parent_counter, 
                                  f_team, hpx::when_all(dep_futures) );
-        }
+        //}
 #else
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
