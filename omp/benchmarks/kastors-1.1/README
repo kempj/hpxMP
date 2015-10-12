@@ -1,0 +1,96 @@
+Configure warning and error messages
+------------------------------------
+
+    - "it appears your xxx compiler does not support OpenMP.": the
+      configure script did not manage to figure out how to compile
+      OpenMP programs with the C compiler you provided. This could
+      mean your C compiler is too old to support OpenMP (GCC
+      implements OpenMP since gcc-4.2).
+
+    - "it appears your xxx compiler does not support OpenMP task
+      dependencies.": KaStORS benchmarks use the #pragma omp task
+      depend (in:...) (out:...) (inout:...) directives, introduced
+      since OpenMP 4.0. For example, GCC implements this features
+      since gcc-4.9. This error message indicates the C compiler
+      you're using does not implement OpenMP 4.0 task dependencies.
+
+    - "couldn't find lapacke.h header.": KaStORS PLASMA benchmarks
+        need the lapacke.h header file, that comes with the dev
+        version of the lapacke library.
+
+    - "couldn't find cblas_dgemm in -lcblas.": KaStORS PLASMA
+        benchmarks need cblas_dgemm() and friends, that can be found
+        in the libcblas library. "libatlas-base-dev" is an example of
+        libraries providing libcblas.
+
+Tests
+-----
+
+The usual:
+
+    $> make check
+
+can be used to check if the backend compiler correctly compiled the KaStORS benchmarks.
+Results are checked with some relative error specific to each kernel.
+
+Run
+---
+
+To run the current compiler on the same example than in the IWOMP2014 paper:
+
+    $> make run
+
+BLAS installation
+-----------------
+Configure will try to find cblas/OpenBLAS implementation for BLAS.
+If you have a specific implementation to use, please consider using the
+--with-blas flag::
+
+    $> mkdir build && cd build
+    $> ../configure --with-blas=/usr/lib/libgslcblas.a
+    $> ../configure --with-blas="/usr/lib/libcblas.a /usr/lib/libatlas.a"
+
+Default dynamic flags detection is possible for atlas and OpenBLAS:
+
+    $> ../configure --with-blas=atlas
+    $> ../configure --with-blas=openblas
+
+OpenBlas May contains lapacke too. Specify it using::
+
+    $> ../configure --with-blas=openblas --with-lapacke=openblas
+
+If your installation is not in you Paths::
+
+    $> ../configure --with-blas=openblas --with-lapacke=openblas --with-lapacke-installdir=/path/to/install --with-blas-installdir=/path/to/install
+
+If your target platform doesn't come with any BLAS library, consider
+installing OpenBLAS:
+
+    $> mkdir /path/to/kastors/third_party && cd /path/to/kastors/third_party
+    $> git clone git://github.com/xianyi/OpenBLAS
+    $> cd OpenBLAS
+    $> make USE_THREAD=0
+
+and run the KaStORS configure this way:
+    $> cd /path/to/kastors/build
+    $> ../configure --with-blas=/path/to/kastors/third_party/OpenBLAS/libopenblas.a
+
+Note that the best performance observed on KaStORS was obtained using the
+serial version of the OpenBLAS library. To prevent OpenBLAS from creating
+threads, you can either build OpenBLAS with the USE_THREAD=0 option, or use a
+precompiled version of the library and set the OPENBLAS_NUM_THREADS
+environment variable to 1.
+
+    $> export OPENBLAS_NUM_THREADS=1
+
+
+Using Intel MKL
+---------------
+
+You can pass --with-mkl to the configure script in order to use the Intel MKL
+library as BLAS suppliers. To do so, you also need to set the MKL_INC and
+MKL_LIB environment variables to the location where you installed MKL, like
+the example above:
+
+    $> MKL_INC=/mkl_install_dir/include/ MKL_LIB=/mkl_install_dir/lib/ ../configure --with-mkl
+
