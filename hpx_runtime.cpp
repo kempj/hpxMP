@@ -251,6 +251,7 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     delete[] (char*)task;
 }
 
+#ifdef OMP_COMPLIANT
 void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
                  shared_ptr<local_priority_queue_executor> tg_exec,
                  parallel_region *team)
@@ -258,12 +259,14 @@ void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv,
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     task_data.in_taskgroup = true;
+    task_data.tg_exec = tg_exec;
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
 
     task_func(gtid, task);
 
     delete[] (char*)task;
 }
+#endif
 
 //shared_ptr is used for these counters, because the parent/calling task may terminate at any time,
 //causing its omp_task_data to be deallocated.
@@ -301,6 +304,7 @@ void df_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
     task_setup( gtid, task, icv, task_counter, team);
 }
 
+#ifdef OMP_COMPLIANT
 void df_tg_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv, 
                         shared_ptr<local_priority_queue_executor> tg_exec,
                         parallel_region *team, 
@@ -308,6 +312,7 @@ void df_tg_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
 {
     tg_task_setup( gtid, task, icv, tg_exec, team);
 }
+#endif
 
 // The input on the Intel call is a pair of pointers to arrays of dep structs,
 // and the length of these arrays.
@@ -368,18 +373,20 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 
 
 #ifdef OMP_COMPLIANT
-        //if(task->in_taskgroup) {
-        //    new_task = dataflow( *(task->tg_exec),
-        //                         unwrapped(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
-        //                         make_ready_future(task->tg_exec),
-        //                         f_team, hpx::when_all(dep_futures) );
-        //} else {
-            //new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
+        shared_future<shared_ptr<local_priority_queue_executor>> tg_exec = hpx::make_ready_future(task->tg_exec);
+
+        if(task->in_taskgroup) {
+            new_task = dataflow( *(task->tg_exec),
+                                 unwrapped(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
+                                 //make_ready_future(task->tg_exec),
+                                 tg_exec, 
+                                 f_team, hpx::when_all(dep_futures) );
+        } else {
             new_task = dataflow( *(team->exec),
                                  unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                                  f_parent_counter, 
                                  f_team, hpx::when_all(dep_futures) );
-        //}
+        }
 #else
         new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
