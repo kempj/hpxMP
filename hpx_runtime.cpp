@@ -21,7 +21,8 @@ using hpx::threads::get_self_id;
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 
-void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
+void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running)
+{
     cout << "HPX OpenMP runtime has started" << endl;
     {   // Let the main thread know that we're done.
         boost::mutex::scoped_lock lk(mtx);
@@ -30,13 +31,15 @@ void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running){
     }
 }
 
-void fini_runtime() {
+void fini_runtime()
+{
     cout << "Stopping HPX OpenMP runtime" << endl;
     //this should only be done if this runtime started hpx
     hpx::get_runtime().stop();
 }
 
-void start_hpx(int initial_num_threads) {
+void start_hpx(int initial_num_threads)
+{
 #ifdef OMP_COMPLIANT
     int num_hard_coded_args = 2;
 #else
@@ -97,7 +100,8 @@ void start_hpx(int initial_num_threads) {
     delete[] argv;
 }
 
-hpx_runtime::hpx_runtime() {
+hpx_runtime::hpx_runtime()
+{
     int initial_num_threads;
     num_procs = hpx::threads::hardware_concurrency();
     char const* omp_num_threads = getenv("OMP_NUM_THREADS");
@@ -107,15 +111,6 @@ hpx_runtime::hpx_runtime() {
     } else { 
         initial_num_threads = num_procs;
     }
-    //char const* omp_stack_size = getenv("OMP_STACKSIZE");
-    //OMP_NESTED -> initial_nest_var
-    //cancel_var
-    //stacksize_var
-    //char const* omp_max_levels = getenv("OMP_MAX_ACTIVE_LEVELS");
-    //if(omp_max_levels != NULL) { max_active_levels_var = atoi(omp_max_levels); }
-    ////Not device specific, so it needs to move to parallel region:
-    //char const* omp_thread_limit = getenv("OMP_THREAD_LIMIT");
-    //if(omp_thread_limit != NULL) { thread_limit_var = atoi(omp_thread_limit); }
 
     external_hpx = hpx::get_runtime_ptr();
     if(external_hpx){
@@ -124,9 +119,6 @@ hpx_runtime::hpx_runtime() {
         num_procs = hpx::get_os_thread_count();
         initial_num_threads = num_procs;
     }
-
-    //TODO: nthreads_var is a list of ints where the nth item corresponds
-    // to the number of threads in nth level parallel regions.
 
     implicit_region.reset(new parallel_region(1));
     initial_thread.reset(new omp_task_data(implicit_region.get(), &device_icv, initial_num_threads));
@@ -137,14 +129,15 @@ hpx_runtime::hpx_runtime() {
     }
 }
 
-//This isn't really a thread team, it's a region. I think.
-parallel_region* hpx_runtime::get_team(){
+parallel_region* hpx_runtime::get_team()
+{
     auto task_data = get_task_data();
     auto team = task_data->team;
     return team;
 }
 
-omp_task_data* hpx_runtime::get_task_data(){
+omp_task_data* hpx_runtime::get_task_data()
+{
     omp_task_data *data;
     if(hpx::threads::get_self_ptr()) {
         data = reinterpret_cast<omp_task_data*>(get_thread_data(get_self_id()));
@@ -176,6 +169,7 @@ void hpx_runtime::set_num_threads(int nthreads) {
     }
 }
 
+//TODO: Why not always return the given worker thread number?
 int hpx_runtime::get_thread_num() {
 #ifdef OMP_COMPLIANT
     return hpx::get_worker_thread_num();
@@ -202,25 +196,35 @@ void hpx_runtime::barrier_wait(){
     }
 }
 
-bool hpx_runtime::start_taskgroup(){
+//TODO: Does the spec say that outstanding tasks need to end before this begins?
+bool hpx_runtime::start_taskgroup()
+{
     auto *task = get_task_data();
     task->in_taskgroup = true;
 #ifdef OMP_COMPLIANT
     task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
+#else
+    task->tg_num_tasks.reset(new atomic<int64_t>{0});
 #endif
     return true;
 }
 
-void hpx_runtime::end_taskgroup() {
+void hpx_runtime::end_taskgroup() 
+{
     auto *task = get_task_data();
 #ifdef OMP_COMPLIANT
-    //FIXME: This currently doesn't wait on dataflow tasks.
     task->tg_exec.reset();
+#else
+    while( *(task->tg_num_tasks) > 0 ) {
+        hpx::this_thread::yield();
+    }
+    task->tg_num_tasks.reset();
 #endif
     task->in_taskgroup = false;
 }
 
-void hpx_runtime::task_wait() {
+void hpx_runtime::task_wait() 
+{
     auto *task = get_task_data();
     if(task->df_map.size() > 0) {
         task->last_df_task.wait();
@@ -230,11 +234,10 @@ void hpx_runtime::task_wait() {
     }
 }
 
-// container_task_counter can be either num_taskgroup_tasks or num_thread_tasks
 void task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
                  shared_ptr<atomic<int64_t>> parent_task_counter,
-                 parallel_region *team) {
-
+                 parallel_region *team)
+{
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
@@ -245,13 +248,13 @@ void task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 #ifndef OMP_COMPLIANT
     team->num_tasks--;
 #endif
-
     delete[] (char*)task;
 }
 
 void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv, 
                  shared_ptr<local_priority_queue_executor> tg_exec,
-                 parallel_region *team) {
+                 parallel_region *team)
+{
     auto task_func = task->routine;
     omp_task_data task_data(gtid, team, icv);
     task_data.in_taskgroup = true;
@@ -264,7 +267,8 @@ void tg_task_setup( int gtid, kmp_task_t *task, omp_icv icv,
 
 //shared_ptr is used for these counters, because the parent/calling task may terminate at any time,
 //causing its omp_task_data to be deallocated.
-void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk){
+void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task_t *thunk)
+{
     auto *current_task = get_task_data();
 
     if(current_task->team->num_threads > 1) {
@@ -305,11 +309,9 @@ void df_tg_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
     tg_task_setup( gtid, task, icv, tg_exec, team);
 }
 
-//The input on the Intel call is a pair of pointers to arrays of dep structs, and the length of
-//these arrays.
-//The structs contain a pointer and a flag for in or out dep
-//I need dep_futures vector, so I can do a wait_all on it.
-//void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, vector<int64_t> in_deps, vector<int64_t> out_deps) {
+// The input on the Intel call is a pair of pointers to arrays of dep structs,
+// and the length of these arrays.
+// The structs contain a pointer and a flag for in or out dep
 void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk, 
                            int ndeps, kmp_depend_info_t *dep_list,
                            int ndeps_noalias, kmp_depend_info_t *noalias_dep_list )
@@ -402,8 +404,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    parallel_region *team, omp_task_data *parent,
                    mutex_type& mtx,
                    hpx::lcos::local::condition_variable& cond,
-                   atomic<int>& running_threads
-                   ) {
+                   atomic<int>& running_threads )
+{
     omp_task_data task_data(tid, team, parent);
 
     set_thread_data( get_self_id(), reinterpret_cast<size_t>(&task_data));
@@ -423,8 +425,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 }
 
-//This is the only place where I can't call get_thread.
-//That data is not initialized for the new hpx threads yet.
+// This is the only place where get_thread can't be called, since
+// that data is not initialized for the new hpx threads yet.
 void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                   int argc, void **argv,
                   omp_task_data *parent) 
@@ -434,7 +436,6 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #ifdef OMP_COMPLIANT
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 #endif
-
     hpx::lcos::local::condition_variable cond;
     mutex_type mtx;
     atomic<int> running_threads;
@@ -453,6 +454,9 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
             cond.wait(lk);
         }
     }
+    //The executor containing the tasks will be destroyed as this call goes out
+    //of scope, which will wait on all tasks contained in it. So, nothing needs
+    //to be done here for it.
 #ifndef OMP_COMPLIANT
     while(team.num_tasks > 0) {
         hpx::this_thread::yield();
