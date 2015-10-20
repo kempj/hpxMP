@@ -51,6 +51,11 @@ void jacobi( size_t n , size_t iterations, size_t block_size, std::string output
 
     size_t n_block = static_cast<size_t>(std::ceil(double(n)/block_size));
 
+#pragma omp parallel 
+{
+#pragma omp single
+{
+
     auto start = std::chrono::high_resolution_clock::now();
 
     for(size_t i = 0; i < iterations; ++i) {
@@ -62,17 +67,21 @@ void jacobi( size_t n , size_t iterations, size_t block_size, std::string output
             //if(j + 1 < n_block) 
             //    trigger.push_back((*deps_old)[j+1]);
 
+#pragma omp task depend(inout: grid_new[y*n], grid_old[y*n]
             jacobi_kernel_wrap(y, y_end, n, boost::ref(*grid_new), boost::cref(*grid_old));
 
             std::swap(grid_new, grid_old);
 
         }
-    }
 
+    }
+#pragma omp taskwait
     auto end = std::chrono::high_resolution_clock::now();
     double elapsed = std::chrono::duration_cast< std::chrono::duration<double> >(end-start).count();
     jacobi_smp::report_timing(n, iterations, elapsed);
     jacobi_smp::output_grid(output_filename, *grid_old, n);
+}}
+
 }
 
 

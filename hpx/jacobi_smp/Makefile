@@ -10,7 +10,7 @@ jacobi_hpx.o: jacobi_hpx.cpp jacobi.hpp
 	$(CC) -c -o jacobi_hpx.o jacobi_hpx.cpp --std=c++11 `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=jacobi_hpx.o 
 
 jacobi-omp: jacobi.cpp jacobi.hpp jacobi_omp.cpp
-	$(CC) -g -o jacobi-omp jacobi_omp.cpp -std=c++11  `pkg-config --cflags --libs hpx_application` -DHPX_APPLICATION_NAME=jacobi-omp
+	$(CC) -g -fopenmp -o jacobi-omp jacobi_omp.cpp -std=c++11  `pkg-config --cflags --libs hpx_application` -DHPX_APPLICATION_NAME=jacobi-omp
 
 
 
