@@ -19,8 +19,16 @@ using boost::shared_ptr;
 using std::min;
 using std::vector;
 
+struct block {
+    double *src;
+    double *dest;
+    size_t matrix_size;
+    size_t block_size;
+    size_t col;
+    size_t row;
+};
 
-
+/*
 void jacobi_kernel(
         double * dst
         , const double * src
@@ -34,14 +42,15 @@ void jacobi_kernel(
     for(std::size_t x = 1; x < n-1; ++x) {
         dst[x] = (src[x-n] + src[x+n] + src[x] + src[x-1] + src[x+1]) * 0.2;
     }
-}
+}*/
 
 
 void jacobi_kernel_wrap(size_t y_begin, size_t y_end, size_t n, vector<double> & dst, vector<double> const & src) {
     for(size_t y = y_begin; y < y_end; ++y) {
-        double * dst_ptr = &dst[y * n];
-        const double * src_ptr = &src[y * n];
-        jacobi_kernel( dst_ptr, src_ptr, n );
+        size_t offset = y * n;
+        for(size_t x = offset + 1; x < offset + n-1; ++x) {
+            dst[x] = (src[x-n] + src[x+n] + src[x] + src[x-1] + src[x+1]) * 0.2;
+        }
     }
 }
 
@@ -55,17 +64,11 @@ void jacobi( size_t n , size_t iterations, size_t block_size, std::string output
 {
 #pragma omp single
 {
-
     auto start = std::chrono::high_resolution_clock::now();
 
     for(size_t i = 0; i < iterations; ++i) {
-        for(size_t y = 1, j = 0; y < n -1; y += block_size, ++j) {
+        for(size_t y = 1, j = 0; y < n - 1; y += block_size, ++j) {
             size_t y_end = min(y + block_size, n - 1);
-            //trigger.push_back((*deps_old)[j]);
-            //if(j > 0)
-            //    trigger.push_back((*deps_old)[j-1]);
-            //if(j + 1 < n_block) 
-            //    trigger.push_back((*deps_old)[j+1]);
 
             double *dest = (*grid_new).data();
             double *src = (*grid_old).data();
