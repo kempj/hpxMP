@@ -19,31 +19,6 @@ using boost::shared_ptr;
 using std::min;
 using std::vector;
 
-struct block {
-    double *src;
-    double *dest;
-    size_t matrix_size;
-    size_t block_size;
-    size_t col;
-    size_t row;
-};
-
-/*
-void jacobi_kernel(
-        double * dst
-        , const double * src
-        , std::size_t n
-        )
-{
-#ifdef HPX_INTEL_VERSION
-#pragma vector always
-#pragma unroll(4)
-#endif
-    for(std::size_t x = 1; x < n-1; ++x) {
-        dst[x] = (src[x-n] + src[x+n] + src[x] + src[x-1] + src[x+1]) * 0.2;
-    }
-}*/
-
 
 void jacobi_kernel_wrap(size_t y_begin, size_t y_end, size_t n, vector<double> & dst, vector<double> const & src) {
     for(size_t y = y_begin; y < y_end; ++y) {
@@ -77,11 +52,8 @@ void jacobi( size_t n , size_t iterations, size_t block_size, std::string output
         {
             jacobi_kernel_wrap(y, y_end, n, boost::ref(*grid_new), boost::cref(*grid_old));
         }
-
             std::swap(grid_new, grid_old);
-
         }
-
     }
 #pragma omp taskwait
     auto end = std::chrono::high_resolution_clock::now();
