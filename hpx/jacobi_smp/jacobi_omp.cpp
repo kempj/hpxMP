@@ -68,7 +68,9 @@ void jacobi( size_t n , size_t iterations, size_t block_size, std::string output
             //    trigger.push_back((*deps_old)[j+1]);
 
 #pragma omp task depend(inout: grid_new[y*n], grid_old[y*n]
+        {
             jacobi_kernel_wrap(y, y_end, n, boost::ref(*grid_new), boost::cref(*grid_old));
+        }
 
             std::swap(grid_new, grid_old);
 
