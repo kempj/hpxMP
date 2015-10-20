@@ -6,7 +6,8 @@
 
 #include "jacobi.hpp"
 
-#include <hpx/hpx_fwd.hpp>
+#include <hpx/hpx.hpp>
+#include <hpx/hpx_init.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/lcos/local/dataflow.hpp>
 #include <hpx/util/high_resolution_timer.hpp>
@@ -49,18 +50,14 @@ namespace jacobi_smp {
                 if(j + 1 < n_block) 
                     trigger.push_back((*deps_old)[j+1]);
 
-                // FIXME: dataflow seems to have some raceconditions left
-                (*deps_new)[j]
-                    = hpx::lcos::local::dataflow(
-                        hpx::util::bind(
-                            jacobi_kernel_wrap
+                auto jacobi_op = hpx::util::unwrapped(jacobi_kernel_wrap);
+                (*deps_new)[j] = hpx::lcos::local::dataflow( 
+                            jacobi_op
                           , range(y, y_end)
                           , n
                           , boost::ref(*grid_new)
                           , boost::cref(*grid_old)
-                        )
-                      , trigger
-                    );
+                        );
                 
                 /*
                 (*deps_new)[j] = hpx::when_all(boost::move(trigger)).then(
