@@ -55,34 +55,125 @@ namespace jacobi_smp {
                                           previous.src[i*(n+1) + j  ] ) * 0.2;
             }
         }
-        auto tmp = previous.src ;
-        previous.src = previous.dest;
-        previous.dest = tmp;
+        std::swap(previous.src, previous.dest);
         return previous;
     }
+
     block jacobi_kernel_top(block previous, block left, block right, block below){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j-1] +
+                                          previous.src[i*n     + j+1] +
+                                          previous.src[i*(n-1) + j  ] ) * 0.25;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
     block jacobi_kernel_bot(block previous, block left, block right, block above){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j-1] +
+                                          previous.src[i*n     + j+1] +
+                                          previous.src[i*(n+1) + j  ] ) * 0.25;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
     block jacobi_kernel_left (block previous, block right, block below, block above){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j+1] +
+                                          previous.src[i*(n-1) + j  ] +
+                                          previous.src[i*(n+1) + j  ] ) * 0.25;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
     block jacobi_kernel_right(block previous, block left, block below, block above){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j-1] +
+                                          previous.src[i*(n-1) + j  ] +
+                                          previous.src[i*(n+1) + j  ] ) * 0.25;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
     block jacobi_kernel_TL(block previous, block right, block below ){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j+1] +
+                                          previous.src[i*(n-1) + j  ] ) / 3.0;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
     block jacobi_kernel_TR(block previous, block left, block below ){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j-1] +
+                                          previous.src[i*(n-1) + j  ] ) / 3.0;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
     block jacobi_kernel_BL(block previous, block right, block above){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j+1] +
+                                          previous.src[i*(n+1) + j  ] ) / 3.0;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
     block jacobi_kernel_BR(block previous, block left, block above){
-        return block();
+        size_t block_size = previous.block_size;
+        size_t n = previous.matrix_size;
+
+        for(size_t i = previous.row; i < previous.row + block_size; i++) {
+            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+                previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
+                                          previous.src[i*n     + j-1] +
+                                          previous.src[i*(n-1) + j  ] ) / 3.0;
+            }
+        }
+        std::swap(previous.src, previous.dest);
+        return previous;
     }
 
 
