@@ -50,7 +50,11 @@ int hpx_main(variables_map &vm)
             output_filename = vm["output-filename"].as<std::string>();
         }
 
-        jacobi_smp::jacobi(n, iterations, block_size, output_filename);
+        if(n > block_size) {
+            jacobi_smp::jacobi(n, iterations, block_size, output_filename);
+        } else {
+            jacobi_smp::jacobi_serial(n, iterations, output_filename);
+        }
     }
 
     return hpx::finalize();

@@ -34,6 +34,8 @@ struct block {
 
 
 namespace jacobi_smp {
+    vector<double> matrix1;
+    vector<double> matrix2;
 
     void jacobi_kernel_wrapper(range const & y_range, size_t n, vector<double> & dst, vector<double> const & src) {
         for(size_t y = y_range.begin(); y < y_range.end(); ++y) {
@@ -41,6 +43,44 @@ namespace jacobi_smp {
             const double * src_ptr = &src[y * n];
             jacobi_kernel( dst_ptr, src_ptr, n );
         }
+    }
+    void jacobi_serial(size_t n, size_t iterations, std::string output_filename) {
+        hpx::util::high_resolution_timer t;
+        matrix1.resize(n*n);
+        matrix2.resize(n*n);
+        for(size_t i = 1; i < iterations; ++i) {
+            matrix2[0] = ( matrix1[0] + matrix1[1] + matrix1[n] ) / 3;//LB
+            for(size_t i = 1; i < n-1; i++) {//bot
+                matrix2[i] = ( matrix1[i  ] + matrix1[i-1] +
+                               matrix1[i+1] + matrix1[i+n] ) * .25;
+            }
+            matrix2[n-1] = ( matrix1[ n-1 ] + matrix1[n-2] + matrix1[n+n-1] ) / 3;//RB
+    
+            for(size_t i = 1; i < n-1; i++) {
+                matrix2[i*n] = ( matrix1[ i   *n] + matrix1[ i   *n+1] + 
+                                 matrix1[(i-1)*n] + matrix1[(i+1)*n  ] 
+                                 ) * .25;//left
+                for(size_t j = 1; j < n-1; j++) {
+                    matrix2[i*n+j] = ( matrix1[ i   *n+j  ] +  
+                                       matrix1[ i   *n+j-1] + matrix1[ i   *n+j+1] +
+                                       matrix1[(i-1)*n+j  ] + matrix1[(i+1)*n+j  ]
+                                       ) * .2; //mid
+                }
+                matrix2[i*n+n-1] = ( matrix1[i*n+n-1] + matrix1[i*n+n-2] + 
+                                     matrix1[i*n-1] + matrix1[(i+2)*n-1] 
+                                     ) * .25;//right
+            }
+            matrix2[(n-1)*n] = ( matrix1[(n-1)*n] + matrix1[(n-1)*n+1] +
+                                                    matrix1[(n-2)*n] ) / 3;//TL
+            for(size_t i = 1; i < n-1; i++) {//top
+                matrix2[(n-1)*n + i] = ( matrix1[(n-1)*n+i] + matrix1[(n-1)*n+i-1] +
+                                                              matrix1[(n-1)*n+i+1] +
+                                                              matrix1[(n-2)*n+i  ] ) * .25;
+            }
+            matrix2[n*n-1] = ( matrix1[n*n-1] + matrix1[n*n-2] + matrix1[n*n-1-n] ) / 3;//TR
+        }
+        report_timing(n, iterations, t.elapsed());
+        //output_grid(output_filename, *grid_old, n);
     }
     
     block jacobi_kernel_mid(block previous, block left, block right, block below, block above) {
@@ -188,8 +228,6 @@ namespace jacobi_smp {
     auto jacobi_TL    = unwrapped(&jacobi_kernel_TL);
     auto jacobi_TR    = unwrapped(&jacobi_kernel_TR);
 
-    vector<double> matrix1;
-    vector<double> matrix2;
 
     void block_init(vector< vector<block> > &blockList, size_t block_size, size_t matrix_size){
         size_t numBlocks = static_cast<size_t>(std::ceil(double(matrix_size)/block_size));
@@ -197,8 +235,10 @@ namespace jacobi_smp {
         if(remainder == 0) {
             remainder = block_size;
         }
-        matrix1.resize(matrix_size*matrix_size);
-        matrix2.resize(matrix_size*matrix_size);
+
+        matrix1.resize(matrix_size * matrix_size);
+        matrix2.resize(matrix_size * matrix_size);
+
         blockList.resize(numBlocks);
         for(int i = 0; i < numBlocks; i++){
             blockList[i].resize(numBlocks);
@@ -286,11 +326,13 @@ namespace jacobi_smp {
     }
 
     void jacobi( size_t n , size_t iterations, size_t block_size, std::string output_filename) {
+        hpx::util::high_resolution_timer t;
+
         vector< vector< vector< shared_future<block> > > > blockList(2);
         jacobi_init(blockList, n, block_size);
+
         size_t numBlocks = blockList[0].size();
 
-        hpx::util::high_resolution_timer t;
         for(size_t i = 1; i < iterations; ++i) {
             const size_t prev = i%2;
             const size_t curr = (i+1)%2;
@@ -344,7 +386,7 @@ namespace jacobi_smp {
             blockList[curr][numBlocks-1][numBlocks-1] = dataflow(
                     jacobi_TR, blockList[prev][numBlocks-1][numBlocks-1],
                                blockList[prev][numBlocks-1][numBlocks-2],
-                               blockList[prev][numBlocks-22][numBlocks-1]);
+                               blockList[prev][numBlocks-2][numBlocks-1]);
         }
         for(int i = 0; i < blockList[(n-1)%2].size(); i++) {
             hpx::wait_all(blockList[(n-1)%2][i]);

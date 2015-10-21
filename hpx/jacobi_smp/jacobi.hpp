@@ -14,6 +14,7 @@
 
 namespace jacobi_smp {
     void jacobi(size_t n, size_t iterations, size_t block_size, std::string output_filename);
+    void jacobi_serial(size_t n, size_t iterations, std::string output_filename);
 
     struct range
     {
