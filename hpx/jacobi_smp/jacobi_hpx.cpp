@@ -321,7 +321,7 @@ namespace jacobi_smp {
         futureList[curr][numBlocks-1][numBlocks-1] = async(
                 jacobi_kernel_TR, blockList[numBlocks-1][numBlocks-1],
                            blockList[numBlocks-1][numBlocks-2],
-                           blockList[numBlocks-22][numBlocks-1]);
+                           blockList[numBlocks-2][numBlocks-1]);
 
     }
 
