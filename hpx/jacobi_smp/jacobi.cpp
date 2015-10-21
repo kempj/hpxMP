@@ -8,6 +8,7 @@
 #include <hpx/hpx_init.hpp>
 
 #include <boost/program_options.hpp>
+#include <boost/assign.hpp>
 
 #include <iostream>
 
@@ -82,6 +83,11 @@ int main(int argc, char **argv)
         "output-filename", value<std::string>()
       , "Filename of the result (if empty no result is written)"
     );
+    using namespace boost::assign;
+    std::vector<std::string> cfg;
+    cfg += "hpx.os_threads=" +
+        boost::lexical_cast<std::string>(hpx::threads::hardware_concurrency());
 
-    return hpx::init(desc_cmd, argc, argv);
+
+    return hpx::init(desc_cmd, argc, argv, cfg);
 }
