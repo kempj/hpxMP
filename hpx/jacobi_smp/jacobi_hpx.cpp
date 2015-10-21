@@ -75,14 +75,21 @@ namespace jacobi_smp {
             futureList[1][i].resize(numBlocks);
             blockList[i].resize(numBlocks);
         }
-
         
         const size_t curr = 1;
         
         futureList[1][0][0] = hpx::async(
                 jacobi_kernel_BL, blockList[0][0],
-                           blockList[0][1],
-                           blockList[1][0] );
+                                  blockList[0][1],
+                                  blockList[1][0] );
+
+        for(size_t i = 1; i < numBlocks - 1; i++) {
+            futureList[1][i][0] = hpx::async(
+                    jacobi_kernel_left, blockList[i  ][0],
+                                        blockList[i  ][1],
+                                        blockList[i-1][0],
+                                        blockList[i+1][0]);
+        }
 
         for(size_t i = 1; i < numBlocks - 1; i++) {
             for(size_t j = 1; j < numBlocks - 1; j++) {
@@ -103,6 +110,7 @@ namespace jacobi_smp {
     void jacobi( size_t n , size_t iterations, size_t block_size, std::string output_filename) {
         vector< vector< vector< shared_future<block> > > > blockList(2);
         jacobi_init(blockList, n, block_size);
+        size_t numBlocks = blockList[0].size();
 
         hpx::util::high_resolution_timer t;
         for(size_t i = 1; i < iterations; ++i) {
@@ -112,31 +120,53 @@ namespace jacobi_smp {
                     jacobi_BL, blockList[prev][0][0],
                                blockList[prev][0][1],
                                blockList[prev][1][0] );
-            for(size_t j = 1; j < blockList[i%2].size() - 1; j++) {
+            for(size_t j = 1; j < numBlocks - 1; j++) {
                 blockList[curr][j][0] = dataflow(
                         jacobi_left, blockList[prev][j  ][0],
                                      blockList[prev][j  ][1],
-                                     blockList[prev][j+1][0],
-                                     blockList[prev][j+1][1] );
+                                     blockList[prev][j-1][0],
+                                     blockList[prev][j+1][0] );
             }
-            //TL
-            for(size_t j = 1; j < blockList[i%2].size() - 1; j++) {
-                //bot
-                for(size_t k = 1; k < blockList[i%2][j].size() - 1; k++) {
+            blockList[curr][numBlocks-1][0] = dataflow(
+                    jacobi_TL, blockList[prev][numBlocks-1][0],
+                               blockList[prev][numBlocks-1][1],
+                               blockList[prev][numBlocks-2][0] );
+
+            for(size_t j = 1; j < numBlocks - 1; j++) {
+                blockList[curr][0][j] = dataflow(
+                        jacobi_bot, blockList[prev][0][j  ], 
+                                    blockList[prev][0][j-1],
+                                    blockList[prev][0][j+1],
+                                    blockList[prev][1][j  ] );
+                for(size_t k = 1; k < numBlocks - 1; k++) {
                     blockList[curr][j][k] = dataflow( 
-                            jacobi_op, blockList[prev][j  ][k  ],
-                                       blockList[prev][j-1][k  ],
-                                       blockList[prev][j+1][k  ],
-                                       blockList[prev][j  ][k-1],
-                                       blockList[prev][j  ][k+1]);
+                            jacobi_op, blockList[prev][k  ][j  ],
+                                       blockList[prev][k  ][j-1],
+                                       blockList[prev][k  ][j+1],
+                                       blockList[prev][k-1][j  ],
+                                       blockList[prev][k+1][j  ]);
                 }
-                //top
+                blockList[curr][numBlocks-1][j] = dataflow(
+                        jacobi_top, blockList[prev][numBlocks-1][j  ], 
+                                    blockList[prev][numBlocks-1][j-1],
+                                    blockList[prev][numBlocks-1][j+1],
+                                    blockList[prev][numBlocks-2][j  ] );
             }
-            //BR
+            blockList[curr][0][numBlocks-1] = dataflow(
+                    jacobi_BR, blockList[prev][0][numBlocks-1],
+                               blockList[prev][0][numBlocks-2],
+                               blockList[prev][1][numBlocks-1]);
             for(size_t j = 1; j < blockList[i%2].size() - 1; j++) {
-                //right
+            blockList[curr][j][numBlocks-1] = dataflow(
+                    jacobi_left, blockList[prev][j ][numBlocks-1],
+                                 blockList[prev][j ][numBlocks-2],
+                                 blockList[prev][j-1][numBlocks-1],
+                                 blockList[prev][j+1][numBlocks-1]);
             }
-            //TR
+            blockList[curr][numBlocks-1][numBlocks-1] = dataflow(
+                    jacobi_TR, blockList[prev][numBlocks-1][numBlocks-1],
+                               blockList[prev][numBlocks-1][numBlocks-2],
+                               blockList[prev][numBlocks-22][numBlocks-1]);
         }
         for(int i = 0; i < blockList[(n-1)%2].size(); i++) {
             hpx::wait_all(blockList[(n-1)%2][i]);
