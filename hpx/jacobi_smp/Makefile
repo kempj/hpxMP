@@ -4,7 +4,7 @@ CC=g++
 default: jacobi
 
 jacobi: jacobi_hpx.o jacobi.cpp jacobi.hpp
-	$(CC) -o jacobi jacobi.cpp jacobi_hpx.o --std=c++11 `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=jacobi
+	$(CC) -o jacobi jacobi.cpp jacobi_hpx.o --std=c++11 `pkg-config --cflags --libs hpx_application` -DHPX_APPLICATION_NAME=jacobi
 
 jacobi_hpx.o: jacobi_hpx.cpp jacobi.hpp
 	$(CC) -c -o jacobi_hpx.o jacobi_hpx.cpp --std=c++11 `pkg-config --cflags --libs hpx_application` -liostreams -DHPX_APPLICATION_NAME=jacobi_hpx.o 

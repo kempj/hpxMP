@@ -19,6 +19,7 @@ using std::vector;
 using hpx::make_ready_future;
 using hpx::lcos::local::dataflow;
 using hpx::lcos::shared_future;
+using hpx::async;
 
 using hpx::util::unwrapped;
 
@@ -41,15 +42,33 @@ namespace jacobi_smp {
         }
     }
     
-    block jacobi_kernel_mid  (block previous, block left, block right, block below, block above);
-    block jacobi_kernel_top  (block previous, block left, block right, block below             );
-    block jacobi_kernel_bot  (block previous, block left, block right,              block above);
-    block jacobi_kernel_left (block previous,             block right, block below, block above);
-    block jacobi_kernel_right(block previous, block left,              block below, block above);
-    block jacobi_kernel_TL   (block previous,             block right, block below             );
-    block jacobi_kernel_TR   (block previous, block left,              block below             );
-    block jacobi_kernel_BL   (block previous,             block right,              block above);
-    block jacobi_kernel_BR   (block previous, block left,                           block above);
+    block jacobi_kernel_mid  (block previous, block left, block right, block below, block above) {
+        return block();
+    }
+    block jacobi_kernel_top  (block previous, block left, block right, block below             ){
+        return block();
+    }
+    block jacobi_kernel_bot  (block previous, block left, block right,              block above){
+        return block();
+    }
+    block jacobi_kernel_left (block previous,             block right, block below, block above){
+        return block();
+    }
+    block jacobi_kernel_right(block previous, block left,              block below, block above){
+        return block();
+    }
+    block jacobi_kernel_TL   (block previous,             block right, block below             ){
+        return block();
+    }
+    block jacobi_kernel_TR   (block previous, block left,              block below             ){
+        return block();
+    }
+    block jacobi_kernel_BL   (block previous,             block right,              block above){
+        return block();
+    }
+    block jacobi_kernel_BR   (block previous, block left,                           block above){
+        return block();
+    }
 
 
     auto jacobi_op    = unwrapped(&jacobi_kernel_mid);
@@ -78,30 +97,56 @@ namespace jacobi_smp {
         
         const size_t curr = 1;
         
-        futureList[1][0][0] = hpx::async(
+        futureList[curr][0][0] = async(
                 jacobi_kernel_BL, blockList[0][0],
                                   blockList[0][1],
                                   blockList[1][0] );
-
-        for(size_t i = 1; i < numBlocks - 1; i++) {
-            futureList[1][i][0] = hpx::async(
-                    jacobi_kernel_left, blockList[i  ][0],
-                                        blockList[i  ][1],
-                                        blockList[i-1][0],
-                                        blockList[i+1][0]);
+        for(size_t j = 1; j < numBlocks - 1; j++) {
+            futureList[curr][j][0] = async(
+                    jacobi_kernel_left, blockList[j  ][0],
+                                        blockList[j  ][1],
+                                        blockList[j-1][0],
+                                        blockList[j+1][0] );
         }
-
-        for(size_t i = 1; i < numBlocks - 1; i++) {
-            for(size_t j = 1; j < numBlocks - 1; j++) {
-            futureList[curr][i][j] = hpx::async(
-                    jacobi_kernel_mid, blockList[i  ][j  ],
-                                       blockList[i-1][j  ],
-                                       blockList[i+1][j  ],
-                                       blockList[i  ][j-1],
-                                       blockList[i  ][j+1] );
+        futureList[curr][numBlocks-1][0] = async(
+                jacobi_kernel_TL, blockList[numBlocks-1][0],
+                                  blockList[numBlocks-1][1],
+                                  blockList[numBlocks-2][0] );
+        for(size_t j = 1; j < numBlocks - 1; j++) {
+            futureList[curr][0][j] = async(
+                    jacobi_kernel_bot, blockList[0][j  ], 
+                                       blockList[0][j-1],
+                                       blockList[0][j+1],
+                                       blockList[1][j  ] );
+            for(size_t k = 1; k < numBlocks - 1; k++) {
+                futureList[curr][j][k] = async( 
+                        jacobi_kernel_mid, blockList[k  ][j  ],
+                                           blockList[k  ][j-1],
+                                           blockList[k  ][j+1],
+                                           blockList[k-1][j  ],
+                                           blockList[k+1][j  ]);
             }
+            futureList[curr][numBlocks-1][j] = async(
+                    jacobi_kernel_top, blockList[numBlocks-1][j  ], 
+                                       blockList[numBlocks-1][j-1],
+                                       blockList[numBlocks-1][j+1],
+                                       blockList[numBlocks-2][j  ] );
         }
-
+        futureList[curr][0][numBlocks-1] = async(
+                jacobi_kernel_BR, blockList[0][numBlocks-1],
+                                  blockList[0][numBlocks-2],
+                                  blockList[1][numBlocks-1]);
+        for(size_t j = 1; j < numBlocks - 1; j++) {
+            futureList[curr][j][numBlocks-1] = async(
+                    jacobi_kernel_left, blockList[j ][numBlocks-1],
+                                        blockList[j ][numBlocks-2],
+                                        blockList[j-1][numBlocks-1],
+                                        blockList[j+1][numBlocks-1]);
+        }
+        futureList[curr][numBlocks-1][numBlocks-1] = async(
+                jacobi_kernel_TR, blockList[numBlocks-1][numBlocks-1],
+                           blockList[numBlocks-1][numBlocks-2],
+                           blockList[numBlocks-22][numBlocks-1]);
 
         //allocate matrices
         //initialize block List
@@ -156,7 +201,7 @@ namespace jacobi_smp {
                     jacobi_BR, blockList[prev][0][numBlocks-1],
                                blockList[prev][0][numBlocks-2],
                                blockList[prev][1][numBlocks-1]);
-            for(size_t j = 1; j < blockList[i%2].size() - 1; j++) {
+            for(size_t j = 1; j < numBlocks - 1; j++) {
             blockList[curr][j][numBlocks-1] = dataflow(
                     jacobi_left, blockList[prev][j ][numBlocks-1],
                                  blockList[prev][j ][numBlocks-2],
