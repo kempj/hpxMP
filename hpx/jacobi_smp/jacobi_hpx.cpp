@@ -88,7 +88,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j-1] +
                                           previous.src[i*n     + j+1] +
@@ -105,7 +105,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j-1] +
                                           previous.src[i*n     + j+1] +
@@ -120,7 +120,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j-1] +
                                           previous.src[i*n     + j+1] +
@@ -135,7 +135,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j+1] +
                                           previous.src[i*(n-1) + j  ] +
@@ -150,7 +150,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j-1] +
                                           previous.src[i*(n-1) + j  ] +
@@ -165,7 +165,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j+1] +
                                           previous.src[i*(n-1) + j  ] ) / 3.0;
@@ -179,7 +179,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j-1] +
                                           previous.src[i*(n-1) + j  ] ) / 3.0;
@@ -193,7 +193,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j+1] +
                                           previous.src[i*(n+1) + j  ] ) / 3.0;
@@ -207,7 +207,7 @@ namespace jacobi_smp {
         size_t n = previous.matrix_size;
 
         for(size_t i = previous.row; i < previous.row + block_size; i++) {
-            for(size_t j = previous.col; i < previous.col + block_size; j++) {
+            for(size_t j = previous.col; j < previous.col + block_size; j++) {
                 previous.dest[i*n + j] = (previous.src[i*n     + j  ] + 
                                           previous.src[i*n     + j-1] +
                                           previous.src[i*(n-1) + j  ] ) / 3.0;
