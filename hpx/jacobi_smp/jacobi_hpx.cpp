@@ -32,6 +32,7 @@ struct block {
     size_t row;
 };
 
+
 namespace jacobi_smp {
 
     void jacobi_kernel_wrapper(range const & y_range, size_t n, vector<double> & dst, vector<double> const & src) {
@@ -187,18 +188,46 @@ namespace jacobi_smp {
     auto jacobi_TL    = unwrapped(&jacobi_kernel_TL);
     auto jacobi_TR    = unwrapped(&jacobi_kernel_TR);
 
+    vector<double> matrix1;
+    vector<double> matrix2;
+
+    void block_init(vector< vector<block> > &blockList, size_t block_size, size_t matrix_size){
+        size_t numBlocks = static_cast<size_t>(std::ceil(double(matrix_size)/block_size));
+        size_t remainder = matrix_size % block_size;
+        if(remainder == 0) {
+            remainder = block_size;
+        }
+        matrix1.resize(matrix_size*matrix_size);
+        matrix2.resize(matrix_size*matrix_size);
+        blockList.resize(numBlocks);
+        for(int i = 0; i < numBlocks; i++){
+            blockList[i].resize(numBlocks);
+            for(int j = 0; j < numBlocks; j++) {
+                blockList[i][j].matrix_size = matrix_size;
+                if(i == numBlocks - 1 || j == numBlocks -1) {
+                    blockList[i][j].block_size = remainder;
+                } else {
+                    blockList[i][j].block_size = block_size;
+                }
+                blockList[i][j].dest = matrix2.data();
+                blockList[i][j].src  = matrix1.data();
+                blockList[i][j].col  = j*block_size;
+                blockList[i][j].row  = i*block_size;
+            }
+        }
+    }
+
     void jacobi_init(vector< vector< vector< hpx::shared_future<block> > > > &futureList, size_t n, size_t block_size) {
-        size_t numBlocks = static_cast<size_t>(std::ceil(double(n)/block_size));
+        vector< vector<block> > blockList;
+        block_init(blockList, block_size, n);
+        size_t numBlocks = blockList.size();
+
         futureList[0].resize(numBlocks);
         futureList[1].resize(numBlocks);
-
-        vector< vector<block> > blockList;
-        blockList.resize(numBlocks);
 
         for(int i = 0; i < numBlocks; i++){
             futureList[0][i].resize(numBlocks);
             futureList[1][i].resize(numBlocks);
-            blockList[i].resize(numBlocks);
         }
         
         const size_t curr = 1;
@@ -254,8 +283,6 @@ namespace jacobi_smp {
                            blockList[numBlocks-1][numBlocks-2],
                            blockList[numBlocks-22][numBlocks-1]);
 
-        //allocate matrices
-        //initialize block List
     }
 
     void jacobi( size_t n , size_t iterations, size_t block_size, std::string output_filename) {
