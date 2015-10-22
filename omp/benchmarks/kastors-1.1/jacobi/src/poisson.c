@@ -207,7 +207,7 @@ void rhs(int matrix_size, int matrix_size2, double *f_, int block_size)
     //for collapse(2)
     for (j = 0; j < matrix_size; j+=block_size)
         for (i = 0; i < matrix_size; i+=block_size)
-#pragma omp task firstprivate(block_size,i,j,matrix_size,matrix_size) private(ii,jj,x,y)
+#pragma omp task firstprivate(block_size,i,j,matrix_size) private(ii,jj,x,y)
             for (jj=j; jj<j+block_size; ++jj)
             {
                 y = (double) (jj) / (double) (matrix_size - 1);
