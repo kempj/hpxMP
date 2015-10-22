@@ -16,19 +16,17 @@ void sweep (int nx, int ny, double dx, double dy, double *f_,
     {
         for (it = itold + 1; it <= itnew; it++) {
             // Save the current estimate.
-/*            for (i = 0; i < nx; i++) {
+            for (i = 0; i < nx; i++) {
 #pragma omp task firstprivate(i, ny) private(j) shared(u, unew)
                 for (j = 0; j < ny; j++) {
                     (*u)[i][j] = (*unew)[i][j];
                 }
             }
 #pragma omp taskwait
-*/
             // Compute a new estimate.
             for (i = 0; i < nx; i++) {
 #pragma omp task firstprivate(i, dx, dy, nx, ny) private(j) shared(u, unew, f)
                 for (j = 0; j < ny; j++) {
-                    (*u)[i][j] = (*unew)[i][j];
                     if (i == 0 || j == 0 || i == nx - 1 || j == ny - 1) {
                         (*unew)[i][j] = (*f)[i][j];
                     } else {
