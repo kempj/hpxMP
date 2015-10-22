@@ -164,7 +164,6 @@ double run(struct user_parameters* params)
     }
 #else
     params->succeed = 1;
-    (void)error;
 #endif
     free(f_);
     free(u_);
@@ -173,7 +172,7 @@ double run(struct user_parameters* params)
 }
 
 /* R8MAT_RMS returns the RMS norm of a vector stored as a matrix. */
-double r8mat_rms(int matrix_size, int matrix_size, double *a_) {
+double r8mat_rms(int matrix_size, int matrix_size2, double *a_) {
     double (*a)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])a_;
     int i;
     int j;
@@ -192,7 +191,7 @@ double r8mat_rms(int matrix_size, int matrix_size, double *a_) {
 }
 
 /* RHS initializes the right hand side "vector". */
-void rhs(int matrix_size, int matrix_size, double *f_, int block_size)
+void rhs(int matrix_size, int matrix_size2, double *f_, int block_size)
 {
     double (*f)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])f_;
     int i,ii;
