@@ -93,6 +93,8 @@ void check_params( struct user_parameters* params, int matrix_size,
         for (i = 0; i < matrix_size; i++) {
             x = (double) (i) / (double) (matrix_size - 1);
             (*udiff)[i][j] = (*unew)[i][j] - u_exact(x, y);
+            if( (*udiff)[i][j] > 1.0E-6 ) { 
+                printf("error: %d, %d: %f\n", i, j, (*udiff)[i][j]);
         }
     }
     error1 = r8mat_rms(matrix_size, matrix_size, udiff_);
