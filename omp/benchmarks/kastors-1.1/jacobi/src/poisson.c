@@ -50,7 +50,8 @@ void check_params( struct user_parameters* params, int matrix_size,
                    int block_size, double dx, double dy, double *f_,
                    int niter, double *u_, double *unew_) 
 {
-    double x, y, i, j;
+    double x, y;
+    int i, j;
     double *udiff_ =(double*)malloc(matrix_size * matrix_size * sizeof(double));
     double (*udiff)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])udiff_;
     double (*unew)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])unew_;
