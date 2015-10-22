@@ -145,8 +145,10 @@ double run(struct user_parameters* params)
                 for (ii=i; ii<i+block_size; ++ii) {
                     if (ii == 0 || ii == matrix_size - 1 || jj == 0 || jj == matrix_size - 1) {
                         (*unew)[ii][jj] = (*f)[ii][jj];
+                        (*u_)[ii][jj] = (*f)[ii][jj];
                     } else {
                         (*unew)[ii][jj] = 0.0;
+                        (*u_)[ii][jj] = 0.0;
                     }
                 }
     /// KERNEL INTENSIVE COMPUTATION
