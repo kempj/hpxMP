@@ -55,6 +55,7 @@ void check_params( struct user_parameters* params, int matrix_size,
     double *udiff_ =(double*)malloc(matrix_size * matrix_size * sizeof(double));
     double (*udiff)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])udiff_;
     double (*unew)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])unew_;
+    double (*u)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])u_;
     double (*f)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])f_;
 
     // Check for convergence.
@@ -82,8 +83,10 @@ void check_params( struct user_parameters* params, int matrix_size,
         for (i = 0; i < matrix_size; i++) {
             if (i == 0 || i == matrix_size - 1 || j == 0 || j == matrix_size - 1) {
                 (*unew)[i][j] = (*f)[i][j];
+                (*u)[ii][jj] = (*f)[ii][jj];
             } else {
                 (*unew)[i][j] = 0.0;
+                (*u)[ii][jj] = 0.0;
             }
         }
     }
