@@ -21,9 +21,9 @@ void sweep_seq(int nx, int ny, double dx, double dy, double *f_,
                 if (i == 0 || j == 0 || i == nx - 1 || j == ny - 1) {
                     (*unew)[i][j] = (*f)[i][j];
                 } else {
-                    (*unew)[i][j] = 0.25 * ((*u)[i-1][j] + (*u)[i][j+1]
-                            + (*u)[i][j-1] + (*u)[i+1][j]
-                            + (*f)[i][j] * dx * dy);
+                    (*unew)[i][j] = 0.25 * ( (*u)[i-1][j  ] + (*u)[i][j+1]
+                                           + (*u)[i  ][j-1] + (*u)[i+1][j]
+                                           + (*f)[i  ][j  ] * dx * dy);
                 }
             }
         }

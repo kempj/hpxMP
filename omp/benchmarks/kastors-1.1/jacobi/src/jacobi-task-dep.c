@@ -15,14 +15,12 @@ void sweep (int nx, int ny, double dx, double dy, double *f_,
 #pragma omp single
     {
         for (it = itold + 1; it <= itnew; it++) {
-            // Save the current estimate.
-/*            for (i = 0; i < nx; i++) {
+            for (i = 0; i < nx; i++) {
 #pragma omp task shared(u, unew) firstprivate(i) private(j) depend(in: unew[i]) depend(out: u[i])
                 for (j = 0; j < ny; j++) {
                     (*u)[i][j] = (*unew)[i][j];
                 }
             }
-*/
             // Compute a new estimate.
             for (i = 1; i < nx-1; i++) {
 //#pragma omp task shared(u, unew, f) firstprivate(i, nx, ny, dx, dy) private(j) depend(in: f[i], u[i-1], u[i], u[i+1]) depend(out: unew[i])
@@ -30,7 +28,6 @@ void sweep (int nx, int ny, double dx, double dy, double *f_,
                  depend(in :    u[i-1], u[i+1], unew[i]) \
                  depend(out: unew[i  ], u[i  ])
                 for (j = 1; j < ny-1; j++) {
-                    (*u)[i][j] = (*unew)[i][j];
                     (*unew)[i][j] = 0.25 * ((*u)[i-1][j] + (*u)[i][j+1]
                                           + (*u)[i][j-1] + (*u)[i+1][j]
                                           + (*f)[i][j] * dx * dy);

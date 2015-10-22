@@ -75,10 +75,6 @@ void check_params( struct user_parameters* params, int matrix_size,
     // Set the right hand side array F.
     rhs(matrix_size, matrix_size, f_, block_size);
 
-    /*
-       Set the initial solution estimate UNEW.
-       We are "allowed" to pick up the boundary conditions exactly.
-       */
     for (j = 0; j < matrix_size; j++) {
         for (i = 0; i < matrix_size; i++) {
             if (i == 0 || i == matrix_size - 1 || j == 0 || j == matrix_size - 1) {
