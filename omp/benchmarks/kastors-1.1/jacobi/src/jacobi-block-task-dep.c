@@ -41,7 +41,7 @@ void sweep (int nx, int ny, double dx, double dy, double *f_,
                     int ydm1 = block_y == 0 ? 0 : 1;
 #pragma omp task shared(u_, unew_, f_, dx, dy, nx, ny, block_size) \
                  firstprivate(block_x, block_y, xdm1, xdp1, ydp1, ydm1) \
-                 depend(inout: unew[ block_x         * block_size][ block_y         * block_size]  \
+                 depend(inout: unew[ block_x         * block_size][ block_y         * block_size], \
                                   u[ block_x         * block_size][ block_y         * block_size]) \
                  depend(in   :    f[ block_x         * block_size][ block_y         * block_size], \
                                   u[(block_x - xdm1) * block_size][ block_y         * block_size], \
