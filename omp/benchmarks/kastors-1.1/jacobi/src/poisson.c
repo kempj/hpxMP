@@ -83,10 +83,10 @@ void check_params( struct user_parameters* params, int matrix_size,
         for (i = 0; i < matrix_size; i++) {
             if (i == 0 || i == matrix_size - 1 || j == 0 || j == matrix_size - 1) {
                 (*unew)[i][j] = (*f)[i][j];
-                (*u)[ii][jj] = (*f)[ii][jj];
+                (*u)[i][j] = (*f)[i][j];
             } else {
                 (*unew)[i][j] = 0.0;
-                (*u)[ii][jj] = 0.0;
+                (*u)[i][j] = 0.0;
             }
         }
     }
