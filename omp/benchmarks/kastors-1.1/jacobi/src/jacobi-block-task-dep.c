@@ -47,7 +47,7 @@ void sweep (int nx, int ny, double dx, double dy, double *f_,
                                   u[(block_x - xdm1) * block_size][ block_y         * block_size], \
                                   u[ block_x         * block_size][(block_y + ydp1) * block_size], \
                                   u[ block_x         * block_size][(block_y - ydm1) * block_size], \
-                                  u[(block_x + xdp1) * block_size][ block_y         * block_size]) \
+                                  u[(block_x + xdp1) * block_size][ block_y         * block_size]) \ 
                     { //compute_estimate(block_x, block_y, u_, unew_, f_, dx, dy, nx, ny, block_size);
                         copy_block(nx, ny, block_x, block_y, u_, unew_, block_size);
                         int i, j;
