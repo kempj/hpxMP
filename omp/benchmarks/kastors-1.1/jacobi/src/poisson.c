@@ -106,9 +106,9 @@ void check_params( struct user_parameters* params, int matrix_size,
     }
     error1 = r8mat_rms(matrix_size, matrix_size, udiff_);
     params->succeed = fabs(error - error1) < 1.0E-6;
-    if(!params->succeed) {
+//    if(!params->succeed) {
         printf("error = %f, error1 = %f\n", error, error1);
-    }
+//    }
     free(udiff_);
 }
 
