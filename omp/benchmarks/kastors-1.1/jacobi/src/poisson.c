@@ -160,7 +160,7 @@ double run(struct user_parameters* params)
 
 #ifdef _OPENMP
     if(params->check) {
-        check_params(params, matrix_size, block_size, dx, dy, f_, niter, u_, unew_) 
+        check_params(params, matrix_size, block_size, dx, dy, f_, niter, u_, unew_) ;
     }
 #else
     params->succeed = 1;
