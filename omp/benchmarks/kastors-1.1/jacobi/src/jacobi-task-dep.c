@@ -22,6 +22,7 @@ void sweep (int nx, int ny, double dx, double dy, double *f_,
                     (*u)[i][j] = (*unew)[i][j];
                 }
             }
+
             // Compute a new estimate.
             for (i = 0; i < nx; i++) {
 #pragma omp task shared(u, unew, f) firstprivate(i, nx, ny, dx, dy) private(j) depend(in: f[i], u[i-1], u[i], u[i+1]) depend(out: unew[i])
@@ -35,6 +36,7 @@ void sweep (int nx, int ny, double dx, double dy, double *f_,
                     }
                 }
             }
+
         }
     }
 }
