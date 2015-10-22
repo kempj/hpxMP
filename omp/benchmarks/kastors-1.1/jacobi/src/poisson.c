@@ -13,8 +13,8 @@
 # include "timer.h"
 
 
-double r8mat_rms(int matrix_size, int matrix_size, double *a_);
-void rhs(int matrix_size, int matrix_size, double *f_, int block_size);
+double r8mat_rms(int dx, int dy, double *a_);
+void rhs(int dx, int dy, double *f_, int block_size);
 void timestamp(void);
 double u_exact(double x, double y);
 double uxxyy_exact(double x, double y);
