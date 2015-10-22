@@ -128,6 +128,7 @@ double run(struct user_parameters* params)
     double *u_ = (double*)malloc(matrix_size * matrix_size * sizeof(double));
     double *unew_ = (double*)malloc(matrix_size * matrix_size * sizeof(double));
     double (*unew)[matrix_size][matrix_size] = (double (*)[matrix_size][matrix_size])unew_;
+    double (*u)[nx][ny] = (double (*)[nx][ny])u_;
 
     double dx = 1.0 / (double) (matrix_size - 1);
     double dy = 1.0 / (double) (matrix_size - 1);
@@ -145,10 +146,10 @@ double run(struct user_parameters* params)
                 for (ii=i; ii<i+block_size; ++ii) {
                     if (ii == 0 || ii == matrix_size - 1 || jj == 0 || jj == matrix_size - 1) {
                         (*unew)[ii][jj] = (*f)[ii][jj];
-                        (*u_)[ii][jj] = (*f)[ii][jj];
+                        (*u)[ii][jj] = (*f)[ii][jj];
                     } else {
                         (*unew)[ii][jj] = 0.0;
-                        (*u_)[ii][jj] = 0.0;
+                        (*u)[ii][jj] = 0.0;
                     }
                 }
     /// KERNEL INTENSIVE COMPUTATION
