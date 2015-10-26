@@ -22,10 +22,10 @@ int main(int argc, char ** argv) {
     int length = 20;
     if(argc > 1)
         length = atoi(argv[1]);
+    int val = 0;
 #pragma omp parallel
 #pragma omp single
 {
-    int val = 0;
     auto t1 = high_resolution_clock::now();
 
     func_time.reserve(length);
