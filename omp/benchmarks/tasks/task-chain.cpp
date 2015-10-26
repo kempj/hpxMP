@@ -22,6 +22,9 @@ int main(int argc, char ** argv) {
     int length = 20;
     if(argc > 1)
         length = atoi(argv[1]);
+#pragma omp parallel
+#pragma omp single
+{
     int val = 0;
     auto t1 = high_resolution_clock::now();
 
@@ -32,6 +35,7 @@ int main(int argc, char ** argv) {
        val = chain_add(val); 
     }
 #pragma omp taskwait
+}
     auto t2 = high_resolution_clock::now();
     cout << "val = " << val << endl;
     
