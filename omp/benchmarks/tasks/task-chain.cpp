@@ -35,7 +35,6 @@ int main(int argc, char ** argv) {
        val = chain_add(val); 
     }
 #pragma omp taskwait
-}
     auto t2 = high_resolution_clock::now();
     cout << "val = " << val << endl;
     
@@ -48,6 +47,7 @@ int main(int argc, char ** argv) {
     }
     cout << " last time = " << duration_cast<nanoseconds> (t2-func_time[length-1]).count() << endl;
 
+}
     return 0;
 }
 
