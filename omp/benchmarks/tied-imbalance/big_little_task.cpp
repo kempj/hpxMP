@@ -2,37 +2,37 @@
 #include <chrono>
 #include <thread>
 
+#ifndef using_tied
+#define using_tied  true
+#endif
+
 using std::cout;
 using std::endl;
-int long_time = 2000;
-int short_time = 50;
 
-void big_tree(int level){
+
+//TODO: try with increasing/decreasing times with depth
+void task_tree(int level, int width, int time) {
     if(level > 0) {
+        for(int i = 0; i < width; i++) {
+            if(using_tied) {
 #pragma omp task
-        big_tree(level - 1);
-#pragma omp task
-        big_tree(level - 1);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(long_time));
-#pragma omp taskwait
-    }
-}
-
-void short_tree(int level) {
-    if(level > 0) {
-#pragma omp task
-        short_tree(level - 1);
-#pragma omp task
-        short_tree(level - 1);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(short_time));
+                task_tree(level - 1, width, time);
+            } else {
+#pragma omp task untied
+                task_tree(level - 1, width, time);
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(time));
 #pragma omp taskwait
     }
 }
 
 int main(int argc, char **argv){
     int depth = 8;
+    int width = 8;
+    int short_time = 50;
+    int long_time = 5000;
+
     if(argc > 1) {
         depth = atoi(argv[1]);
     }
@@ -42,18 +42,32 @@ int main(int argc, char **argv){
 #pragma omp single
     {
         auto start = std::chrono::high_resolution_clock::now();
+        if(using_tied) {
 #pragma omp task
-        {
-            big_tree(depth);
-            long_end = std::chrono::high_resolution_clock::now();
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(long_time));
+            {
+                task_tree(depth, width, long_time);
+                long_end = std::chrono::high_resolution_clock::now();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(long_time));
 
 #pragma omp task
-        {
-            short_tree(depth);
-            short_end = std::chrono::high_resolution_clock::now();
+            {
+                task_tree(depth, width, short_time);
+                short_end = std::chrono::high_resolution_clock::now();
+            }
+        } else {
+#pragma omp task untied
+            {
+                task_tree(depth, width, long_time);
+                long_end = std::chrono::high_resolution_clock::now();
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(long_time));
+
+#pragma omp task untied
+            {
+                task_tree(depth, width, short_time);
+                short_end = std::chrono::high_resolution_clock::now();
+            }
         }
 
 #pragma omp taskwait
