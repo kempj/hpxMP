@@ -36,20 +36,31 @@ int main(int argc, char **argv){
     if(argc > 1) {
         depth = atoi(argv[1]);
     }
+    std::chrono::time_point<std::chrono::high_resolution_clock> short_end, long_end;
 
 #pragma omp parallel
 #pragma omp single
     {
-         auto start = std::chrono::high_resolution_clock::now();
+        auto start = std::chrono::high_resolution_clock::now();
 #pragma omp task
-        big_tree(depth);
+        {
+            big_tree(depth);
+            long_end = std::chrono::high_resolution_clock::now();
+        }
 #pragma omp task
-        short_tree(depth);
+        {
+            short_tree(depth);
+            short_end = std::chrono::high_resolution_clock::now();
+        }
 
 #pragma omp taskwait
         auto end = std::chrono::high_resolution_clock::now();
-        auto time = std::chrono::duration_cast< std::chrono::milliseconds >(end-start).count();
+        auto       time = std::chrono::duration_cast< std::chrono::milliseconds >(end      -start).count();
+        auto short_time = std::chrono::duration_cast< std::chrono::milliseconds >(short_end-start).count();
+        auto  long_time = std::chrono::duration_cast< std::chrono::milliseconds >(long_end -start).count();
         cout << "total time = " << time << " milliseconds" << endl;
+        cout << "total time = " << short_time << " milliseconds" << endl;
+        cout << "total time = " << long_time << " milliseconds" << endl;
 
     }
 
