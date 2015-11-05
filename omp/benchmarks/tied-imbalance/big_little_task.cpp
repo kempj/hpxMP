@@ -4,7 +4,7 @@
 
 using std::cout;
 using std::endl;
-int long_time = 5000;
+int long_time = 2000;
 int short_time = 50;
 
 void big_tree(int level){
@@ -47,6 +47,9 @@ int main(int argc, char **argv){
             big_tree(depth);
             long_end = std::chrono::high_resolution_clock::now();
         }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(long_time));
+
 #pragma omp task
         {
             short_tree(depth);
