@@ -32,7 +32,7 @@ void short_tree(int level) {
 }
 
 int main(int argc, char **argv){
-    int depth = 10;
+    int depth = 8;
     if(argc > 1) {
         depth = atoi(argv[1]);
     }
@@ -59,8 +59,8 @@ int main(int argc, char **argv){
         auto short_time = std::chrono::duration_cast< std::chrono::milliseconds >(short_end-start).count();
         auto  long_time = std::chrono::duration_cast< std::chrono::milliseconds >(long_end -start).count();
         cout << "total time = " << time << " milliseconds" << endl;
-        cout << "total time = " << short_time << " milliseconds" << endl;
-        cout << "total time = " << long_time << " milliseconds" << endl;
+        cout << "short time = " << short_time << " milliseconds" << endl;
+        cout << "long  time = " << long_time << " milliseconds" << endl;
 
     }
 
