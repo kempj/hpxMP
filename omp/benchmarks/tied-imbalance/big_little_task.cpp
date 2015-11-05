@@ -31,19 +31,25 @@ void short_tree(int level) {
     }
 }
 
-int main(){
-
+int main(int argc, char **argv){
     int depth = 10;
+    if(argc > 1) {
+        depth = atoi(argv[1]);
+    }
 
 #pragma omp parallel
 #pragma omp single
     {
+         auto start = std::chrono::high_resolution_clock::now();
 #pragma omp task
         big_tree(depth);
 #pragma omp task
         short_tree(depth);
 
 #pragma omp taskwait
+        auto end = std::chrono::high_resolution_clock::now();
+        auto time = std::chrono::duration_cast< std::chrono::milliseconds >(end-start).count();
+        cout << "total time = " << time << " milliseconds" << endl;
 
     }
 
