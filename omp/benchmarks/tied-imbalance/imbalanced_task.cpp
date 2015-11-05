@@ -6,36 +6,29 @@ using std::cout;
 using std::endl;
 
 
-void task_tree(int level, int width, int time) {
-    if(level > 0) {
-        for(int i = 0; i < width; i++) {
-#pragma omp task
-            task_tree(level - 1, width, time);
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(time));
-#pragma omp taskwait
-    }
-}
+int depth = 8;
+int width = 8;
+int short_time = 50;
+int long_time = 5000;
+int delay = 50;
 
-void imbalanced_tree(int level, int width, int time) {
+
+void imbalanced_tree(int level, int time) {
     if(level > 0) {
 #pragma omp task
+        imbalanced_tree(level - 1, long_time);
 
-        for(int i = 1; i < width; i++) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+
 #pragma omp task
-            task_tree(1, 2, time);
-        }
-        task_tree(level - 1, 1, time);
+        imbalanced_tree(level - 1, short_time);
+
         std::this_thread::sleep_for(std::chrono::milliseconds(time));
 #pragma omp taskwait
     }
 }
 
 int main(int argc, char **argv){
-    int depth = 8;
-    int width = 8;
-    int short_time = 50;
-    int long_time = 5000;
 
     if(argc > 1) {
         depth = atoi(argv[1]);
@@ -48,14 +41,14 @@ int main(int argc, char **argv){
         auto start = std::chrono::high_resolution_clock::now();
 #pragma omp task
         {
-            imbalanced_tree(depth, width, long_time);
+            imbalanced_tree(depth, long_time);
             long_end = std::chrono::high_resolution_clock::now();
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(long_time));
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
 
 #pragma omp task
         {
-            task_tree(depth, 2, short_time);
+            imbalanced_tree(depth, short_time);
             short_end = std::chrono::high_resolution_clock::now();
         }
 
