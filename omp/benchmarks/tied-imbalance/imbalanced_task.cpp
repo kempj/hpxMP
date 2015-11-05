@@ -10,7 +10,7 @@ int depth = 8;
 int width = 8;
 int short_time = 50;
 int long_time = 5000;
-int delay = 50;
+int delay = 1;
 
 
 void imbalanced_tree(int level, int time) {
