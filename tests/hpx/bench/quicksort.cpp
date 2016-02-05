@@ -55,24 +55,21 @@ template <typename T>
 void quicksort_parallel(T *data, std::size_t begin, std::size_t end)
 {
     if (begin != end) {
-
         std::size_t middle_idx = partition(data, begin, end);
+        shared_future<void> n;
 
         if (2 * middle_idx < end - begin) {
-            shared_future<void> n = async(quicksort_parallel<T>, data, (std::max)(begin + 1, middle_idx), end);
+            n = async(quicksort_parallel<T>, data, (std::max)(begin + 1, middle_idx), end);
 
             quicksort_parallel(data, begin, middle_idx);
-            hpx::wait_all(n);
         } else {
-            shared_future<void> n = async(quicksort_parallel<T>, data, begin, middle_idx);
-
+            n = async(quicksort_parallel<T>, data, begin, middle_idx);
             quicksort_parallel(data, (std::max)(begin + 1, middle_idx), end);
-            hpx::wait_all(n);
         }
+        hpx::wait_all(n);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
 int hpx_main(variables_map& vm)
 {
     std::size_t elements = 0;
@@ -83,7 +80,7 @@ int hpx_main(variables_map& vm)
     int *data = new int[elements];
     std::generate(data, data + elements, std::rand);
 
-    std::cout << "serial quicksort" << std::endl;
+    std::cout << "serial quicksort on " << elements << " elements."  << std::endl;
 
     high_resolution_timer t;
     quicksort_serial<int>(data, 0, elements);
@@ -93,7 +90,7 @@ int hpx_main(variables_map& vm)
 
     std::generate(data, data + elements, std::rand);
 
-    std::cout << "parallel quicksort" << std::endl;
+    std::cout << "parallel quicksort on " << elements << " elements." << std::endl;
 
     t.restart();
     shared_future<void> n = async(quicksort_parallel<int>, data, 0, elements);
@@ -105,7 +102,6 @@ int hpx_main(variables_map& vm)
     return hpx::finalize();
 }
 
-///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
     // Configure application-specific options
