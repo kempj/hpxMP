@@ -243,25 +243,24 @@ void __kmpc_flush(ident_t *loc, ...){
 void * __kmpc_future_cached(ident_t *  loc, kmp_int32  global_tid, void *data, size_t size, void ***cache) {
     void *retval;
     shared_future<raw_data> *future_ptr;
-    cout << "\n\tentering _future_cached";
+    //cout << "\n\tentering _future_cached";
     if(!(*cache)) {
-        cout << " and allocating:";
+        //cout << " and allocating:";
         raw_data data; //TODO: When is this freed?
         data.data = (void*)new char[size]{0};
         data.size = size;
-        cout << " data.size = " << data.size << ", data.data = " << data.data <<
-                ",*( (int*)data.data ) = " << *((int*)data.data);
-        //*cache = (void**)new shared_future<raw_data>(hpx::make_ready_future(data));
+        //cout << " data.size = " << data.size << ", data.data = " << data.data <<
+        //        ",*( (int*)data.data ) = " << *((int*)data.data);
         future_ptr = new shared_future<raw_data>(hpx::make_ready_future(data));
         *cache = (void**) future_ptr;
     } else {
         future_ptr = (shared_future<raw_data>*) *cache;
-        cout << " and waiting: ";
+        //cout << " and waiting: ";
     }
-    cout << " future_ptr->get().data = " << *((int*)(future_ptr->get().data)) << ", *cache = " << *cache; 
+    //cout << " future_ptr->get().data = " << *((int*)(future_ptr->get().data)) << ", *cache = " << *cache; 
 
     retval = future_ptr->get().data;
-    cout << " and returning " << retval <<  endl;
+    //cout << " and returning " << retval <<  endl;
     return retval;
 }
 
