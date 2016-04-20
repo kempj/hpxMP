@@ -7,8 +7,11 @@ FLAGS= -DOMP_COMPLIANT $(OPT)
 CFLAGS=
 #ATOMIC_FLAGS=-Qoption,cpp,--extended_float_type
 
-all: libiomp5.so
+all: libiomp5.so libomp.so
 	
+
+libomp.so: intel_rt.o hpx_runtime.o loop_schedule.o kmp_atomic.o asm_functions.o
+	$(CC) $(FLAGS) -shared -Wl,-x -Wl,-soname=libomp.so,--version-script=exports_so.txt -o libomp.so intel_rt.o loop_schedule.o kmp_atomic.o hpx_runtime.o asm_functions.o -L. `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`
 
 libiomp5.so: intel_rt.o hpx_runtime.o loop_schedule.o kmp_atomic.o asm_functions.o
 	$(CC) $(FLAGS) -shared -Wl,-x -Wl,-soname=libiomp5.so,--version-script=exports_so.txt -o libiomp5.so intel_rt.o loop_schedule.o kmp_atomic.o hpx_runtime.o asm_functions.o -L. `pkg-config --cflags --libs $(HPX_BUILD_TYPE)`

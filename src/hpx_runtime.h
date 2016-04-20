@@ -28,6 +28,8 @@
 
 #include "icv-vars.h"
 
+#include <mutex>
+
 using std::atomic;
 using boost::shared_ptr;
 using hpx::threads::executors::local_priority_queue_executor;
@@ -47,7 +49,8 @@ typedef void (*omp_micro)(int , frame_pointer_t);
 
 typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
-typedef hpx::lcos::local::spinlock mutex_type;
+//typedef hpx::lcos::local::spinlock mutex_type;
+typedef hpx::lcos::local::mutex  mutex_type;
 typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
 typedef int (* kmp_routine_entry_t)( int, void * );
@@ -215,6 +218,11 @@ class omp_task_data {
         depends_map df_map;
 };
 
+struct raw_data {
+    void *data;
+    size_t size;
+};
+
 class hpx_runtime {
     public:
         hpx_runtime();
@@ -233,6 +241,9 @@ class hpx_runtime {
         void create_df_task( int gtid, kmp_task_t *thunk, 
                              int ndeps, kmp_depend_info_t *dep_list,
                              int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
+
+        void create_future_task( int gtid, kmp_task_t *thunk, 
+                                 int ndeps, kmp_depend_info_t *dep_list);
         void task_exit();
         void task_wait();
         double get_time();

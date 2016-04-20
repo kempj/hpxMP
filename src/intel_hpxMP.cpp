@@ -88,32 +88,14 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
         //TODO:how to I handle immediate tasks, read them from flags?
         hpx_backend->create_task(new_task->routine, gtid, new_task);
     } else {
-        /*
-        vector<int64_t> in_deps;
-        vector<int64_t> out_deps;
-        in_deps.reserve(ndeps);
-        out_deps.reserve(ndeps);
+#ifdef FUTURIZE_TASKS
 
-        for(int i = 0; i < ndeps; i++) {
-            if(dep_list[i].flags.in) {
-                in_deps.push_back(dep_list[i].base_addr);
-            }
-            if(dep_list[i].flags.out) {
-                out_deps.push_back(dep_list[i].base_addr);
-            }
-        }
-        for(int i = 0; i < ndeps_noalias; i++) {
-            if(noalias_dep_list[i].flags.in) {
-                in_deps.push_back(noalias_dep_list[i].base_addr);
-            }
-            if(noalias_dep_list[i].flags.out) {
-                out_deps.push_back(noalias_dep_list[i].base_addr);
-            }
-        }
-        hpx_backend->create_df_task(gtid, new_task, in_deps, out_deps);
-        */
+        hpx_backend->create_future_task( gtid, new_task, ndeps, dep_list,
+                                     ndeps_noalias, noalias_dep_list);
+#else
         hpx_backend->create_df_task( gtid, new_task, ndeps, dep_list,
                                      ndeps_noalias, noalias_dep_list);
+#endif
     }
     return 1;
 }
@@ -258,6 +240,15 @@ __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit)
 
 void __kmpc_flush(ident_t *loc, ...){
     __sync_synchronize();
+}
+
+void * __kmpc_future_cached(ident_t *  loc, kmp_int32  global_tid, void *data, size_t size, void ***cache) {
+
+    if(!(*cache)) {
+        *cache = (void**)new shared_future<raw_data>;//TODO: When is this freed?
+    }
+
+    return *cache;
 }
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version

@@ -314,6 +314,7 @@ void df_tg_task_wrapper( int gtid, kmp_task_t *task, omp_icv icv,
 }
 #endif
 
+
 // The input on the Intel call is a pair of pointers to arrays of dep structs,
 // and the length of these arrays.
 // The structs contain a pointer and a flag for in or out dep
@@ -406,6 +407,48 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
     task->last_df_task = new_task;
 }
 
+
+raw_data future_wrapper( int gtid, kmp_task_t *task, );
+{
+    auto task_func = task->routine;
+
+    task_func(gtid, task);
+
+    delete[] (char*)task;
+}
+
+void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk, 
+                                      int ndeps, kmp_depend_info_t *dep_list)
+{
+    size_t shared_offset = 0, size = 0;
+    //shared_future<raw_data>*** future_ptr = (shared_future<raw_data>***)(dep_list[0].base_addr);
+    void *data_ptr;
+
+    //if the variables are FP, then the data needs to be copied, if it's shared, then only
+    //pointers need to be set. working with the assumption/requirement that data is FP.
+    for(int i=0; i < ndeps; i++) {
+        
+        data_ptr = (***(shared_future<raw_data>***)(dep_list[i].base_addr)).get().data ;
+        size = dep_list[i].len;
+        memcpy( (thunk->shareds), data_ptr, size);
+        shared_offset += size;
+    } else if( ndeps == 2) {
+    }
+
+
+    shared_offset = 0;
+    for(int i=0; i < ndeps; i++) {
+        if(dep_list[i].flags.out ) {
+            data_ptr = (***(shared_future<raw_data>***)(dep_list[i].base_addr)).get().data ;
+            size = dep_list[i].len;
+            memcpy(data_ptr, (thunk->shareds + shared_offset), size);
+            shared_offset += size;
+        }
+    }
+}
+
+
+
 void thread_setup( invoke_func kmp_invoke, microtask_t thread_func, 
                    int argc, void **argv, int tid,
                    parallel_region *team, omp_task_data *parent,
@@ -427,7 +470,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     }
 
     if(--running_threads == 0) {
-        hpx::lcos::local::spinlock::scoped_lock lk(mtx);
+        //hpx::lcos::local::spinlock::scoped_lock lk(mtx);
+        std::unique_lock<mutex_type> lk(mtx);
         cond.notify_all();
     }
 }
@@ -456,7 +500,8 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
                 true, hpx::threads::thread_priority_normal, i );
     }
     {
-        hpx::lcos::local::spinlock::scoped_lock lk(mtx);
+        //hpx::lcos::local::spinlock::scoped_lock lk(mtx);
+        std::unique_lock<mutex_type> lk(mtx);
         while( running_threads > 0 ) {
             cond.wait(lk);
         }

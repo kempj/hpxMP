@@ -193,6 +193,10 @@ extern "C" void __kmpc_flush(ident_t *loc, ...);
 extern "C" void* 
 __kmpc_threadprivate_cached( ident_t *loc, kmp_int32 tid, void *data, size_t size, void ***cache);
 
+extern "C" void*
+__kmpc_future_cached( ident_t * loc, kmp_int32 global_tid, void * data, size_t size, void *** cache );
+
+
 extern "C" void
 __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, 
                     void *cpy_data, void(*cpy_func)(void*,void*), kmp_int32 didit);
