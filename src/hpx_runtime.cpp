@@ -432,6 +432,22 @@ raw_data future_wrapper2( int gtid, kmp_task_t *task, raw_data arg1, raw_data ar
     return arg1;
 }
 
+raw_data future_wrapper3( int gtid, kmp_task_t *task, raw_data arg1, raw_data arg2, raw_data arg3)
+{
+    memcpy((task->shareds), 
+            arg1.data, arg1.size);
+    memcpy((task->shareds) + arg1.size,
+            arg2.data, arg2.size);
+    memcpy((task->shareds) + arg1.size + arg3.size, 
+            arg3.data, arg3.size);
+
+    task->routine(gtid, task);
+
+    delete[] (char*)task;
+
+    memcpy(arg1.data, (task->shareds), arg1.size);
+    return arg1;
+}
 
 void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk, 
                                       int ndeps, kmp_depend_info_t *dep_list)
@@ -447,9 +463,23 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
             output_future = (**(shared_future<raw_data>***)(dep_list[i].base_addr));
         }
     }
-    *(output_future) = dataflow( unwrapped(future_wrapper), 
-                                            make_ready_future(gtid), make_ready_future(thunk),
-                                            *(input_futures[0]));
+
+    if(ndeps == 1) {
+        *(output_future) = dataflow( unwrapped(future_wrapper), 
+                                                make_ready_future(gtid), make_ready_future(thunk),
+                                                *(input_futures[0]) );
+    } else if(ndeps == 2) {
+        *(output_future) = dataflow( unwrapped(future_wrapper2), 
+                                                make_ready_future(gtid), make_ready_future(thunk),
+                                                *(input_futures[0]), *(input_futures[1]) );
+    } else if(ndeps == 3) {
+        *(output_future) = dataflow( unwrapped(future_wrapper3), 
+                                                make_ready_future(gtid), make_ready_future(thunk),
+                                                *(input_futures[0]), *(input_futures[1]),
+                                                *(input_futures[2]) );
+    } else {
+        cout << "too many dependencies for now" << endl;
+    }
 }
 
 

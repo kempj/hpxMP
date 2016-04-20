@@ -237,7 +237,6 @@ class hpx_runtime {
         void create_task( omp_task_func taskfunc, void *frame_pointer,
                           void *firstprivates, int is_tied, int blocks_parent);
         void create_task( kmp_routine_entry_t taskfunc, int gtid, kmp_task_t *task);
-        //void create_df_task( int gtid, kmp_task_t *task, vector<int64_t> in, vector<int64_t> out);
         void create_df_task( int gtid, kmp_task_t *thunk, 
                              int ndeps, kmp_depend_info_t *dep_list,
                              int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );

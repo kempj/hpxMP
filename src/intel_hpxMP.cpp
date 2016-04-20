@@ -89,9 +89,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
         hpx_backend->create_task(new_task->routine, gtid, new_task);
     } else {
 #ifdef FUTURIZE_TASKS
-
-        hpx_backend->create_future_task( gtid, new_task, ndeps, dep_list,
-                                     ndeps_noalias, noalias_dep_list);
+        hpx_backend->create_future_task( gtid, new_task, ndeps, dep_list);
 #else
         hpx_backend->create_df_task( gtid, new_task, ndeps, dep_list,
                                      ndeps_noalias, noalias_dep_list);
@@ -243,12 +241,28 @@ void __kmpc_flush(ident_t *loc, ...){
 }
 
 void * __kmpc_future_cached(ident_t *  loc, kmp_int32  global_tid, void *data, size_t size, void ***cache) {
-
+    void *retval;
+    shared_future<raw_data> *future_ptr;
+    cout << "\n\tentering _future_cached";
     if(!(*cache)) {
-        *cache = (void**)new shared_future<raw_data>;//TODO: When is this freed?
+        cout << " and allocating:";
+        raw_data data; //TODO: When is this freed?
+        data.data = (void*)new char[size]{0};
+        data.size = size;
+        cout << " data.size = " << data.size << ", data.data = " << data.data <<
+                ",*( (int*)data.data ) = " << *((int*)data.data);
+        //*cache = (void**)new shared_future<raw_data>(hpx::make_ready_future(data));
+        future_ptr = new shared_future<raw_data>(hpx::make_ready_future(data));
+        *cache = (void**) future_ptr;
+    } else {
+        future_ptr = (shared_future<raw_data>*) *cache;
+        cout << " and waiting: ";
     }
+    cout << " future_ptr->get().data = " << *((int*)(future_ptr->get().data)) << ", *cache = " << *cache; 
 
-    return *cache;
+    retval = future_ptr->get().data;
+    cout << " and returning " << retval <<  endl;
+    return retval;
 }
 
 //I think I need to pair up *data to with the memory allocated to represend the threadlocal version
