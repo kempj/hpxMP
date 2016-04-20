@@ -407,44 +407,49 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
     task->last_df_task = new_task;
 }
 
-
-raw_data future_wrapper( int gtid, kmp_task_t *task, );
+raw_data future_wrapper( int gtid, kmp_task_t *task, raw_data arg1)
 {
-    auto task_func = task->routine;
+    memcpy( (task->shareds), arg1.data, arg1.size);
 
-    task_func(gtid, task);
+    task->routine(gtid, task);
 
     delete[] (char*)task;
+
+    return arg1;
 }
+
+//I don't have access to which variable is output, assuming it's the first one for now.
+raw_data future_wrapper2( int gtid, kmp_task_t *task, raw_data arg1, raw_data arg2)
+{
+    memcpy((task->shareds)            , arg1.data, arg1.size);
+    memcpy((task->shareds) + arg1.size, arg2.data, arg2.size);
+
+    task->routine(gtid, task);
+
+    delete[] (char*)task;
+
+    memcpy(arg1.data, (task->shareds), arg1.size);
+    return arg1;
+}
+
 
 void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk, 
                                       int ndeps, kmp_depend_info_t *dep_list)
 {
-    size_t shared_offset = 0, size = 0;
-    //shared_future<raw_data>*** future_ptr = (shared_future<raw_data>***)(dep_list[0].base_addr);
-    void *data_ptr;
+    shared_future<raw_data> *output_future;
+    vector<shared_future<raw_data>*> input_futures(ndeps);
 
     //if the variables are FP, then the data needs to be copied, if it's shared, then only
     //pointers need to be set. working with the assumption/requirement that data is FP.
     for(int i=0; i < ndeps; i++) {
-        
-        data_ptr = (***(shared_future<raw_data>***)(dep_list[i].base_addr)).get().data ;
-        size = dep_list[i].len;
-        memcpy( (thunk->shareds), data_ptr, size);
-        shared_offset += size;
-    } else if( ndeps == 2) {
-    }
-
-
-    shared_offset = 0;
-    for(int i=0; i < ndeps; i++) {
+        input_futures[i] = (**(shared_future<raw_data>***)(dep_list[i].base_addr));
         if(dep_list[i].flags.out ) {
-            data_ptr = (***(shared_future<raw_data>***)(dep_list[i].base_addr)).get().data ;
-            size = dep_list[i].len;
-            memcpy(data_ptr, (thunk->shareds + shared_offset), size);
-            shared_offset += size;
+            output_future = (**(shared_future<raw_data>***)(dep_list[i].base_addr));
         }
     }
+    *(output_future) = dataflow( unwrapped(future_wrapper), 
+                                            make_ready_future(gtid), make_ready_future(thunk),
+                                            *(input_futures[0]));
 }
 
 
