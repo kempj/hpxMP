@@ -21,6 +21,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/thread/mutex.hpp>
 #include <atomic>
 
 #include <hpx/util/high_resolution_timer.hpp>

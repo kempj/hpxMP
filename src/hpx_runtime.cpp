@@ -10,7 +10,7 @@
 using std::cout;
 using std::endl;
 
-using hpx::lcos::local::dataflow;
+using hpx::dataflow;
 using hpx::util::unwrapped;
 using hpx::make_ready_future;
 using hpx::threads::set_thread_data;

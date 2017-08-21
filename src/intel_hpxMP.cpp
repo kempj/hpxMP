@@ -241,6 +241,7 @@ void __kmpc_flush(ident_t *loc, ...){
 }
 
 void * __kmpc_future_cached(ident_t *  loc, kmp_int32  global_tid, void *data, size_t size, void ***cache) {
+    //cout << "__kmpc_future_cached called, data = " << data << ", cache = " << cache << endl;
     void *retval;
     shared_future<raw_data> *future_ptr;
     if(!(*cache)) {

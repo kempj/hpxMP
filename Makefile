@@ -42,3 +42,4 @@ clean:
 	rm -rf *.o
 	rm -rf *.so
 	rm -rf *.so.1
+	cd src; make clean;
