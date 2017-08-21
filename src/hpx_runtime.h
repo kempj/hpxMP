@@ -22,6 +22,7 @@
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/condition.hpp>
 #include <atomic>
 
 #include <hpx/util/high_resolution_timer.hpp>
