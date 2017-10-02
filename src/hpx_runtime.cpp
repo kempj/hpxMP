@@ -21,11 +21,11 @@ using hpx::threads::get_self_id;
 extern boost::shared_ptr<hpx_runtime> hpx_backend;
 
 
-void wait_for_startup(boost::mutex& mtx, boost::condition& cond, bool& running)
+void wait_for_startup(std::mutex& mtx, std::condition_variable& cond, bool& running)
 {
     cout << "HPX OpenMP runtime has started" << endl;
     {   // Let the main thread know that we're done.
-        boost::mutex::scoped_lock lk(mtx);
+        std::scoped_lock lk(mtx);
         running = true;
         cond.notify_all();
     }
@@ -82,15 +82,16 @@ void start_hpx(int initial_num_threads)
     hpx::util::function_nonser<int(boost::program_options::variables_map& vm)> f;
     boost::program_options::options_description desc_cmdline; 
 
-    boost::mutex local_mtx;
-    boost::condition cond;//TODO: replace this with something that can be checked later, once hpx is needed.
+    std::mutex local_mtx;
+    std::condition_variable cond;//TODO: replace this with something that can be checked later, once hpx is needed.
     bool running = false;
 
     hpx::start(f, desc_cmdline, argc, argv, cfg,
             std::bind(&wait_for_startup, boost::ref(local_mtx), boost::ref(cond), boost::ref(running)));
 
     { 
-        boost::mutex::scoped_lock lk(local_mtx);
+        //std::scoped_lock lk(local_mtx);
+        std::unique_lock lk(local_mtx);
         if (!running)
             cond.wait(lk);
     }
@@ -553,12 +554,12 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 
 void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func, 
                     int argc, void **argv,
-                    omp_task_data *parent, boost::mutex& mtx, 
-                    boost::condition& cond, bool& running ) 
+                    omp_task_data *parent, std::mutex& mtx, 
+                    std::condition_variable& cond, bool& running ) 
 {
     fork_worker(kmp_invoke, thread_func, argc, argv, parent);
     {
-        boost::mutex::scoped_lock lk(mtx);
+        std::scoped_lock lk(mtx);
         running = true;
         cond.notify_all();
     }
@@ -572,8 +573,8 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
     if( hpx::threads::get_self_ptr() ) {
         fork_worker(kmp_invoke, thread_func, argc, argv, current_task);
     } else {
-        boost::mutex mtx;
-        boost::condition cond;
+        std::mutex mtx;
+        std::condition_variable cond;
         bool running = false;
         hpx::applier::register_thread_nullary(
                 std::bind(&fork_and_sync,
@@ -581,7 +582,8 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
                     current_task, boost::ref(mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
-            boost::mutex::scoped_lock lk(mtx);
+            //std::scoped_lock lk(mtx);
+            std::unique_lock lk(mtx);
             while (!running)
                 cond.wait(lk);
         }

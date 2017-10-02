@@ -5,6 +5,10 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <limits>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_start.hpp>
@@ -21,16 +25,14 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition.hpp>
-#include <atomic>
+//#include <boost/thread/mutex.hpp>
+//#include <boost/thread/condition.hpp>
 
 #include <hpx/util/high_resolution_timer.hpp>
 #include <map>
 
 #include "icv-vars.h"
 
-#include <mutex>
 
 using std::atomic;
 using boost::shared_ptr;
