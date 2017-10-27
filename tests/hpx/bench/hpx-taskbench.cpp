@@ -218,6 +218,7 @@ uint64_t testLeafTaskGeneration(int num_threads, int inner_reps) {
 }
 
 void print_tasks(int num_threads){
+    /*
     hpx::performance_counters::performance_counter count(
             "/threadqueue{locality#0/total}/length");
     int Ntasks = count.get_value<int>().get();
@@ -234,6 +235,7 @@ void print_tasks(int num_threads){
         completed.reset();
         cout << Ncompleted << " completed hpx threads on thread " << i << endl;
     }
+    */
 }
 
 void print_time(std::vector<double> time, std::string name) {
