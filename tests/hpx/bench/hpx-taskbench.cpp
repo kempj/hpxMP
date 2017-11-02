@@ -20,7 +20,7 @@ using std::endl;
 using std::atomic;
 
 const int DEPTH = 6;
-int delay_length;
+int delay_reps = 10000;
 
 atomic<int> task_counter{0};
 
@@ -37,7 +37,7 @@ void spawn_tasks_wait(int inner_reps) {
     vector<future<void>> tasks;
     tasks.reserve(inner_reps);
     for(int i = 0; i < inner_reps; i++) {
-        tasks.push_back(hpx::async(delay, delay_length));
+        tasks.push_back(hpx::async(delay, delay_reps));
     }
     hpx::wait_all(tasks);
 }
@@ -47,7 +47,7 @@ future<void> spawn_tasks(int inner_reps) {
     vector<future<void>> tasks;
     tasks.reserve(inner_reps);
     for(int i = 0; i < inner_reps; i++) {
-        tasks.push_back(hpx::async(delay, delay_length));
+        tasks.push_back(hpx::async(delay, delay_reps));
     }
     return hpx::when_all(tasks);
 }
@@ -69,7 +69,7 @@ uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
     threads.reserve(num_threads * inner_reps);
     uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads * inner_reps; i++) {
-        threads.push_back(hpx::async(delay, delay_length));
+        threads.push_back(hpx::async(delay, delay_reps));
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
@@ -80,7 +80,7 @@ future<void> master_busy_thread(int thread_id, int inner_reps) {
     vector<future<void>> tasks;
     for(int i = 0; i < inner_reps; i++) {
         if(thread_id == 0) {
-            tasks.push_back(hpx::async(delay, delay_length));
+            tasks.push_back(hpx::async(delay, delay_reps));
         } else {
             delay( inner_reps );
         }
@@ -102,7 +102,7 @@ uint64_t testMasterTaskGenerationWithBusySlaves(int num_threads, int inner_reps)
 //TASK WAIT
 void spawn_and_wait(int inner_reps) {
     for(int i = 0; i < inner_reps; i++) {
-        auto task = hpx::async(delay, delay_length);
+        auto task = hpx::async(delay, delay_reps);
         task.wait();
     }
 }
@@ -156,13 +156,13 @@ future<void> branch2(int tree_level);
 
 future<void> branch1(int tree_level) {
     future<void> f = hpx::async(branch2, tree_level);
-    delay(delay_length);
+    delay(delay_reps);
     return f;
 }
 
 future<void> branch2(int tree_level) {
     vector<future<void>> tasks;
-    tasks.push_back( hpx::async( delay, delay_length ));
+    tasks.push_back( hpx::async( delay, delay_reps ));
     if(tree_level == 1 ) {
         return std::move(tasks[0]);
     }
@@ -192,8 +192,8 @@ uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
 future<void> leaf_task_tree(int tree_level) {
     vector<future<void>> tasks;
     if( tree_level == 1 ) {
-        tasks.push_back( hpx::async(delay, delay_length));
-        tasks.push_back( hpx::async(delay, delay_length));
+        tasks.push_back( hpx::async(delay, delay_reps));
+        tasks.push_back( hpx::async(delay, delay_reps));
     } else {
         tasks.push_back( hpx::async(leaf_task_tree, tree_level-1));
         tasks.push_back( hpx::async(leaf_task_tree, tree_level-1));
@@ -253,14 +253,14 @@ void print_time(std::vector<double> time, std::string name) {
         }
     }
     cout << endl << name << ", (average, min, max) in ns:" << endl
-         << (total / time.size()) << ", " << min << ", " << max << endl;
+         << (total / time.size()) << " - " << min << " - " << max << endl;
     
 }
 
 void print_delay_time(){
     uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < 1000; i++) {
-        delay(delay_length);
+        delay(delay_reps);
     }
     uint64_t total = hpx::util::high_resolution_clock::now() - start;
     double average = (double)total / (double)1000.0;
@@ -272,7 +272,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
 
     int reps = vm["reps"].as<int>();
     int inner_reps = vm["inner_reps"].as<int>();
-    delay_length = vm["delay_length"].as<int>();
+    delay_reps= vm["delay_reps"].as<int>();
     vector<double> time(reps);
 
     print_delay_time();
@@ -355,7 +355,7 @@ int main(int argc, char ** argv) {
           "number of times to repeat the benchmark")
         ( "inner_reps", value<int>()->default_value(1024),
           "corresponds to the number of tasks spawned, default 1024")
-        ( "delay_length", value<int>()->default_value(10000),
+        ( "delay_reps", value<int>()->default_value(10000),
           "number of iterations in delay function (0-?, default: 10000)") ;
 
     return hpx::init(desc_commandline, argc, argv, cfg);
