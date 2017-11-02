@@ -1,5 +1,5 @@
 CC = icpc
-CFLAGS = -O3 -openmp -std=c++11
+CFLAGS = -O3 -fopenmp -std=c++11
 
 all: taskbench 
 
