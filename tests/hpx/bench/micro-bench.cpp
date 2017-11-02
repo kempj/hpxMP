@@ -30,7 +30,7 @@ void print_time(std::vector<uint64_t> time, std::string name) {
         }
     }
     cout << "\ntest " << name << ", average = " << (double)total / (double)time.size()
-         << "ns - min = " << min << " - max = " << max << endl;
+         << " ns - min = " << min << " - max = " << max << endl;
 }
 
 void delay(int delaylength) {

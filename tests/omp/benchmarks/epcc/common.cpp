@@ -80,7 +80,7 @@ void benchmark(char name[], bench_func test, int delay_reps, int inner_reps, int
 
     printf("Computing %s time using %d reps\n", name, inner_reps);
 
-    for(int k = 0; k <= outer_reps; k++) {
+    for(int k = 0; k < outer_reps; k++) {
         double start = omp_get_wtime();
         test(inner_reps, delay_reps);
         times[k] = (omp_get_wtime() - start) * 1.0e6 / (double) inner_reps;
