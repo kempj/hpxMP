@@ -58,23 +58,30 @@ int getdelaylengthfromtime(uint64_t delaytime) {
     }
     return delaylength;
 }
-void parallel_thread(int inner_reps, int delay_length) {
+
+void parallel_thread(int inner_reps, int delay_length, barrier *B) {
     vector<future<void>> tasks(inner_reps);
+    B->wait();
     for(int i=0; i<inner_reps; i++) {
         tasks[i] = hpx::async(delay, delay_length);
     }
     hpx::wait_all(tasks);
+    B->wait();
 }
 
 //parallel spawn
 boost::uint64_t par_region(int num_threads, int inner_reps, int delay_reps) {
     vector<future<void>> threads(num_threads);
-    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    barrier B(num_threads+1);
     for(int i=0; i<num_threads; i++) {
-        threads[i] = hpx::async(parallel_thread, inner_reps, delay_reps);
+        threads[i] = hpx::async(parallel_thread, inner_reps, delay_reps, &B);
     }
+    B.wait();
+    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    B.wait();
+    uint64_t total = hpx::util::high_resolution_clock::now() - start;
     hpx::wait_all(threads);
-    return hpx::util::high_resolution_clock::now() - start;
+    return total;
 }
 
 void barrier_func(int delay_reps, barrier *B) {
@@ -82,6 +89,7 @@ void barrier_func(int delay_reps, barrier *B) {
     delay(delay_reps);
     B->wait();
 }
+
 //barrier
 boost::uint64_t barrier_test(int num_threads, int inner_reps, int delay_reps) {
     vector<future<void>> threads;
@@ -98,22 +106,19 @@ boost::uint64_t barrier_test(int num_threads, int inner_reps, int delay_reps) {
     return total;
 }
 
-//single doesn't really translate to hpx
-//master
-//lock/unlock
-//par for
-//for static
-//for dynamic
-
-
 int hpx_main(boost::program_options::variables_map& vm) {
     std::string test = vm["test"].as<std::string>();
     int reps = vm["reps"].as<int>();
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
-    int default_delay = getdelaylengthfromtime(100);//.1 microseconds
-    int delay_reps = 10000, inner_reps = 1024;
+    //int default_delay = getdelaylengthfromtime(100);//.1 microseconds
+    int delay_reps = vm["delay_reps"].as<int>();
+    int inner_reps = vm["inner_reps"].as<int>();
 
+    cout << "outer_reps = " << reps << endl;
+    cout << "inner_reps = " << inner_reps << endl;
+    cout << "delay_reps = " << delay_reps << endl;
+    cout << "num_threads = " << num_threads << endl;
 
     if(test == "all" or test == "0") {
         for(int i = 0; i < reps; i++) {
@@ -148,6 +153,10 @@ int main(int argc, char ** argv) {
     desc_commandline.add_options()
         ( "reps", value<int>()->default_value(20),
           "number of times to repeat the benchmark")
+        ( "inner_reps", value<int>()->default_value(1024),
+          "number of tasks each thread creates")
+        ( "delay_reps", value<int>()->default_value(10000),
+          "number of iterations in the delay function")
         ( "test", value<std::string>()->default_value("all"),
           "select tests to execute (0-?, default: all)") ;
 
