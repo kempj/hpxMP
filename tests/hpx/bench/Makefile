@@ -1,6 +1,6 @@
 CC=g++
 
-all: micro taskbench hpx-startup
+all: micro taskbench
 
 
 mmult: hpx-mmult.cpp matrix_block.h
@@ -42,3 +42,5 @@ spawn: timed_task_spawn.cpp
 chain: task-chain.cpp
 	$(CC) -O3 task-chain.cpp -o chain `pkg-config --cflags --libs hpx_application`
 
+clean:
+	rm -rf *.o micro taskbench
