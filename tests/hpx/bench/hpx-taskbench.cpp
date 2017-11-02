@@ -30,7 +30,7 @@ void delay(int delaylength) {
         a += i;
     if(a < 0)
         printf("%f \n", a);
-    task_counter++;
+    //task_counter++;
 }
 
 void spawn_tasks_wait(int inner_reps) {
