@@ -47,7 +47,7 @@ void print_results(vector<double> &times) {
     double maxtime = 0.;
     double totaltime = 0.;
 
-    for(int i = 1; i <= reps; i++) {
+    for(int i = 0; i < reps; i++) {
         mintime = (mintime < times[i]) ? mintime : times[i];
         maxtime = (maxtime > times[i]) ? maxtime : times[i];
         totaltime += times[i];
