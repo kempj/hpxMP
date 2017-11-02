@@ -201,10 +201,9 @@ void testNestedMasterTaskGeneration(int inner_reps, int delay_reps) {
 }
 
 void testTaskWait(int inner_reps, int delay_reps) {
-    int j;
-#pragma omp parallel private( j )
+#pragma omp parallel 
     {
-        for ( j = 0; j < inner_reps; j ++ ) {
+        for(int j = 0; j < inner_reps; j ++ ) {
 #pragma omp task
             {
                 //task_counter++;
@@ -216,10 +215,9 @@ void testTaskWait(int inner_reps, int delay_reps) {
 }
 
 void testTaskBarrier(int inner_reps, int delay_reps) {
-    int j;
-#pragma omp parallel private( j )
+#pragma omp parallel 
     {
-        for ( j = 0; j < inner_reps; j ++ ) {
+        for(int j = 0; j < inner_reps; j ++ ) {
 #pragma omp task
             {
                 //task_counter++;
@@ -231,10 +229,9 @@ void testTaskBarrier(int inner_reps, int delay_reps) {
 }
 
 void testBranchTaskGeneration(int inner_reps, int delay_reps) {
-    int j;
-#pragma omp parallel private(j)
+#pragma omp parallel 
     {
-        for (j = 0; j < (inner_reps >> DEPTH); j++) {
+        for(int j = 0; j < (inner_reps >> DEPTH); j++) {
 #pragma omp task
             {
                 //task_counter++;
@@ -258,10 +255,9 @@ void branchTaskTree(int tree_level, int delay_reps) {
 }
 
 void testLeafTaskGeneration(int inner_reps, int delay_reps) {
-    int j;
-#pragma omp parallel private(j)
+#pragma omp parallel 
     {
-        for (j = 0; j < (inner_reps >> DEPTH); j++) {
+        for(int j = 0; j < (inner_reps >> DEPTH); j++) {
             leafTaskTree(DEPTH, delay_reps);
         }
     }
