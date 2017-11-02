@@ -108,10 +108,9 @@ int main(int argc, char **argv) {
 }
 
 void testParallelTaskGeneration(int inner_reps, int delay_reps) {
-    int j;
-#pragma omp parallel private( j )
+#pragma omp parallel 
     {
-        for ( j = 0; j < inner_reps; j ++ ) {
+        for(int j=0; j<inner_reps; j++ ) {
 #pragma omp task
             {
                 delay( delay_reps );
