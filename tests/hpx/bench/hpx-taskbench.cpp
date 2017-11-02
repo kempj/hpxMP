@@ -51,10 +51,11 @@ future<void> spawn_tasks(int inner_reps) {
     }
     return hpx::when_all(tasks);
 }
+
 uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
-    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
+    uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
         threads.push_back(hpx::async(spawn_tasks, inner_reps));
     }
@@ -64,9 +65,9 @@ uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
 
 //MASTER TASK
 uint64_t testMasterTaskGeneration(int num_threads, int inner_reps) {
-    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads * inner_reps);
+    uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads * inner_reps; i++) {
         threads.push_back(hpx::async(delay, delay_length));
     }
@@ -86,10 +87,11 @@ future<void> master_busy_thread(int thread_id, int inner_reps) {
     }
     return hpx::when_all(tasks);
 }
+
 uint64_t testMasterTaskGenerationWithBusySlaves(int num_threads, int inner_reps)  {
-    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
+    uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
         threads.push_back(hpx::async(master_busy_thread, i, inner_reps));
     }
@@ -107,9 +109,9 @@ void spawn_and_wait(int inner_reps) {
 // this is very similar to PARALLEL TASK, only with taskwaits in each thread
 // this is probably going to be slower, though.
 uint64_t testTaskWait(int num_threads, int inner_reps){
-    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
+    uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
         threads.push_back(hpx::async(spawn_and_wait, inner_reps));
     }
@@ -127,9 +129,9 @@ void spawn_nested_tasks_wait(int num_threads, int inner_reps) {
     hpx::wait_all(tasks);
 }
 uint64_t testNestedTaskGeneration(int num_threads, int inner_reps) {
-    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
+    uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
         threads.push_back(hpx::async(spawn_nested_tasks_wait, num_threads, inner_reps/num_threads));
     }
@@ -139,9 +141,9 @@ uint64_t testNestedTaskGeneration(int num_threads, int inner_reps) {
 
 //NESTED MASTER TASK
 uint64_t testNestedMasterTaskGeneration(int num_threads, int inner_reps) {
-    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(inner_reps);
+    uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < inner_reps; i++) {
         threads.push_back(hpx::async(spawn_tasks_wait, num_threads ));
     }
@@ -176,9 +178,9 @@ future<void> branch_thread_func(int inner_reps) {
     return hpx::when_all(tasks);
 }
 uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
-    uint64_t start = hpx::util::high_resolution_clock::now();
     vector<future<void>> threads;
     threads.reserve(num_threads);
+    uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
         threads.push_back(branch_thread_func( inner_reps ));
     }
