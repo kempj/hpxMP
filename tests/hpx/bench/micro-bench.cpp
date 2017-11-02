@@ -1,5 +1,5 @@
 #include <hpx/hpx_init.hpp>
-//#include <hpx/include/lcos.hpp>
+#include <hpx/include/lcos.hpp>
 //#include <hpx/include/async.hpp>
 #include <hpx/lcos/local/barrier.hpp>
 #include <hpx/runtime/threads/topology.hpp>
@@ -58,29 +58,37 @@ int getdelaylengthfromtime(uint64_t delaytime) {
     }
     return delaylength;
 }
+void parallel_thread(int inner_reps, int delay_length) {
+    vector<future<void>> tasks(inner_reps);
+    for(int i=0; i<inner_reps; i++) {
+        tasks[i] = hpx::async(delay, delay_length);
+    }
+    hpx::wait_all(tasks);
+}
 
 //parallel spawn
-boost::uint64_t par_region(int num_threads, int delay_length) {
+boost::uint64_t par_region(int num_threads, int inner_reps, int delay_reps) {
+    vector<future<void>> threads(num_threads);
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
-    vector<future<void>> threads;
-    for(int i = 0; i < num_threads; i++) {
-        threads.push_back(hpx::async(delay, delay_length));
+    for(int i=0; i<num_threads; i++) {
+        threads[i] = hpx::async(parallel_thread, inner_reps, delay_reps);
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
 }
 
-void barrier_func(int delay_length, barrier *B) {
+void barrier_func(int delay_reps, barrier *B) {
     B->wait();
-    delay(delay_length);
+    delay(delay_reps);
     B->wait();
 }
 //barrier
-boost::uint64_t barrier_test(int num_threads, int delay_length) {
+boost::uint64_t barrier_test(int num_threads, int inner_reps, int delay_reps) {
     vector<future<void>> threads;
     barrier B(num_threads);
     for(int i = 0; i < num_threads - 1; i++) {
-        threads.push_back(hpx::async(barrier_func, delay_length, &B));
+        //threads.push_back(hpx::async(barrier_func, delay_length, &B));
+        threads.push_back(hpx::async(barrier_func, delay_reps, &B));
     }
     B.wait();
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
@@ -104,17 +112,20 @@ int hpx_main(boost::program_options::variables_map& vm) {
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
     int default_delay = getdelaylengthfromtime(100);//.1 microseconds
+    int delay_reps = 10000, inner_reps = 1024;
 
 
     if(test == "all" or test == "0") {
         for(int i = 0; i < reps; i++) {
-            time[i] = par_region(num_threads, default_delay);
+            //time[i] = par_region(num_threads, default_delay);
+            time[i] = par_region(num_threads, inner_reps, delay_reps);
         }
         print_time(time, "parallel region");
     }
     if(test == "all" or test == "1") {
         for(int i = 0; i < reps; i++) {
-            time[i] = barrier_test(num_threads, default_delay);
+            //time[i] = barrier_test(num_threads, default_delay);
+            time[i] = barrier_test(num_threads, inner_reps, delay_reps);
         }
         print_time(time, "Barrier");
     }
