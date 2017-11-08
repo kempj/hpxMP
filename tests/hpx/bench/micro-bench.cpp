@@ -67,24 +67,24 @@ boost::uint64_t par_region(int num_threads, int inner_reps, int delay_reps) {
     return total;
 }
 
-void barrier_func(int delay_reps, barrier *B) {
-    B->wait();
-    delay(delay_reps);
-    B->wait();
+void barrier_thread_func(int inner_reps, int delay_reps, barrier *B) {
+    for(int i=0; i < inner_reps; i++) {
+        auto task = hpx::async(delay, delay_reps);
+        task.wait();
+        B->wait();
+    }
 }
 
 //barrier
 boost::uint64_t barrier_test(int num_threads, int inner_reps, int delay_reps) {
     vector<future<void>> threads;
     barrier B(num_threads);
-    for(int i = 0; i < num_threads - 1; i++) {
-        threads.push_back(hpx::async(barrier_func, delay_reps, &B));
-    }
-    B.wait();
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
-    B.wait();
-    uint64_t total = hpx::util::high_resolution_clock::now() - start;
+    for(int i = 0; i < num_threads; i++) {
+        threads.push_back(hpx::async(barrier_thread_func, inner_reps, delay_reps, &B));
+    }
     hpx::wait_all(threads);
+    uint64_t total = hpx::util::high_resolution_clock::now() - start;
     return total;
 }
 

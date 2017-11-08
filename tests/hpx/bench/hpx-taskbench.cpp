@@ -179,7 +179,8 @@ uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
     threads.reserve(num_threads);
     uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(branch_thread_func( inner_reps ));
+        //threads.push_back(branch_thread_func( inner_reps ));//FIXME: This should use async
+        threads.push_back(hpx::async(branch_thread_func, inner_reps ));
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
