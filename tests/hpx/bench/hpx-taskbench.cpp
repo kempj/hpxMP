@@ -149,6 +149,9 @@ uint64_t testNestedMasterTaskGeneration(int num_threads, int inner_reps) {
 }
 
 //BRANCH TASK TREE 
+//TODO: Maybe a version with executors?
+// choice is executors or returning continuations
+/*
 future<void> branch2(int tree_level);
 
 future<void> branch1(int tree_level) {
@@ -156,21 +159,21 @@ future<void> branch1(int tree_level) {
     delay(delay_reps);
     return f;
 }
+*/
 
 future<void> branch2(int tree_level) {
-    vector<future<void>> tasks;
-    tasks.push_back( hpx::async( delay, delay_reps ));
-    if(tree_level == 1 ) {
-        return std::move(tasks[0]);
+    vector<future<void>> tasks(2);
+    if(tree_level > 1 ) {
+        tasks[0] = hpx::async( branch2, tree_level-1 );
+        tasks[1] = hpx::async( branch2, tree_level-1 );
     }
-    tasks.push_back( hpx::async( branch2, tree_level-1 ));
-    tasks.push_back( branch2( tree_level-1 ));
+    delay(delay_reps);
     return hpx::when_all(tasks);
 }
 future<void> branch_thread_func(int inner_reps) {
-    vector<future<void>> tasks;
+    vector<future<void>> tasks(inner_reps>>DEPTH);
     for(int i = 0; i < (inner_reps >> DEPTH); i++) {
-        tasks.push_back(hpx::async(branch1, DEPTH));
+        tasks[i] = hpx::async(branch2, DEPTH);
     }
     return hpx::when_all(tasks);
 }
@@ -179,7 +182,6 @@ uint64_t testBranchTaskGeneration(int num_threads, int inner_reps) {
     threads.reserve(num_threads);
     uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
-        //threads.push_back(branch_thread_func( inner_reps ));//FIXME: This should use async
         threads.push_back(hpx::async(branch_thread_func, inner_reps ));
     }
     hpx::wait_all(threads);
