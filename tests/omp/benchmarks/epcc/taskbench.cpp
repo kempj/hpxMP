@@ -44,14 +44,14 @@
 std::atomic<int> task_counter{0};
 
 
-void parse_args( int argc, char *argv[], int &delay_reps, int &inner_reps, int &outer_reps) {
+void parse_args( int argc, char *argv[], int &delay_ns, int &inner_reps, int &outer_reps) {
     for(int arg = 1; arg < argc; arg++) {
         if( string(argv[arg]) == "--outer-repetitions" ) {
             outer_reps = atoi(argv[++arg]);
         } else if( string(argv[arg]) ==  "--inner-repetitions" ) {
             inner_reps=atoi(argv[++arg]);
         } else if( string(argv[arg]) == "--delay-repetitions" ) {
-            delay_reps=atoi(argv[++arg]);
+            delay_ns=atoi(argv[++arg]);
         } else {
             printf("parameters are:\n");
             printf("\t--delay-repetitions: the number of repetitions for the delay function\n");
@@ -60,67 +60,67 @@ void parse_args( int argc, char *argv[], int &delay_reps, int &inner_reps, int &
             exit(0);
         }
     }
-    if(outer_reps == 0 || inner_reps < 1 || delay_reps < 1) {
+    if(outer_reps == 0 || inner_reps < 1 || delay_ns < 1) {
         printf("Invalid input: number of repetitions must be > 0");
     }
 }
 int main(int argc, char **argv) {
-    int delay_reps = 10000, inner_reps = 1024, outer_reps = 20; 
-    parse_args(argc, argv, delay_reps, inner_reps, outer_reps);
+    int delay_ns = 50000, inner_reps = 1024, outer_reps = 20; 
+    parse_args(argc, argv, delay_ns, inner_reps, outer_reps);
 
     printf("Running OpenMP benchmark version 3.0\n"
             "\t%d thread(s)\n"
             "\t%d outer repetitions\n"
             "\t%d inner repetitions\n"
             "\t%d delay repetitions\n",
-            omp_get_max_threads(), outer_reps, inner_reps, delay_reps);
+            omp_get_max_threads(), outer_reps, inner_reps, delay_ns);
     printf("\n--------------------------------------------------------\n");
 
     //task_counter=0;
-    benchmark("PARALLEL TASK", &testParallelTaskGeneration, delay_reps, inner_reps, outer_reps);
+    benchmark("PARALLEL TASK", &testParallelTaskGeneration, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("MASTER TASK", &testMasterTaskGeneration, delay_reps, inner_reps, outer_reps);
+    benchmark("MASTER TASK", &testMasterTaskGeneration, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("MASTER TASK BUSY SLAVES", &testMasterTaskGenerationWithBusySlaves, delay_reps, inner_reps, outer_reps);
+    benchmark("MASTER TASK BUSY SLAVES", &testMasterTaskGenerationWithBusySlaves, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("TASK WAIT", &testTaskWait, delay_reps, inner_reps, outer_reps);
+    benchmark("TASK WAIT", &testTaskWait, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("TASK BARRIER", &testTaskBarrier, delay_reps, inner_reps, outer_reps);
+    benchmark("TASK BARRIER", &testTaskBarrier, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("NESTED TASK", &testNestedTaskGeneration, delay_reps, inner_reps, outer_reps);
+    benchmark("NESTED TASK", &testNestedTaskGeneration, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("NESTED MASTER TASK", &testNestedMasterTaskGeneration, delay_reps, inner_reps, outer_reps);
+    benchmark("NESTED MASTER TASK", &testNestedMasterTaskGeneration, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("BRANCH TASK TREE", &testBranchTaskGeneration, delay_reps, inner_reps, outer_reps);
+    benchmark("BRANCH TASK TREE", &testBranchTaskGeneration, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
     //task_counter=0;
-    benchmark("LEAF TASK TREE", &testLeafTaskGeneration, delay_reps, inner_reps, outer_reps);
+    benchmark("LEAF TASK TREE", &testLeafTaskGeneration, delay_ns, inner_reps, outer_reps);
     //printf("num tasks = %d\n", task_counter);
 
     return 0;
 }
 
-void testParallelTaskGeneration(int inner_reps, int delay_reps) {
+void testParallelTaskGeneration(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
         for(int j=0; j<inner_reps; j++ ) {
 #pragma omp task
             {
-                delay( delay_reps );
+                delay( delay_ns );
                 //task_counter++;
             } 
         }
     }
 }
 
-void testMasterTaskGeneration(int inner_reps, int delay_reps) {
+void testMasterTaskGeneration(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
 #pragma omp master
@@ -131,14 +131,14 @@ void testMasterTaskGeneration(int inner_reps, int delay_reps) {
 #pragma omp task
                 {
                     //task_counter++;
-                    delay(delay_reps);
+                    delay(delay_ns);
                 }
             } 
         }
     } 
 }
 
-void testMasterTaskGenerationWithBusySlaves(int inner_reps, int delay_reps) {
+void testMasterTaskGenerationWithBusySlaves(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
         int thread_num = omp_get_thread_num();
@@ -147,16 +147,16 @@ void testMasterTaskGenerationWithBusySlaves(int inner_reps, int delay_reps) {
 #pragma omp task
                 {
                     //task_counter++;
-                    delay( delay_reps );
+                    delay( delay_ns );
                 } 
             } else {
-                delay( delay_reps );
+                delay( delay_ns );
             }
         }
     }
 }
 
-void testNestedTaskGeneration(int inner_reps, int delay_reps) {
+void testNestedTaskGeneration(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
         int nthreads = omp_get_num_threads();
@@ -168,7 +168,7 @@ void testNestedTaskGeneration(int inner_reps, int delay_reps) {
 #pragma omp task untied
                     {
                         //task_counter++;
-                        delay( delay_reps );
+                        delay( delay_ns );
                     }
                 }
 #pragma omp taskwait
@@ -177,7 +177,7 @@ void testNestedTaskGeneration(int inner_reps, int delay_reps) {
     }
 }
 
-void testNestedMasterTaskGeneration(int inner_reps, int delay_reps) {
+void testNestedMasterTaskGeneration(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
 #pragma omp master
@@ -190,7 +190,7 @@ void testNestedMasterTaskGeneration(int inner_reps, int delay_reps) {
 #pragma omp task
                         {
                             //task_counter++;
-                            delay( delay_reps );
+                            delay( delay_ns );
                         }
                     }
 #pragma omp taskwait
@@ -200,78 +200,78 @@ void testNestedMasterTaskGeneration(int inner_reps, int delay_reps) {
     }
 }
 
-void testTaskWait(int inner_reps, int delay_reps) {
+void testTaskWait(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
         for(int j = 0; j < inner_reps; j ++ ) {
 #pragma omp task
             {
                 //task_counter++;
-                delay( delay_reps );
+                delay( delay_ns );
             }
 #pragma omp taskwait
         }
     }
 }
 
-void testTaskBarrier(int inner_reps, int delay_reps) {
+void testTaskBarrier(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
         for(int j = 0; j < inner_reps; j ++ ) {
 #pragma omp task
             {
                 //task_counter++;
-                delay( delay_reps );
+                delay( delay_ns );
             }
 #pragma omp barrier
         }
     }
 }
 
-void testBranchTaskGeneration(int inner_reps, int delay_reps) {
+void testBranchTaskGeneration(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
         for(int j = 0; j < (inner_reps >> DEPTH); j++) {
 #pragma omp task
             {
                 //task_counter++;
-                branchTaskTree(DEPTH, delay_reps);
-                delay(delay_reps);
+                branchTaskTree(DEPTH, delay_ns);
+                delay(delay_ns);
             }
         }
     }
 }
 
-void branchTaskTree(int tree_level, int delay_reps) {
+void branchTaskTree(int tree_level, int delay_ns) {
     if ( tree_level > 0 ) {
 #pragma omp task
         {
             //task_counter++;
-            branchTaskTree(tree_level - 1, delay_reps);
-            branchTaskTree(tree_level - 1, delay_reps);
-            delay(delay_reps);
+            branchTaskTree(tree_level - 1, delay_ns);
+            branchTaskTree(tree_level - 1, delay_ns);
+            delay(delay_ns);
         }
     }
 }
 
-void testLeafTaskGeneration(int inner_reps, int delay_reps) {
+void testLeafTaskGeneration(int inner_reps, int delay_ns) {
 #pragma omp parallel 
     {
         for(int j = 0; j < (inner_reps >> DEPTH); j++) {
-            leafTaskTree(DEPTH, delay_reps);
+            leafTaskTree(DEPTH, delay_ns);
         }
     }
 }
 
-void leafTaskTree(int tree_level, int delay_reps) {
+void leafTaskTree(int tree_level, int delay_ns) {
     if ( tree_level == 0 ) {
-        delay(delay_reps);
+        delay(delay_ns);
     } else {
 #pragma omp task
         {
             //task_counter++;
-            leafTaskTree(tree_level - 1, delay_reps);
-            leafTaskTree(tree_level - 1, delay_reps);
+            leafTaskTree(tree_level - 1, delay_ns);
+            leafTaskTree(tree_level - 1, delay_ns);
         }
     }
 }

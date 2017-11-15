@@ -33,14 +33,24 @@ void print_time(std::vector<uint64_t> time, std::string name) {
          << " ns - min = " << min << " - max = " << max << endl;
 }
 
-void delay(int delaylength) {
-    float a = 0.;
-    for(int i = 0; i < delaylength; i++)
-        a += i;
-    if(a < 0)
-        printf("%f \n", a);
-}
+//void delay(int delaylength) {
+//    float a = 0.;
+//    for(int i = 0; i < delaylength; i++)
+//        a += i;
+//    if(a < 0)
+//        printf("%f \n", a);
+//}
 
+void delay(int nanosec_delay) {
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    uint64_t end = start;
+    while(true) {
+        if(end-start > nanosec_delay) {
+            break;
+        }
+        end = hpx::util::high_resolution_clock::now();
+    }
+}
 
 void parallel_thread(int inner_reps, int delay_length, barrier *B) {
     vector<future<void>> tasks(inner_reps);
@@ -53,11 +63,11 @@ void parallel_thread(int inner_reps, int delay_length, barrier *B) {
 }
 
 //parallel spawn
-boost::uint64_t par_region(int num_threads, int inner_reps, int delay_reps) {
+boost::uint64_t par_region(int num_threads, int inner_reps, int delay_ns) {
     vector<future<void>> threads(num_threads);
     barrier B(num_threads+1);
     for(int i=0; i<num_threads; i++) {
-        threads[i] = hpx::async(parallel_thread, inner_reps, delay_reps, &B);
+        threads[i] = hpx::async(parallel_thread, inner_reps, delay_ns, &B);
     }
     B.wait();
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
@@ -67,21 +77,21 @@ boost::uint64_t par_region(int num_threads, int inner_reps, int delay_reps) {
     return total;
 }
 
-void barrier_thread_func(int inner_reps, int delay_reps, barrier *B) {
+void barrier_thread_func(int inner_reps, int delay_ns, barrier *B) {
     for(int i=0; i < inner_reps; i++) {
-        auto task = hpx::async(delay, delay_reps);
+        auto task = hpx::async(delay, delay_ns);
         task.wait();
         B->wait();
     }
 }
 
 //barrier
-boost::uint64_t barrier_test(int num_threads, int inner_reps, int delay_reps) {
+boost::uint64_t barrier_test(int num_threads, int inner_reps, int delay_ns) {
     vector<future<void>> threads;
     barrier B(num_threads);
     boost::uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
-        threads.push_back(hpx::async(barrier_thread_func, inner_reps, delay_reps, &B));
+        threads.push_back(hpx::async(barrier_thread_func, inner_reps, delay_ns, &B));
     }
     hpx::wait_all(threads);
     uint64_t total = hpx::util::high_resolution_clock::now() - start;
@@ -93,23 +103,23 @@ int hpx_main(boost::program_options::variables_map& vm) {
     int reps = vm["reps"].as<int>();
     int num_threads = hpx::get_os_thread_count();
     vector<uint64_t> time(reps);
-    int delay_reps = vm["delay_reps"].as<int>();
+    int delay_ns = vm["delay_ns"].as<int>();
     int inner_reps = vm["inner_reps"].as<int>();
 
     cout << "outer_reps = " << reps << endl;
     cout << "inner_reps = " << inner_reps << endl;
-    cout << "delay_reps = " << delay_reps << endl;
+    cout << "delay_ns = " << delay_ns << endl;
     cout << "num_threads = " << num_threads << endl;
 
     if(test == "all" or test == "0") {
         for(int i = 0; i < reps; i++) {
-            time[i] = (par_region(num_threads, inner_reps, delay_reps))/(double)inner_reps;
+            time[i] = (par_region(num_threads, inner_reps, delay_ns))/(double)inner_reps;
         }
         print_time(time, "parallel region");
     }
     if(test == "all" or test == "1") {
         for(int i = 0; i < reps; i++) {
-            time[i] = (barrier_test(num_threads, inner_reps, delay_reps));
+            time[i] = (barrier_test(num_threads, inner_reps, delay_ns));
         }
         print_time(time, "Barrier");
     }
@@ -132,8 +142,8 @@ int main(int argc, char ** argv) {
           "number of times to repeat the benchmark")
         ( "inner_reps", value<int>()->default_value(1024),
           "number of tasks each thread creates")
-        ( "delay_reps", value<int>()->default_value(10000),
-          "number of iterations in the delay function")
+        ( "delay_ns", value<int>()->default_value(50000),
+          "number of nanoseconds in the delay function")
         ( "test", value<std::string>()->default_value("all"),
           "select tests to execute (0-?, default: all)") ;
 
