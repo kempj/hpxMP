@@ -44,10 +44,7 @@ void print_time(std::vector<uint64_t> time, std::string name) {
 void delay(int nanosec_delay) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     uint64_t end = start;
-    while(true) {
-        if(end-start > nanosec_delay) {
-            break;
-        }
+    while(end-start < nanosec_delay) {
         end = hpx::util::high_resolution_clock::now();
     }
 }

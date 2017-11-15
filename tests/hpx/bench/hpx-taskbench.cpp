@@ -5,12 +5,15 @@
 #include <hpx/include/util.hpp>
 #include <hpx/util/unwrapped.hpp>
 
+#include <hpx/lcos/local/barrier.hpp>
+
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/format.hpp>
 
 #include <atomic>
 
+using hpx::lcos::local::barrier;
 using hpx::lcos::shared_future;
 using hpx::lcos::future;
 
@@ -36,10 +39,7 @@ atomic<int> task_counter{0};
 void delay(int nanosec_delay) {
     uint64_t start = hpx::util::high_resolution_clock::now();
     uint64_t end = start;
-    while(true) {
-        if(end-start > nanosec_delay) {
-            break;
-        }
+    while(end-start < nanosec_delay) {
         end = hpx::util::high_resolution_clock::now();
     }
 }
@@ -115,6 +115,26 @@ uint64_t testTaskWait(int num_threads, int inner_reps){
     uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
         threads[i] = hpx::async(spawn_and_wait, inner_reps);
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
+}
+
+//TASK BARRIER
+void barrier_thread_func(int inner_reps, int delay_ns, barrier *B) {
+    for(int i=0; i < inner_reps; i++) {
+        auto task = hpx::async(delay, delay_ns);
+        task.wait();
+        B->wait();
+    }
+}
+
+boost::uint64_t barrier_test(int num_threads, int inner_reps) {
+    vector<future<void>> threads(num_threads);
+    barrier B(num_threads);
+    boost::uint64_t start = hpx::util::high_resolution_clock::now();
+    for(int i = 0; i < num_threads; i++) {
+        threads[i] = hpx::async(barrier_thread_func, inner_reps, delay_ns, &B);
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
@@ -274,6 +294,11 @@ int hpx_main(boost::program_options::variables_map& vm) {
         time[i] = ((double)testTaskWait(num_threads, inner_reps) / (double)inner_reps);
     }
     print_time(time, "TASK WAIT");//1280 / 80 (hpxMP)
+    //barrier_thread_func
+    for(int i = 0; i < reps; i++) {
+        time[i] = ((double)barrier_test(num_threads, inner_reps) / (double)inner_reps);
+    }
+    print_time(time, "TASK BARRIER");
 
     for(int i = 0; i < reps; i++) {
         time[i] = ((double)testNestedTaskGeneration(num_threads, inner_reps) / (double)inner_reps);
