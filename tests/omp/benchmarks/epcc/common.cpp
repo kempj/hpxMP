@@ -97,10 +97,8 @@ void benchmark(char name[], bench_func test, int delay_reps, int inner_reps, int
 void delay(int nanosec_delay) {
     auto t1 = high_resolution_clock::now();
     auto t2 = high_resolution_clock::now();
-    while(true) {
-        if( duration_cast<nanoseconds> (t2-t1).count() > nanosec_delay) {
-            break;
-        }
+    while( duration_cast<nanoseconds> (t2-t1).count() < nanosec_delay) 
+    {
         t2 = high_resolution_clock::now();
     }
 }
