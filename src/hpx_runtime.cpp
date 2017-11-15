@@ -11,7 +11,7 @@ using std::cout;
 using std::endl;
 
 using hpx::dataflow;
-using hpx::util::unwrapped;
+using hpx::util::unwrapping;
 using hpx::make_ready_future;
 using hpx::threads::set_thread_data;
 using hpx::threads::get_thread_data;
@@ -25,7 +25,8 @@ void wait_for_startup(std::mutex& startup_mtx, std::condition_variable& cond, bo
 {
     cout << "HPX OpenMP runtime has started" << endl;
     {   // Let the main thread know that we're done.
-        std::scoped_lock lk(startup_mtx);
+        //std::scoped_lock lk(startup_mtx);
+        std::lock_guard<std::mutex> lk(startup_mtx);
         running = true;
         cond.notify_all();
     }
@@ -91,7 +92,7 @@ void start_hpx(int initial_num_threads)
 
     { 
         //std::scoped_lock lk(startup_mtx);
-        std::unique_lock lk(startup_mtx);
+        std::unique_lock<std::mutex> lk(startup_mtx);
         if (!running)
             cond.wait(lk);
     }
@@ -379,18 +380,18 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 
         if(task->in_taskgroup) {
             new_task = dataflow( *(task->tg_exec),
-                                 unwrapped(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
+                                 unwrapping(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
                                  //make_ready_future(task->tg_exec),
                                  tg_exec, 
                                  f_team, hpx::when_all(dep_futures) );
         } else {
             new_task = dataflow( *(team->exec),
-                                 unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
+                                 unwrapping(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                                  f_parent_counter, 
                                  f_team, hpx::when_all(dep_futures) );
         }
 #else
-        new_task = dataflow( unwrapped(df_task_wrapper), f_gtid, f_thunk, f_icv, 
+        new_task = dataflow( unwrapping(df_task_wrapper), f_gtid, f_thunk, f_icv, 
                              f_parent_counter, 
                              f_team, hpx::when_all(dep_futures) );
 #endif
@@ -466,15 +467,15 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
     }
 
     if(ndeps == 1) {
-        *(output_future) = dataflow( unwrapped(future_wrapper), 
+        *(output_future) = dataflow( unwrapping(future_wrapper), 
                                                 make_ready_future(gtid), make_ready_future(thunk),
                                                 *(input_futures[0]) );
     } else if(ndeps == 2) {
-        *(output_future) = dataflow( unwrapped(future_wrapper2), 
+        *(output_future) = dataflow( unwrapping(future_wrapper2), 
                                                 make_ready_future(gtid), make_ready_future(thunk),
                                                 *(input_futures[0]), *(input_futures[1]) );
     } else if(ndeps == 3) {
-        *(output_future) = dataflow( unwrapped(future_wrapper3), 
+        *(output_future) = dataflow( unwrapping(future_wrapper3), 
                                                 make_ready_future(gtid), make_ready_future(thunk),
                                                 *(input_futures[0]), *(input_futures[1]),
                                                 *(input_futures[2]) );
@@ -564,7 +565,8 @@ void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
 {
     fork_worker(kmp_invoke, thread_func, argc, argv, parent);
     {
-        std::scoped_lock lk(fork_mtx);
+        //std::scoped_lock lk(fork_mtx);
+        std::lock_guard<std::mutex> lk(fork_mtx);
         running = true;
         cond.notify_all();
     }
@@ -588,7 +590,7 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
                 , "ompc_fork_worker");
         {   // Wait for the thread to run.
             //std::scoped_lock lk(fork_mtx);
-            std::unique_lock lk(fork_mtx);
+            std::unique_lock<std::mutex> lk(fork_mtx);
             while (!running)
                 cond.wait(lk);
         }
