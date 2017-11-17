@@ -37,6 +37,7 @@ void fini_runtime()
     cout << "Stopping HPX OpenMP runtime" << endl;
     //this should only be done if this runtime started hpx
     hpx::get_runtime().stop();
+    cout << "Stopped" << endl;
 }
 
 void start_hpx(int initial_num_threads)
@@ -354,7 +355,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
     team->num_tasks++;
 #endif
     if(dep_futures.size() == 0) {
-        cout << "no deps for task, using async" << endl;
 #ifdef OMP_COMPLIANT
         if(task->in_taskgroup) {
             new_task = hpx::async( *(task->tg_exec), tg_task_setup, gtid, thunk, task->icv,
@@ -368,12 +368,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                 task->num_child_tasks, team);
 #endif
     } else {
-        cout << "task has deps, using dataflow" << endl;
-        //shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
-        //shared_future<int>              f_gtid  = make_ready_future( gtid );
-        //shared_future<omp_icv>          f_icv   = make_ready_future( task->icv );
-        //shared_future<parallel_region*> f_team  = make_ready_future( team );
-        //shared_future<shared_ptr<atomic<int64_t>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
 
 
 #ifdef OMP_COMPLIANT
@@ -382,7 +376,6 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
         if(task->in_taskgroup) {
             new_task = dataflow( *(task->tg_exec),
                                  unwrapping(df_tg_task_wrapper), gtid, thunk, task->icv, 
-                                 //make_ready_future(task->tg_exec),
                                  tg_exec, 
                                  team, hpx::when_all(dep_futures) );
         } else {
@@ -493,7 +486,7 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
                    int argc, void **argv, int tid,
                    parallel_region *team, omp_task_data *parent,
                    mutex_type& barrier_mtx,
-                   hpx::lcos::local::condition_variable& cond,
+                   hpx::lcos::local::condition_variable_any& cond,
                    atomic<int>& running_threads )
 {
     omp_task_data task_data(tid, team, parent);
@@ -532,7 +525,7 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
 #ifdef OMP_COMPLIANT
     team.exec.reset(new local_priority_queue_executor(parent->threads_requested));
 #endif
-    hpx::lcos::local::condition_variable cond;
+    hpx::lcos::local::condition_variable_any  cond;
     mutex_type barrier_mtx;
     atomic<int> running_threads;
     running_threads = parent->threads_requested;
@@ -568,7 +561,6 @@ void fork_and_sync( invoke_func kmp_invoke, microtask_t thread_func,
 {
     fork_worker(kmp_invoke, thread_func, argc, argv, parent);
     {
-        //std::scoped_lock lk(fork_mtx);
         std::lock_guard<std::mutex> lk(fork_mtx);
         running = true;
         cond.notify_all();
@@ -591,8 +583,7 @@ void hpx_runtime::fork(invoke_func kmp_invoke, microtask_t thread_func, int argc
                     kmp_invoke, thread_func, argc, argv,
                     current_task, boost::ref(fork_mtx), boost::ref(cond), boost::ref(running))
                 , "ompc_fork_worker");
-        {   // Wait for the thread to run.
-            //std::scoped_lock lk(fork_mtx);
+        {   
             std::unique_lock<std::mutex> lk(fork_mtx);
             while (!running)
                 cond.wait(lk);

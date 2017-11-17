@@ -53,8 +53,8 @@ typedef void (*omp_micro)(int , frame_pointer_t);
 
 typedef void (*omp_task_func)(void *firstprivates, void *fp);
 
-//typedef hpx::lcos::local::spinlock mutex_type;
-typedef hpx::lcos::local::mutex  mutex_type;
+typedef hpx::lcos::local::spinlock mutex_type;
+//typedef hpx::lcos::local::mutex  mutex_type;
 typedef boost::shared_ptr<mutex_type> mtx_ptr;
 
 typedef int (* kmp_routine_entry_t)( int, void * );
@@ -133,7 +133,7 @@ struct parallel_region {
         depth = parent->depth + 1; 
     }
     int num_threads;
-    hpx::lcos::local::condition_variable cond;
+    hpx::lcos::local::condition_variable_any cond;
     barrier globalBarrier;
     mutex_type crit_mtx{};
     mutex_type thread_mtx{};
@@ -205,7 +205,7 @@ class omp_task_data {
         int threads_requested;
         parallel_region *team;
         mutex_type thread_mutex;
-        hpx::lcos::local::condition_variable thread_cond;
+        hpx::lcos::local::condition_variable_any thread_cond;
         shared_ptr<atomic<int64_t>> num_child_tasks;
         int single_counter{0};
         int loop_num{0};
