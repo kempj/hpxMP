@@ -354,6 +354,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
     team->num_tasks++;
 #endif
     if(dep_futures.size() == 0) {
+        cout << "no deps for task, using async" << endl;
 #ifdef OMP_COMPLIANT
         if(task->in_taskgroup) {
             new_task = hpx::async( *(task->tg_exec), tg_task_setup, gtid, thunk, task->icv,
@@ -367,12 +368,12 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
                                 task->num_child_tasks, team);
 #endif
     } else {
-        shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
-        shared_future<int>              f_gtid  = make_ready_future( gtid );
-        shared_future<omp_icv>          f_icv   = make_ready_future( task->icv );
-        shared_future<parallel_region*> f_team  = make_ready_future( team );
-        shared_future<shared_ptr<atomic<int64_t>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
-        shared_future<shared_ptr<atomic<int64_t>>> f_counter;
+        cout << "task has deps, using dataflow" << endl;
+        //shared_future<kmp_task_t*>      f_thunk = make_ready_future( thunk );
+        //shared_future<int>              f_gtid  = make_ready_future( gtid );
+        //shared_future<omp_icv>          f_icv   = make_ready_future( task->icv );
+        //shared_future<parallel_region*> f_team  = make_ready_future( team );
+        //shared_future<shared_ptr<atomic<int64_t>>> f_parent_counter  = hpx::make_ready_future( task->num_child_tasks);
 
 
 #ifdef OMP_COMPLIANT
@@ -380,20 +381,20 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 
         if(task->in_taskgroup) {
             new_task = dataflow( *(task->tg_exec),
-                                 unwrapping(df_tg_task_wrapper), f_gtid, f_thunk, f_icv, 
+                                 unwrapping(df_tg_task_wrapper), gtid, thunk, task->icv, 
                                  //make_ready_future(task->tg_exec),
                                  tg_exec, 
-                                 f_team, hpx::when_all(dep_futures) );
+                                 team, hpx::when_all(dep_futures) );
         } else {
             new_task = dataflow( *(team->exec),
-                                 unwrapping(df_task_wrapper), f_gtid, f_thunk, f_icv, 
-                                 f_parent_counter, 
-                                 f_team, hpx::when_all(dep_futures) );
+                                 unwrapping(df_task_wrapper), gtid, thunk, task->icv, 
+                                 task->num_child_tasks, 
+                                 team, hpx::when_all(dep_futures) );
         }
 #else
-        new_task = dataflow( unwrapping(df_task_wrapper), f_gtid, f_thunk, f_icv, 
-                             f_parent_counter, 
-                             f_team, hpx::when_all(dep_futures) );
+        new_task = dataflow( unwrapping(df_task_wrapper), gtid, thunk, task->icv, 
+                             task->num_child_tasks, 
+                             team, hpx::when_all(dep_futures) );
 #endif
     }
     for(int i = 0 ; i < ndeps; i++) {
@@ -409,6 +410,7 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
     task->last_df_task = new_task;
 }
 
+#ifdef FUTURIZE_TASKS
 raw_data future_wrapper( int gtid, kmp_task_t *task, raw_data arg1)
 {
     memcpy( (task->shareds), arg1.data, arg1.size);
@@ -483,6 +485,7 @@ void hpx_runtime::create_future_task( int gtid, kmp_task_t *thunk,
         cout << "too many dependencies for now" << endl;
     }
 }
+#endif
 
 // --- start up for threads and parallel regions below --- //
 

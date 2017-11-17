@@ -245,8 +245,10 @@ class hpx_runtime {
                              int ndeps, kmp_depend_info_t *dep_list,
                              int ndeps_noalias, kmp_depend_info_t *noalias_dep_list );
 
+#ifdef FUTURIZE_TASKS
         void create_future_task( int gtid, kmp_task_t *thunk, 
                                  int ndeps, kmp_depend_info_t *dep_list);
+#endif
         void task_exit();
         void task_wait();
         double get_time();
