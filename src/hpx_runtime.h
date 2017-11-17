@@ -133,7 +133,7 @@ struct parallel_region {
         depth = parent->depth + 1; 
     }
     int num_threads;
-    hpx::lcos::local::condition_variable_any cond;
+    //hpx::lcos::local::condition_variable_any cond;
     barrier globalBarrier;
     mutex_type crit_mtx{};
     mutex_type thread_mtx{};
@@ -204,13 +204,13 @@ class omp_task_data {
         //int global_thread_num;
         int threads_requested;
         parallel_region *team;
-        mutex_type thread_mutex;
-        hpx::lcos::local::condition_variable_any thread_cond;
+        //mutex_type thread_mutex;
+        //hpx::lcos::local::condition_variable_any thread_cond;
         shared_ptr<atomic<int64_t>> num_child_tasks;
         int single_counter{0};
         int loop_num{0};
         bool in_taskgroup{false};
-        shared_future<void> last_df_task;
+        //shared_future<void> last_df_task;
 
 #ifdef OMP_COMPLIANT
         shared_ptr<local_priority_queue_executor> tg_exec;

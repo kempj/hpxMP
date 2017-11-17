@@ -229,9 +229,10 @@ void hpx_runtime::end_taskgroup()
 void hpx_runtime::task_wait() 
 {
     auto *task = get_task_data();
-    if(task->df_map.size() > 0) {
-        task->last_df_task.wait();
-    }
+    //TODO: Is this just an optimization? IT seems unnecessary.
+    //if(task->df_map.size() > 0) {
+    //    task->last_df_task.wait();
+    //}
     while( *(task->num_child_tasks) > 0 ) {
         hpx::this_thread::yield();
     }
@@ -371,12 +372,12 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
 
 
 #ifdef OMP_COMPLIANT
-        shared_future<shared_ptr<local_priority_queue_executor>> tg_exec = hpx::make_ready_future(task->tg_exec);
+        //shared_future<shared_ptr<local_priority_queue_executor>> tg_exec = hpx::make_ready_future(task->tg_exec);
 
         if(task->in_taskgroup) {
             new_task = dataflow( *(task->tg_exec),
                                  unwrapping(df_tg_task_wrapper), gtid, thunk, task->icv, 
-                                 tg_exec, 
+                                 task->tg_exec, 
                                  team, hpx::when_all(dep_futures) );
         } else {
             new_task = dataflow( *(team->exec),
@@ -400,10 +401,11 @@ void hpx_runtime::create_df_task( int gtid, kmp_task_t *thunk,
             task->df_map[noalias_dep_list[i].base_addr] = new_task;
         }
     }
-    task->last_df_task = new_task;
+    //task->last_df_task = new_task;
 }
 
 #ifdef FUTURIZE_TASKS
+//This is for the unfinished compiler work for adding futures to OpenMP
 raw_data future_wrapper( int gtid, kmp_task_t *task, raw_data arg1)
 {
     memcpy( (task->shareds), arg1.data, arg1.size);
