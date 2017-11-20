@@ -205,6 +205,7 @@ bool hpx_runtime::start_taskgroup()
     auto *task = get_task_data();
     task->in_taskgroup = true;
 #ifdef OMP_COMPLIANT
+    //FIXME: why is this local_thread_num? shouldn't it be team->num_threads
     task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
 #else
     task->tg_num_tasks.reset(new atomic<int64_t>{0});
