@@ -174,11 +174,11 @@ void hpx_runtime::set_num_threads(int nthreads) {
 
 //TODO: Why not always return the given worker thread number?
 int hpx_runtime::get_thread_num() {
-#ifdef OMP_COMPLIANT
+//#ifdef OMP_COMPLIANT
     return hpx::get_worker_thread_num();
-#else
-    return get_task_data()->local_thread_num;
-#endif
+//#else
+//    return get_task_data()->local_thread_num;
+//#endif
 }
 
 // this should only be called from implicit tasks
@@ -206,7 +206,8 @@ bool hpx_runtime::start_taskgroup()
     task->in_taskgroup = true;
 #ifdef OMP_COMPLIANT
     //FIXME: why is this local_thread_num? shouldn't it be team->num_threads
-    task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
+    //task->tg_exec.reset(new local_priority_queue_executor(task->local_thread_num));
+    task->tg_exec.reset(new local_priority_queue_executor(task->team->num_threads));
 #else
     task->tg_num_tasks.reset(new atomic<int64_t>{0});
 #endif
