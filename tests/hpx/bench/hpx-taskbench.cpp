@@ -7,6 +7,9 @@
 
 #include <hpx/lcos/local/barrier.hpp>
 
+#include <hpx/include/performance_counters.hpp>
+
+
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/format.hpp>
@@ -273,15 +276,29 @@ int hpx_main(boost::program_options::variables_map& vm) {
     delay_ns= vm["delay_ns"].as<int>();
     vector<double> time(reps);
 
-    print_delay_time();
+    //print_delay_time();
+    hpx::performance_counters::performance_counter count1(
+        "/threads{locality#0/total}/count/stolen-from-staged");
+//        "/threads{locality#0/worker-thread#0}/time/average");
+
+    hpx::performance_counters::performance_counter count2(
+        "/threads{locality#0/total}/count/stolen-from-pending");
 
     for(int i = 0; i < reps; i++) {
+        count1.reset();
+        count2.reset();
         time[i] = ((double)testParallelTaskGeneration(num_threads, inner_reps) / (double)inner_reps);
+        cout << count1.get_value<int>().get() << " / ";
+        cout << count2.get_value<int>().get() << endl;
     }
     print_time(time, "PARALLEL TASK");//20
 
     for(int i = 0; i < reps; i++) {
+        count1.reset();
+        count2.reset();
         time[i] = ((double)testMasterTaskGeneration(num_threads, inner_reps) / (double)inner_reps);
+        cout << count1.get_value<int>().get() << " / ";
+        cout << count2.get_value<int>().get() << endl;
     }
     print_time(time, "MASTER TASK");//20
 

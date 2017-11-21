@@ -3,16 +3,18 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/include/util.hpp>
-#include <hpx/util/unwrapped.hpp>
-#include <hpx/lcos/local/dataflow.hpp>
+#include <hpx/include/lcos.hpp>
+//#include <hpx/util/unwrapping.hpp>
+//#include <hpx/lcos/local/dataflow.hpp>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/format.hpp>
 
 using hpx::lcos::future;
-using hpx::lcos::local::dataflow;
-using hpx::util::unwrapped;
+//using hpx::lcos::local::dataflow;
+using hpx::dataflow;
+using hpx::util::unwrapping;
 
 using std::vector;
 using std::cout;
@@ -36,7 +38,7 @@ int hpx_main(boost::program_options::variables_map& vm) {
 
     auto t1 = high_resolution_clock::now();
     for(int i = 0; i < length; i++) {
-       val = dataflow( unwrapped(&chain_add), val); 
+       val = dataflow( unwrapping(&chain_add), val); 
     }
     val.wait();
     auto t2 = high_resolution_clock::now();
