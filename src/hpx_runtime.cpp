@@ -292,6 +292,7 @@ void hpx_runtime::create_task( kmp_routine_entry_t task_func, int gtid, kmp_task
         }
 #else
         //TODO: add taskgroups in non compliant version
+        *(current_task->num_child_tasks) += 1;
         current_task->team->num_tasks++;
         hpx::apply(task_setup, gtid, thunk, current_task->icv,
                     current_task->num_child_tasks, current_task->team );
