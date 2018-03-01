@@ -36,8 +36,8 @@ task-wait: hpx-wait-bench.cpp
 startup: hpx-startup.cpp
 	$(CC)  hpx-startup.cpp -o startup `pkg-config --cflags --libs hpx_application`
 
-spawn: timed_task_spawn.cpp
-	$(CC) timed_task_spawn.cpp -o spawn `pkg-config --cflags --libs hpx_application`
+spawn: task-spawn.cpp
+	$(CC) task-spawn.cpp -o spawn `pkg-config --cflags --libs hpx_application`
 
 chain: task-chain.cpp
 	$(CC) -O3 task-chain.cpp -o chain `pkg-config --cflags --libs hpx_application`

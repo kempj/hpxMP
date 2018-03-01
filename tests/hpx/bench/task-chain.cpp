@@ -65,7 +65,7 @@ int main(int argc, char ** argv) {
     using boost::program_options::value;
     desc_commandline.add_options()
         ( "length", value<int>()->default_value(20),
-          "number of times to repeat the benchmark") ;
+          "length of the chain of task dependencies used") ;
 
     return hpx::init(desc_commandline, argc, argv);
 }
