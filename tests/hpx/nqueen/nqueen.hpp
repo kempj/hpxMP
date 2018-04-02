@@ -13,34 +13,34 @@
 
 namespace nqueen
 {
-    typedef std::vector<size_t> list_type;
+    typedef std::vector<int> list_type;
 
     class board 
     {
     private:
         list_type list_;
-        size_t count_;
+        int count_;
 
     public:
         board() : list_(0), count_(0)
         {}
 
-        board(list_type const& list, size_t, size_t)
+        board(list_type const& list, int, int)
           : list_(list), count_(0)
         {}
 
         ~board() = default;
 
-        void init_board(size_t size)
+        void init_board(int size)
         {
-            for(size_t i=0; i<size; i++) {
+            for(int i=0; i<size; i++) {
                 list_.push_back(size);
             }
         }
 
-        bool check_board(list_type const& list, size_t level)
+        bool check_board(list_type const& list, int level)
         {
-            for (size_t i = 0; i < level; ++i) {
+            for (int i = 0; i < level; ++i) {
                 if ((list.at(i) == list.at(level)) ||
                     (list.at(level) - list.at(i) == level - i) ||
                     (list.at(i) - list.at(level) == level - i))
@@ -56,7 +56,7 @@ namespace nqueen
             return list_;
         }
 
-        void update_board(size_t pos, size_t val)
+        void update_board(int pos, int val)
         {
             list_.at(pos) = val;
         }
@@ -66,7 +66,7 @@ namespace nqueen
             board::list_.clear();
         }
 
-        size_t solve_board( list_type const& list, size_t size, size_t level, size_t col) 
+        int solve_board( list_type const& list, int size, int level, int col) 
         {
             board b(list, size, level);
 
@@ -78,7 +78,7 @@ namespace nqueen
                     b.count_ += solve_board(b.access_board(), size, level + 1, col);
                 }
             } else {
-                for (size_t i = 0; i < size; ++i) {
+                for (int i = 0; i < size; ++i) {
                     b.update_board(level, i);
                     if (b.check_board(b.access_board(), level)) {
                         b.count_ += solve_board(b.access_board(), size, level + 1, col);

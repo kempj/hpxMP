@@ -10,6 +10,7 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
+#include <hpx/include/lcos.hpp>
 
 #include <boost/lexical_cast.hpp>
 
@@ -21,11 +22,18 @@
 
 #include "nqueen.hpp"
 
+
+int task_create( nqueen::board sub_board, int size, int i)
+{
+    return sub_board.solve_board( sub_board.access_board(), size, 0, i);
+}
+
+
 int hpx_main(boost::program_options::variables_map&)
 {
-    const size_t default_size = 8;
+    const int default_size = 8;
 
-    size_t soln_count_total = 0;
+    int soln_count_total = 0;
 
     hpx::naming::id_type locality_ = hpx::find_here();
 
@@ -40,13 +48,18 @@ int hpx_main(boost::program_options::variables_map&)
             soln_count_total = 0;
             std::string arg;
             std::cin >> arg;
-            size_t sz = boost::lexical_cast<size_t>(arg);
+            int sz = boost::lexical_cast<int>(arg);
 
             std::vector<nqueen::board> sub_boards;
-            for(size_t i=0; i < sz; i++) {
+            std::vector<hpx::shared_future<int> > sub_count(sz);
+            for(int i=0; i < sz; i++) {
                 sub_boards.push_back(nqueen::board());
                 sub_boards[i].init_board(sz);
-                soln_count_total += sub_boards[i].solve_board(sub_boards[i].access_board(), sz, 0, i);
+                //soln_count_total += sub_boards[i].solve_board(sub_boards[i].access_board(), sz, 0, i);
+                sub_count[i] = hpx::async(&task_create, sub_boards[i], sz, i);
+            }
+            for(int i=0; i < sz; i++) {
+                soln_count_total += sub_count[i].get();
             }
 
             std::cout << "soln_count:" << soln_count_total << std::endl;
