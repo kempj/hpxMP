@@ -53,7 +53,6 @@ int main(int argc, char* argv[])
             for(int i=0; i < sz; i++) {
                 sub_boards[i] = nqueen::board();
                 sub_boards[i].init_board(sz);
-                //#pragma omp task firstprivate( sub_boards[i], sz, i) shared( sub_count[i] )
                 #pragma omp task 
                 {
                     sub_count[i] = task_create( sub_boards[i], sz, i);
@@ -66,6 +65,7 @@ int main(int argc, char* argv[])
 
             std::cout << "soln_count:" << soln_count_total << std::endl;
             delete[] sub_boards;
+            delete[] sub_count;
         } else if(cmd == "default") {
             /*
             soln_count_total = 0;
