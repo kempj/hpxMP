@@ -8,9 +8,6 @@
 //  Parts of this nqueen_client.cpp has been taken from the accumulator example
 //  by Hartmut Kaiser.
 
-#include <hpx/hpx.hpp>
-#include <hpx/hpx_init.hpp>
-#include <hpx/include/lcos.hpp>
 
 #include <boost/lexical_cast.hpp>
 
@@ -29,20 +26,21 @@ int task_create( nqueen::board sub_board, int size, int i)
 }
 
 
-int hpx_main(boost::program_options::variables_map&)
+int main(int argc, char* argv[]) 
 {
     const int default_size = 8;
 
     int soln_count_total = 0;
-
-    hpx::naming::id_type locality_ = hpx::find_here();
 
     std::cout << "Enter size of board. Default size is 8." << std::endl;
     std::cout << "Command Options: size[value] | default | print | quit"
               << std::endl;
     std::string cmd;
     std::cin >> cmd;
-
+#pragma omp parallel
+{
+#pragma omp single
+{
     while (std::cin.good()) {
         if(cmd == "size") {
             soln_count_total = 0;
@@ -50,19 +48,24 @@ int hpx_main(boost::program_options::variables_map&)
             std::cin >> arg;
             int sz = boost::lexical_cast<int>(arg);
 
-            std::vector<nqueen::board> sub_boards;
-            std::vector<hpx::shared_future<int> > sub_count(sz);
+            nqueen::board *sub_boards = new nqueen::board[sz];
+            int *sub_count = new int[sz];
             for(int i=0; i < sz; i++) {
-                sub_boards.push_back(nqueen::board());
+                sub_boards[i] = nqueen::board();
                 sub_boards[i].init_board(sz);
-                sub_count[i] = hpx::async(&task_create, sub_boards[i], sz, i);
+                //#pragma omp task firstprivate( sub_boards[i], sz, i) shared( sub_count[i] )
+                #pragma omp task 
+                {
+                    sub_count[i] = task_create( sub_boards[i], sz, i);
+                }
             }
+            #pragma omp taskwait
             for(int i=0; i < sz; i++) {
-                soln_count_total += sub_count[i].get();
+                soln_count_total += sub_count[i];
             }
 
             std::cout << "soln_count:" << soln_count_total << std::endl;
-            sub_boards.clear();
+            delete[] sub_boards;
         } else if(cmd == "default") {
             /*
             soln_count_total = 0;
@@ -97,13 +100,7 @@ int hpx_main(boost::program_options::variables_map&)
         }
         std::cin >> cmd;
     }
-
-    hpx::finalize();
-
+}}//end parallel
     return 0;
 }
 
-int main(int argc, char* argv[])
-{
-    return hpx::init(argc, argv);
-}
