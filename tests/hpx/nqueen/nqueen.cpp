@@ -23,9 +23,9 @@
 
 int hpx_main(boost::program_options::variables_map&)
 {
-    const std::size_t default_size = 8;
+    const size_t default_size = 8;
 
-    std::size_t soln_count_total = 0;
+    size_t soln_count_total = 0;
 
     hpx::naming::id_type locality_ = hpx::find_here();
 
@@ -35,45 +35,29 @@ int hpx_main(boost::program_options::variables_map&)
     std::string cmd;
     std::cin >> cmd;
 
-    while (std::cin.good())
-    {
-        if(cmd == "size")
-        {
+    while (std::cin.good()) {
+        if(cmd == "size") {
             soln_count_total = 0;
             std::string arg;
             std::cin >> arg;
-            std::size_t sz = boost::lexical_cast<std::size_t>(arg);
+            size_t sz = boost::lexical_cast<size_t>(arg);
 
-            std::size_t i = 0;
-            std::list<nqueen::board> b;
-            nqueen::board bi = hpx::new_<nqueen::board>(locality_);
-            while(i != sz)
-            {
-                b.push_back(bi);
-                ++i;
+            std::vector<nqueen::board> sub_boards;
+            for(size_t i=0; i < sz; i++) {
+                sub_boards.push_back(nqueen::board());
+                sub_boards[i].init_board(sz);
+                soln_count_total += sub_boards[i].solve_board(sub_boards[i].access_board(), sz, 0, i);
             }
 
-            i=0;
-            for(std::list<nqueen::board>::iterator iter = b.begin();
-                iter != b.end(); ++iter)
-            {
-                iter->create(locality_);
-                iter->init_board(sz);
-                soln_count_total+= iter->solve_board(iter->access_board(),
-                                                     sz, 0, i);
-                ++i;
-            }
             std::cout << "soln_count:" << soln_count_total << std::endl;
-            b.clear();
-        }
-        else if(cmd == "default")
-        {
+            sub_boards.clear();
+        } else if(cmd == "default") {
+            /*
             soln_count_total = 0;
-            nqueen::board a = hpx::new_<nqueen::board>(locality_);
-            std::size_t i = 0;
+            nqueen::board a; //= hpx::new_<nqueen::board>(locality_);
+            size_t i = 0;
             std::vector<nqueen::board> b;
-            while(i != default_size)
-            {
+            while(i != default_size) {
                 b.push_back(a);
                 ++i;
             }
@@ -81,7 +65,7 @@ int hpx_main(boost::program_options::variables_map&)
             for(std::vector<nqueen::board>::iterator iter = b.begin();
                 iter != b.end(); ++iter)
             {
-                iter->create(locality_);
+                //iter->create(locality_);
                 iter->init_board(default_size);
                 soln_count_total+= iter->solve_board(iter->access_board(),
                                                      default_size, 0, i);
@@ -89,17 +73,12 @@ int hpx_main(boost::program_options::variables_map&)
             }
             std::cout << "soln_count:" << soln_count_total << std::endl;
             b.clear();
-        }
-        else if(cmd == "print")
-        {
+            */
+        } else if(cmd == "print") {
             std::cout << "soln_count : " << soln_count_total << std::endl;
-        }
-        else if (cmd == "quit"){
-            //std::cout << "soln_count : " << soln_count_total << std::endl;
+        } else if (cmd == "quit") {
             break;
-        }
-        else
-        {
+        } else {
             std::cout << "Invalid Command." << std::endl;
             std::cout << "Options: size[value] | default | print "<<
             "| quit" << std::endl;

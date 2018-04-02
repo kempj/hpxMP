@@ -8,42 +8,39 @@
 #include <hpx/runtime.hpp>
 #include <hpx/include/client.hpp>
 
-
 #include <cstddef>
 #include <utility>
 
 namespace nqueen
 {
-    typedef std::vector<std::size_t> list_type;
+    typedef std::vector<size_t> list_type;
 
     class board 
     {
     private:
         list_type list_;
-        std::size_t count_;
+        size_t count_;
 
     public:
         board() : list_(0), count_(0)
         {}
 
-        board(list_type const& list, std::size_t, std::size_t)
+        board(list_type const& list, size_t, size_t)
           : list_(list), count_(0)
         {}
 
         ~board() = default;
 
-        void init_board(std::size_t size)
+        void init_board(size_t size)
         {
-            std::size_t i = 0;
-            while(i!=size) {
+            for(size_t i=0; i<size; i++) {
                 list_.push_back(size);
-                ++i;
-             }
-         }
+            }
+        }
 
-        bool check_board(list_type const& list, std::size_t level)
+        bool check_board(list_type const& list, size_t level)
         {
-            for (std::size_t i = 0; i < level; ++i) {
+            for (size_t i = 0; i < level; ++i) {
                 if ((list.at(i) == list.at(level)) ||
                     (list.at(level) - list.at(i) == level - i) ||
                     (list.at(i) - list.at(level) == level - i))
@@ -59,7 +56,7 @@ namespace nqueen
             return list_;
         }
 
-        void update_board(std::size_t pos, std::size_t val)
+        void update_board(size_t pos, size_t val)
         {
             list_.at(pos) = val;
         }
@@ -69,26 +66,22 @@ namespace nqueen
             board::list_.clear();
         }
 
-        std::size_t solve_board(list_type const& list, std::size_t size,
-            std::size_t level, std::size_t col)
+        size_t solve_board( list_type const& list, size_t size, size_t level, size_t col) 
         {
             board b(list, size, level);
 
             if (level == size) {
                 return 1;
-            }
-            else if (level == 0) {
+            } else if (level == 0) {
                 b.update_board(level, col);
                 if (b.check_board(b.access_board(), level)) {
-                    b.count_ +=
-                        solve_board(b.access_board(), size, level + 1, col);
+                    b.count_ += solve_board(b.access_board(), size, level + 1, col);
                 }
             } else {
-                for (std::size_t i = 0; i < size; ++i) {
+                for (size_t i = 0; i < size; ++i) {
                     b.update_board(level, i);
                     if (b.check_board(b.access_board(), level)) {
-                        b.count_ +=
-                            solve_board(b.access_board(), size, level + 1, col);
+                        b.count_ += solve_board(b.access_board(), size, level + 1, col);
                     }
                 }
             }
