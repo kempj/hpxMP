@@ -9,7 +9,7 @@
 //  by Hartmut Kaiser.
 
 
-#include <boost/lexical_cast.hpp>
+//#include <boost/lexical_cast.hpp>
 
 #include <cstddef>
 #include <iostream>
@@ -46,7 +46,8 @@ int main(int argc, char* argv[])
             soln_count_total = 0;
             std::string arg;
             std::cin >> arg;
-            int sz = boost::lexical_cast<int>(arg);
+            //int sz = boost::lexical_cast<int>(arg);
+            int sz = atoi(arg.c_str());
 
             nqueen::board *sub_boards = new nqueen::board[sz];
             int *sub_count = new int[sz];
