@@ -13,12 +13,17 @@
 
 #include <cstddef>
 #include <iostream>
-#include <list>
 #include <string>
 #include <vector>
+#include <chrono>
+
 
 #include "nqueen.hpp"
 
+
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::nanoseconds;
 
 int task_create( nqueen::board sub_board, int size, int i)
 {
@@ -52,6 +57,7 @@ int main(int argc, char* argv[])
 
         nqueen::board *sub_boards = new nqueen::board[sz];
         int *sub_count = new int[sz];
+        auto t1 = high_resolution_clock::now();
         for(int i=0; i < sz; i++) {
             sub_boards[i] = nqueen::board();
             sub_boards[i].init_board(sz);
@@ -64,7 +70,10 @@ int main(int argc, char* argv[])
         for(int i=0; i < sz; i++) {
             soln_count_total += sub_count[i];
         }
+        auto t2 = high_resolution_clock::now();
 
+        auto total = duration_cast<nanoseconds> (t2-t1).count();
+        std::cout << "time: " << total << " ns" << std::endl;
         std::cout << "soln_count:" << soln_count_total << std::endl;
         delete[] sub_boards;
         delete[] sub_count;
