@@ -55,7 +55,6 @@ int hpx_main(boost::program_options::variables_map&)
             for(int i=0; i < sz; i++) {
                 sub_boards.push_back(nqueen::board());
                 sub_boards[i].init_board(sz);
-                //soln_count_total += sub_boards[i].solve_board(sub_boards[i].access_board(), sz, 0, i);
                 sub_count[i] = hpx::async(&task_create, sub_boards[i], sz, i);
             }
             for(int i=0; i < sz; i++) {
