@@ -19,8 +19,15 @@
 #include <list>
 #include <string>
 #include <vector>
+#include <chrono>
+
 
 #include "nqueen.hpp"
+
+
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
+using std::chrono::nanoseconds;
 
 
 int task_create( nqueen::board sub_board, int size, int i)
@@ -52,6 +59,7 @@ int hpx_main(boost::program_options::variables_map&)
 
             std::vector<nqueen::board> sub_boards;
             std::vector<hpx::shared_future<int> > sub_count(sz);
+            auto t1 = high_resolution_clock::now();
             for(int i=0; i < sz; i++) {
                 sub_boards.push_back(nqueen::board());
                 sub_boards[i].init_board(sz);
@@ -60,6 +68,10 @@ int hpx_main(boost::program_options::variables_map&)
             for(int i=0; i < sz; i++) {
                 soln_count_total += sub_count[i].get();
             }
+            auto t2 = high_resolution_clock::now();
+
+            auto total = duration_cast<nanoseconds> (t2-t1).count();
+            std::cout << "time: " << total << " ns" << std::endl;
 
             std::cout << "soln_count:" << soln_count_total << std::endl;
             sub_boards.clear();
