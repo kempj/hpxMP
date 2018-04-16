@@ -30,9 +30,14 @@ using std::chrono::duration_cast;
 using std::chrono::nanoseconds;
 
 
-int task_create( nqueen::board sub_board, int size, int i)
+//int task_create( nqueen::board sub_board, int size, int i) 
+//{
+//    return sub_board.solve_board( sub_board.access_board(), size, 0, i);
+//}
+
+hpx::shared_future<int> task_create( nqueen::board sub_board, int size, int i)
 {
-    return sub_board.solve_board( sub_board.access_board(), size, 0, i);
+    return hpx::async(&nqueen::board::solve_board, sub_board, sub_board.access_board(), size, 0, i);
 }
 
 
@@ -53,7 +58,9 @@ int hpx_main(int argc, char* argv[])
     for(int i=0; i < sz; i++) {
         sub_boards.push_back(nqueen::board());
         sub_boards[i].init_board(sz);
-        sub_count[i] = hpx::async(&task_create, sub_boards[i], sz, i);
+        sub_count[i] = task_create(sub_boards[i], sz, i);
+        //sub_count[i] = hpx::async(&task_create, sub_boards[i], sz, i);
+        //sub_count[i] = hpx::async(&nqueen::board::solve_board, sub_boards[i], sub_boards[i].access_board(), sz , 0, i);
     }
     for(int i=0; i < sz; i++) {
         soln_count_total += sub_count[i].get();
@@ -62,13 +69,10 @@ int hpx_main(int argc, char* argv[])
 
     auto total = duration_cast<nanoseconds> (t2-t1).count();
     std::cout << "time: " << total << " ns" << std::endl;
-
     std::cout << "soln_count: " << soln_count_total << std::endl;
     sub_boards.clear();
 
-    hpx::finalize();
-
-    return 0;
+    return hpx::finalize();
 }
 
 int main(int argc, char* argv[])
