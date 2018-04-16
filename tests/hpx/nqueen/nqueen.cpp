@@ -83,9 +83,7 @@ hpx::shared_future<int> task_create( nqueen::board sub_board, int size, int col,
         }
     }
 
-    hpx::shared_future<std::vector<hpx::shared_future<int> > > count_futures = hpx::when_all(sub_count);
-
-    return hpx::dataflow( hpx::util::unwrapping(sum_count_futures), count_futures);
+    return hpx::dataflow( hpx::util::unwrapping(sum_count_futures), hpx::when_all(sub_count));
 }
 
 
@@ -100,28 +98,24 @@ int hpx_main(int argc, char* argv[])
         task_level = atoi(argv[2]);
     }
 
-
     std::cout << "board size: " << sz << std::endl;
 
     std::vector<nqueen::board> sub_boards;
     std::vector<hpx::shared_future<int> > sub_count(sz);
+
     auto t1 = high_resolution_clock::now();
     for(int i=0; i < sz; i++) {
         sub_boards.push_back(nqueen::board());
         sub_boards[i].init_board(sz);
         sub_count[i] = task_create(sub_boards[i], sz, i, task_level);
-        //sub_count[i] = hpx::async(&task_create, sub_boards[i], sz, i);
-        //sub_count[i] = hpx::async(&nqueen::board::solve_board, sub_boards[i], sub_boards[i].access_board(), sz , 0, i);
     }
-    for(int i=0; i < sz; i++) {
-        soln_count_total += sub_count[i].get();
-    }
+    soln_count_total = sum_count_futures(sub_count);
+
     auto t2 = high_resolution_clock::now();
 
     auto total = duration_cast<nanoseconds> (t2-t1).count();
     std::cout << "time: " << total << " ns" << std::endl;
     std::cout << "soln_count: " << soln_count_total << std::endl;
-    sub_boards.clear();
 
     return hpx::finalize();
 }
