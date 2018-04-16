@@ -30,33 +30,6 @@ using std::chrono::duration_cast;
 using std::chrono::nanoseconds;
 
 
-//int task_create( nqueen::board sub_board, int size, int i) 
-//{
-//    return sub_board.solve_board( sub_board.access_board(), size, 0, i);
-//}
-
-/*
-{
-    board b(list, size, level);
-
-    if (level == size) {
-        return 1;
-    } else if (level == 0) {
-        b.update_board(level, col);
-        if (b.check_board(b.access_board(), level)) {
-            b.count_ += solve_board(b.access_board(), size, level + 1, col);
-        }
-    } else {
-        for (int i = 0; i < size; ++i) {
-            b.update_board(level, i);
-            if (b.check_board(b.access_board(), level)) {
-                b.count_ += solve_board(b.access_board(), size, level + 1, col);
-            }
-        }
-    }
-    return b.count_;
-}
-*/
 int sum_count_futures(std::vector<hpx::shared_future<int> > counts)
 {
     int sum = 0;
@@ -66,24 +39,27 @@ int sum_count_futures(std::vector<hpx::shared_future<int> > counts)
     return sum;
 }
 
-hpx::shared_future<int> task_create( nqueen::board sub_board, int size, int col, int task_level)
+hpx::shared_future<int> task_create( nqueen::board sub_board, int size, int col)
 {
-    if (task_level == 0) {
-        return hpx::async(&nqueen::board::solve_board, sub_board, sub_board.access_board(), size, 0, col);
-    } 
+    nqueen::board b1(sub_board.access_board(), size, 0);
+    b1.update_board(0, col);
+    if(b1.check_board(b1.access_board(), 0)) {
+        int level = 1;
+        std::vector<hpx::shared_future<int> > sub_count(size);
 
-    nqueen::board b(sub_board.access_board(), size, 0);
-    std::vector<hpx::shared_future<int> > sub_count(size);
-
-    for(int i=0; i<size; i++) {
-        b.update_board(0, i);
-        if (b.check_board(b.access_board(), 0)) {
-            //b.count_ += solve_board(b.access_board(), size, 1, i);
-            sub_count[i] = hpx::async(&nqueen::board::solve_board, b, b.access_board(), size, 1, i);
+        nqueen::board b2(b1.access_board(), size, 0);
+        for(int i=0; i<size; i++) {
+            b2.update_board(level, i);
+            if (b2.check_board(b2.access_board(), level)) {
+                sub_count[i] = hpx::async(&nqueen::board::solve_board, b2, b2.access_board(), size, level+1, col);
+            } else {
+                sub_count[i] = hpx::make_ready_future(0);
+            }
         }
+        return hpx::dataflow( hpx::util::unwrapping(sum_count_futures), hpx::when_all(sub_count));
     }
+    return hpx::make_ready_future(0);
 
-    return hpx::dataflow( hpx::util::unwrapping(sum_count_futures), hpx::when_all(sub_count));
 }
 
 
@@ -94,7 +70,8 @@ int hpx_main(int argc, char* argv[])
     int task_level = 1;
     if(argc > 1) {
         sz = atoi(argv[1]);
-    } else if(argc > 2) {
+    } 
+    if(argc > 2) {
         task_level = atoi(argv[2]);
     }
 
@@ -107,7 +84,11 @@ int hpx_main(int argc, char* argv[])
     for(int i=0; i < sz; i++) {
         sub_boards.push_back(nqueen::board());
         sub_boards[i].init_board(sz);
-        sub_count[i] = task_create(sub_boards[i], sz, i, task_level);
+        if(task_level == 0) {
+            sub_count[i] = hpx::async(&nqueen::board::solve_board, sub_boards[i], sub_boards[i].access_board(), sz, 0, i);
+        } else {
+            sub_count[i] = task_create(sub_boards[i], sz, i);
+        }
     }
     soln_count_total = sum_count_futures(sub_count);
 
