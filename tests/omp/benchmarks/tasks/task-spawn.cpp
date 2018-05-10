@@ -26,25 +26,15 @@ void delay(int nanosec_delay) {
 }
 
 void spawn_tasks(int num_tasks, int delay_time){
-//#pragma omp parallel
-//{
-//#pragma omp single
-//{
     for(int i = 0; i < num_tasks; i++) {
 #pragma omp task
         delay(delay_time);
 
     }
-//#pragma omp taskwait
-//}
-//}
+#pragma omp taskwait
 }
 
 void spawn_dep_tasks(int num_tasks1, int num_tasks2, int delay_time) {
-//#pragma omp parallel
-//{
-//#pragma omp single
-//{
     for(int i = 0; i < num_tasks2; i++) {
 #pragma omp task depend(out: A[0][i])
         delay(delay_time);
@@ -56,8 +46,6 @@ void spawn_dep_tasks(int num_tasks1, int num_tasks2, int delay_time) {
         }
     }
 #pragma omp taskwait
-//}
-//}
 }
 
 int main(int argc, char ** argv) {
@@ -79,7 +67,7 @@ int main(int argc, char ** argv) {
 #pragma omp single 
 {
     num_threads = omp_get_num_threads();
-//}}
+
     cout << "spawning " << num_tasks << " tasks, with a delay of " << delay_time << endl;
 
     A = new int*[num_tasks1];
