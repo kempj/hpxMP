@@ -47,7 +47,7 @@ hpx::shared_future<int> task_create( nqueen::board sub_board, int size, int col)
         int level = 1;
         std::vector<hpx::shared_future<int> > sub_count(size);
 
-        nqueen::board b2(b1.access_board(), size, 0);
+        nqueen::board b2(b1.access_board(), size, level);
         for(int i=0; i<size; i++) {
             b2.update_board(level, i);
             if (b2.check_board(b2.access_board(), level)) {
