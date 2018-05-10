@@ -58,7 +58,7 @@ int hpx_main(int argc, char ** argv) {
         local_priority_queue_executor exec;
         t1 = high_resolution_clock::now();
         for(int i = 0; i < num_tasks; i++) {
-            hpx::apply(exec, delay, delay_time);
+            hpx::async(exec, delay, delay_time);
             //delay(delay_time);
         }
     }

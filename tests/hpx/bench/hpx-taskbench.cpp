@@ -47,7 +47,7 @@ void delay(int nanosec_delay) {
     }
 }
 
-//PARALLEL TASK
+//PARALLEL TASK 1 (nowait)
 future<void> spawn_tasks(int inner_reps) {
     vector<future<void>> tasks(inner_reps);
     for(int i = 0; i < inner_reps; i++) {
@@ -56,11 +56,31 @@ future<void> spawn_tasks(int inner_reps) {
     return hpx::when_all(tasks);
 }
 
+
 uint64_t testParallelTaskGeneration(int num_threads, int inner_reps) {
     vector<future<void>> threads(num_threads);
     uint64_t start = hpx::util::high_resolution_clock::now();
     for(int i = 0; i < num_threads; i++) {
         threads[i]  = hpx::async(spawn_tasks, inner_reps);
+    }
+    hpx::wait_all(threads);
+    return hpx::util::high_resolution_clock::now() - start;
+}
+
+//PARALLEL TASK 2 (wait)
+void spawn_tasks_wait(int inner_reps) {
+    vector<future<void>> tasks(inner_reps);
+    for(int i = 0; i < inner_reps; i++) {
+        tasks[i] = hpx::async(delay, delay_ns);
+    }
+    hpx::wait_all(tasks);
+}
+
+uint64_t testParallelTaskGeneration_wait(int num_threads, int inner_reps) {
+    vector<future<void>> threads(num_threads);
+    uint64_t start = hpx::util::high_resolution_clock::now();
+    for(int i = 0; i < num_threads; i++) {
+        threads[i]  = hpx::async(spawn_tasks_wait, inner_reps);
     }
     hpx::wait_all(threads);
     return hpx::util::high_resolution_clock::now() - start;
@@ -144,13 +164,13 @@ boost::uint64_t barrier_test(int num_threads, int inner_reps) {
 }
 
 //NESTED TASK
-void spawn_tasks_wait(int inner_reps) {
-    vector<future<void>> tasks(inner_reps);
-    for(int i=0; i<inner_reps; i++) {
-        tasks[i] = hpx::async(delay, delay_ns);
-    }
-    hpx::wait_all(tasks);
-}
+//void spawn_tasks_wait(int inner_reps) {
+//    vector<future<void>> tasks(inner_reps);
+//    for(int i=0; i<inner_reps; i++) {
+//        tasks[i] = hpx::async(delay, delay_ns);
+//    }
+//    hpx::wait_all(tasks);
+//}
 
 void spawn_nested_tasks_wait(int num_threads, int inner_reps) {
     vector<future<void>> tasks(inner_reps);
@@ -276,29 +296,18 @@ int hpx_main(boost::program_options::variables_map& vm) {
     delay_ns= vm["delay_ns"].as<int>();
     vector<double> time(reps);
 
-    //print_delay_time();
-    hpx::performance_counters::performance_counter count1(
-        "/threads{locality#0/total}/count/stolen-from-staged");
-//        "/threads{locality#0/worker-thread#0}/time/average");
-
-    hpx::performance_counters::performance_counter count2(
-        "/threads{locality#0/total}/count/stolen-from-pending");
-
     for(int i = 0; i < reps; i++) {
-        count1.reset();
-        count2.reset();
         time[i] = ((double)testParallelTaskGeneration(num_threads, inner_reps) / (double)inner_reps);
-        cout << count1.get_value<int>().get() << " / ";
-        cout << count2.get_value<int>().get() << endl;
     }
     print_time(time, "PARALLEL TASK");//20
 
     for(int i = 0; i < reps; i++) {
-        count1.reset();
-        count2.reset();
+        time[i] = ((double)testParallelTaskGeneration_wait(num_threads, inner_reps) / (double)inner_reps);
+    }
+    print_time(time, "PARALLEL TASK v2 (wait)");//20
+
+    for(int i = 0; i < reps; i++) {
         time[i] = ((double)testMasterTaskGeneration(num_threads, inner_reps) / (double)inner_reps);
-        cout << count1.get_value<int>().get() << " / ";
-        cout << count2.get_value<int>().get() << endl;
     }
     print_time(time, "MASTER TASK");//20
 
