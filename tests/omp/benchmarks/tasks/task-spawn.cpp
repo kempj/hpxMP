@@ -15,8 +15,8 @@ using std::chrono::nanoseconds;
 int **A;
 
 void delay(int nanosec_delay) {
-    auto t1 = high_resolution_clock::now();
     auto t2 = high_resolution_clock::now();
+    auto t1 = high_resolution_clock::now();
     while(true) {
         if( duration_cast<nanoseconds> (t2-t1).count() > nanosec_delay) {
             break;
