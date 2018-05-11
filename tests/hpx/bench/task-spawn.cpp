@@ -30,7 +30,7 @@ using hpx::threads::executors::local_priority_queue_executor;
 atomic<int64_t> task_counter;
 
 
-void delay_counter(int nanosec_delay) {
+void delay_counter(int64_t nanosec_delay) {
     auto t1 = high_resolution_clock::now();
     auto t2 = high_resolution_clock::now();
     while(true) {
