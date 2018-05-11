@@ -108,7 +108,7 @@ future<void> master_busy_thread(int thread_id, int inner_reps) {
     } else {
         vector<future<void>> tasks;
         for(int i = 0; i < inner_reps; i++) {
-            delay( inner_reps );
+            delay( delay_ns );
         }
         return hpx::when_all(tasks);
     }
@@ -245,10 +245,12 @@ future<void> leaf_task_tree(int tree_level) {
     } 
     return hpx::when_all(tasks);
 }
+
 future<void> leaf_thread_func(int inner_reps) {
     vector<future<void>> tasks(inner_reps >> DEPTH);
     for(int i = 0; i < (inner_reps >> DEPTH); i++) {
-        tasks[i] = hpx::async(leaf_task_tree, DEPTH);
+       //tasks[i] = hpx::async(leaf_task_tree, DEPTH);
+       tasks[i] = leaf_task_tree( DEPTH );
     }
     return hpx::when_all(tasks);
 }
