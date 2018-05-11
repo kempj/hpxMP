@@ -50,7 +50,7 @@ int64_t atomic_task_spawn(int64_t num_tasks, int64_t delay_time) {
         t1 = high_resolution_clock::now();
         for(int i = 0; i < num_tasks; i++) {
             task_counter++;
-            hpx::apply(delay_counter, delay_time);
+            hpx::async(delay_counter, delay_time);
         }
     }
     while(task_counter > 0) {
