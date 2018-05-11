@@ -245,7 +245,6 @@ future<void> leaf_task_tree(int tree_level) {
     } 
     return hpx::when_all(tasks);
 }
-
 future<void> leaf_thread_func(int inner_reps) {
     vector<future<void>> tasks(inner_reps >> DEPTH);
     for(int i = 0; i < (inner_reps >> DEPTH); i++) {
