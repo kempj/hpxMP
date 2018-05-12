@@ -1,10 +1,14 @@
 #include <chrono>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
+
 
 #include <hpx/hpx_init.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/include/util.hpp>
 #include <hpx/include/lcos.hpp>
+#include <hpx/apply.hpp>
 
 #include <boost/assign/std/vector.hpp>
 #include <boost/cstdint.hpp>
@@ -27,10 +31,52 @@ using std::atomic;
 using hpx::threads::executors::local_priority_queue_executor;
 
 
+typedef hpx::lcos::local::mutex mutex_type;
+
 atomic<int64_t> task_counter;
+mutex_type count_mutex;
+hpx::lcos::local::condition_variable count_cond;
 
 
-void delay_counter(int64_t nanosec_delay) {
+
+void delay_cond(int nanosec_delay) {
+    auto t1 = high_resolution_clock::now();
+    auto t2 = high_resolution_clock::now();
+    while(true) {
+        if( duration_cast<nanoseconds> (t2-t1).count() > nanosec_delay) {
+            break;
+        }
+        t2 = high_resolution_clock::now();
+    }
+    int task_num = --task_counter;
+    if(task_num == 0){
+        std::unique_lock<mutex_type> lk(count_mutex);
+                  count_cond.notify_all();
+    }
+}
+
+int64_t cond_task_spawn(int num_tasks, int delay_time) {
+    task_counter = 0;
+    auto t1 = high_resolution_clock::now();
+    {
+        t1 = high_resolution_clock::now();
+        for(int i = 0; i < num_tasks; i++) {
+            task_counter++;
+            hpx::apply(delay_cond, delay_time);
+        }
+    }
+    {
+        std::unique_lock<mutex_type> lk(count_mutex);
+        while(task_counter > 0) {
+            count_cond.wait(lk);
+        }
+    }
+    auto t2 = high_resolution_clock::now();
+    return duration_cast<nanoseconds> (t2-t1).count();
+}
+
+
+void delay_counter(int nanosec_delay) {
     auto t1 = high_resolution_clock::now();
     auto t2 = high_resolution_clock::now();
     while(true) {
@@ -42,15 +88,14 @@ void delay_counter(int64_t nanosec_delay) {
     task_counter--;
 }
 
-int64_t atomic_task_spawn(int64_t num_tasks, int64_t delay_time) {
+int64_t atomic_task_spawn(int num_tasks, int delay_time) {
     task_counter = 0;
     auto t1 = high_resolution_clock::now();
     {
-        local_priority_queue_executor exec;
         t1 = high_resolution_clock::now();
         for(int i = 0; i < num_tasks; i++) {
             task_counter++;
-            hpx::async(delay_counter, delay_time);
+            hpx::apply(delay_counter, delay_time);
         }
     }
     while(task_counter > 0) {
@@ -122,6 +167,9 @@ int hpx_main(int argc, char ** argv) {
 
     int64_t atomic_time = atomic_task_spawn(num_tasks, delay_time);
     cout << "atomic time  = " << atomic_time / 1000000.0 << " ms : " << ( atomic_time - theory) / 1000000.0 << " ms overhead " << endl;
+
+    int64_t cond_time = cond_task_spawn(num_tasks, delay_time);
+    cout << "cond time  = " << cond_time / 1000000.0 << " ms : " << ( cond_time - theory) / 1000000.0 << " ms overhead " << endl;
 
     return hpx::finalize();
 }
