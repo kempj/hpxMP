@@ -187,11 +187,13 @@ void hpx_runtime::barrier_wait(){
     task_wait();
 #ifdef OMP_COMPLIANT
     while(team->exec->num_pending_closures() > 0 ) {
-        hpx::this_thread::yield();
+        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //hpx::this_thread::yield();
     }
 #else
     while(team->num_tasks > 0) {
-        hpx::this_thread::yield();
+        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //hpx::this_thread::yield();
     }
 #endif
     if(team->num_threads > 1) {
@@ -221,7 +223,8 @@ void hpx_runtime::end_taskgroup()
     task->tg_exec.reset();
 #else
     while( *(task->tg_num_tasks) > 0 ) {
-        hpx::this_thread::yield();
+        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //hpx::this_thread::yield();
     }
     task->tg_num_tasks.reset();
 #endif
@@ -236,7 +239,8 @@ void hpx_runtime::task_wait()
     //    task->last_df_task.wait();
     //}
     while( *(task->num_child_tasks) > 0 ) {
-        hpx::this_thread::yield();
+        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //hpx::this_thread::yield();
     }
 }
 
@@ -504,7 +508,8 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
         kmp_invoke(thread_func, tid, tid, argc, argv);
     }
     while (*(task_data.num_child_tasks) > 0 ) {
-        hpx::this_thread::yield();
+        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //hpx::this_thread::yield();
     }
 
     //This keeps the task_data on this stack allocated. When is that needed?
@@ -552,9 +557,13 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     //The executor containing the tasks will be destroyed as this call goes out
     //of scope, which will wait on all tasks contained in it. So, nothing needs
     //to be done here for it.
+    
+    //I shouldn't need this. Tasks should be done before the thread exit.
+    //FIXME: Remove this once the rest of the cond vars are in.
 #ifndef OMP_COMPLIANT
     while(team.num_tasks > 0) {
-        hpx::this_thread::yield();
+        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        //hpx::this_thread::yield();
     }
 #endif
 }
