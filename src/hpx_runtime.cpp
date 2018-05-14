@@ -191,18 +191,18 @@ void hpx_runtime::barrier_wait(){
         hpx::this_thread::yield();
     }
 #else
-    int count = 0;
-    int max_count = 10;
+    int count = 1;
+    int max_count = 100000;
     while(team->num_tasks > 0) {
-        if(count == 0) {
+        if(count == 1) {
             hpx::this_thread::yield();
         } else {
-            int sleep_time = 10*count;
+            int sleep_time = count;
             if(count > max_count)
-                sleep_time = 10*max_count;
-            hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+                sleep_time = max_count;
+            hpx::this_thread::sleep_for(std::chrono::microseconds(sleep_time));
         }
-        count++;
+        count = count * 2;
         //hpx::this_thread::yield();
     }
 #endif
