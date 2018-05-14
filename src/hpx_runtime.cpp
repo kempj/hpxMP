@@ -187,12 +187,22 @@ void hpx_runtime::barrier_wait(){
     task_wait();
 #ifdef OMP_COMPLIANT
     while(team->exec->num_pending_closures() > 0 ) {
-        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
-        //hpx::this_thread::yield();
+        //hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        hpx::this_thread::yield();
     }
 #else
+    int count = 0;
+    int max_count = 10;
     while(team->num_tasks > 0) {
-        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if(count == 0) {
+            hpx::this_thread::yield();
+        } else {
+            int sleep_time = 10*count;
+            if(count > max_count)
+                sleep_time = 10*max_count;
+            hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+        }
+        count++;
         //hpx::this_thread::yield();
     }
 #endif
@@ -223,8 +233,8 @@ void hpx_runtime::end_taskgroup()
     task->tg_exec.reset();
 #else
     while( *(task->tg_num_tasks) > 0 ) {
-        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
-        //hpx::this_thread::yield();
+        //hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
+        hpx::this_thread::yield();
     }
     task->tg_num_tasks.reset();
 #endif
@@ -238,9 +248,14 @@ void hpx_runtime::task_wait()
     //if(task->df_map.size() > 0) {
     //    task->last_df_task.wait();
     //}
+    //int count = 0;
+    //int max_count = 10;
     while( *(task->num_child_tasks) > 0 ) {
-        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
-        //hpx::this_thread::yield();
+        //int sleep_time = 10*count;
+        //if(count > max_count)
+        //    sleep_time = 10*max_count;
+        //hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+        hpx::this_thread::yield();
     }
 }
 
@@ -507,9 +522,18 @@ void thread_setup( invoke_func kmp_invoke, microtask_t thread_func,
     } else {
         kmp_invoke(thread_func, tid, tid, argc, argv);
     }
+    int count = 0;
+    int max_count = 10;
     while (*(task_data.num_child_tasks) > 0 ) {
-        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
-        //hpx::this_thread::yield();
+        if(count == 0) {
+            hpx::this_thread::yield();
+        } else {
+            int sleep_time = 10*count;
+            if(count > max_count)
+                sleep_time = 10*max_count;
+            hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+        }
+        count++;
     }
 
     //This keeps the task_data on this stack allocated. When is that needed?
@@ -561,9 +585,18 @@ void fork_worker( invoke_func kmp_invoke, microtask_t thread_func,
     //I shouldn't need this. Tasks should be done before the thread exit.
     //FIXME: Remove this once the rest of the cond vars are in.
 #ifndef OMP_COMPLIANT
+    int count = 0;
+    int max_count = 10;
     while(team.num_tasks > 0) {
-        hpx::this_thread::sleep_for(std::chrono::milliseconds(100));
-        //hpx::this_thread::yield();
+        if(count == 0) {
+            hpx::this_thread::yield();
+        } else {
+            int sleep_time = 10*count;
+            if(count > max_count)
+                sleep_time = 10*max_count;
+            hpx::this_thread::sleep_for(std::chrono::milliseconds(sleep_time));
+        }
+        count++;
     }
 #endif
 }
