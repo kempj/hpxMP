@@ -38,7 +38,7 @@ int sum_count_futures(std::vector<hpx::shared_future<int> > counts)
     }
     return sum;
 }
-
+/*
 hpx::shared_future<int> task_create( nqueen::board sub_board, int size, int col)
 {
     nqueen::board b1(sub_board.access_board(), size, 0);
@@ -61,6 +61,32 @@ hpx::shared_future<int> task_create( nqueen::board sub_board, int size, int col)
     return hpx::make_ready_future(0);
 
 }
+*/
+int task_create( nqueen::board sub_board, int size, int col)
+{
+    nqueen::board b1(sub_board.access_board(), size, 0);
+    b1.update_board(0, col);
+    int sum = 0;
+    if(b1.check_board(b1.access_board(), 0)) {
+        int level = 1;
+        std::vector<hpx::shared_future<int> > sub_count(size);
+
+        nqueen::board b2(b1.access_board(), size, level);
+        for(int i=0; i<size; i++) {
+            b2.update_board(level, i);
+            if (b2.check_board(b2.access_board(), level)) {
+                sub_count[i] = hpx::async(&nqueen::board::solve_board, b2, b2.access_board(), size, level+1, col);
+            } else {
+                sub_count[i] = hpx::make_ready_future(0);
+            }
+        }
+        hpx::wait_all(sub_count);
+        for(int i=0; i < size; i++) {
+            sum += sub_count[i].get();
+        }
+    }
+    return sum;
+}
 
 
 int hpx_main(int argc, char* argv[])
@@ -75,7 +101,8 @@ int hpx_main(int argc, char* argv[])
         task_level = atoi(argv[2]);
     }
 
-    std::cout << "board size: " << sz << std::endl;
+    std::cout << "board size: " << sz;
+    std::cout << ", nesting level " << task_level << std::endl;
 
     std::vector<nqueen::board> sub_boards;
     std::vector<hpx::shared_future<int> > sub_count(sz);
@@ -87,7 +114,7 @@ int hpx_main(int argc, char* argv[])
         if(task_level == 0) {
             sub_count[i] = hpx::async(&nqueen::board::solve_board, sub_boards[i], sub_boards[i].access_board(), sz, 0, i);
         } else {
-            sub_count[i] = task_create(sub_boards[i], sz, i);
+            sub_count[i] = hpx::async(task_create, sub_boards[i], sz, i);
         }
     }
     soln_count_total = sum_count_futures(sub_count);
