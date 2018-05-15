@@ -63,6 +63,7 @@ namespace nqueen
             board::list_.clear();
         }
 
+        //int solve_board( list_type const& list, int size, int level, int col) 
         int solve_board( list_type list, int size, int level, int col) 
         {
             board b(list, size, level);

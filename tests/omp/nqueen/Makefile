@@ -1,5 +1,5 @@
 
-CC=g++
+CC=icpc
 
 default: nqueen
 
