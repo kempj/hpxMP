@@ -12,6 +12,9 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/lcos.hpp>
 
+#include <hpx/runtime.hpp>
+#include <hpx/include/client.hpp>
+
 #include <boost/lexical_cast.hpp>
 
 #include <cstddef>
@@ -81,9 +84,7 @@ int task_create( nqueen::board sub_board, int size, int col)
             }
         }
         hpx::wait_all(sub_count);
-        for(int i=0; i < size; i++) {
-            sum += sub_count[i].get();
-        }
+        sum = sum_count_futures(sub_count);
     }
     return sum;
 }
@@ -114,6 +115,7 @@ int hpx_main(int argc, char* argv[])
         if(task_level == 0) {
             sub_count[i] = hpx::async(&nqueen::board::solve_board, sub_boards[i], sub_boards[i].access_board(), sz, 0, i);
         } else {
+            //sub_count[i] = task_create( sub_boards[i], sz, i);
             sub_count[i] = hpx::async(task_create, sub_boards[i], sz, i);
         }
     }
