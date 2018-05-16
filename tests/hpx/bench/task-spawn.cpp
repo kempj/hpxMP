@@ -98,6 +98,10 @@ int64_t atomic_task_spawn(int num_tasks, int delay_time) {
             hpx::apply(delay_counter, delay_time);
         }
     }
+    hpx::threads::set_thread_state( hpx::threads::get_self_id(), 
+                                    hpx::threads::pending, 
+                                    hpx::threads::wait_signaled, 
+                                    hpx::threads::thread_priority_low);
     while(task_counter > 0) {
         hpx::this_thread::yield();
     }
