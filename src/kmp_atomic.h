@@ -40,7 +40,7 @@
 
 
 //#include <hpx/include/lcos.hpp>
-#include <hpx_runtime.h>
+#include "hpx_runtime.h"
 
 typedef size_t kmp_size_t;
 
