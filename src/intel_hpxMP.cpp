@@ -34,6 +34,7 @@ int __kmpc_ok_to_fork(ident_t *loc){
     #ifdef DEBUG
         std::cout<<"kmpc_ok_to_fork"<<std::endl;
     #endif
+    start_backend();
     return 1;
 }
 
@@ -48,6 +49,7 @@ void __kmpc_end(ident_t *loc) {
     #ifdef DEBUG
         std::cout<<"__kmpc_end"<<std::endl;
     #endif
+    start_backend();
 }
 
 void
@@ -55,6 +57,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...) {
     #ifdef DEBUG
         std::cout<<"__kmpc_fork_call"<<std::endl;
     #endif
+    start_backend();
     vector<void*> argv(argc);
     start_backend();
 
@@ -81,6 +84,7 @@ __kmpc_omp_task_alloc( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 flags,
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_task_alloc"<<std::endl;
     #endif
+    start_backend();
     //kmp_tasking_flags_t *input_flags = (kmp_tasking_flags_t *) & flags;
     //TODO: do I need to do something with these flags?
     int task_size = sizeof_kmp_task_t + (-sizeof_kmp_task_t%8);
@@ -103,6 +107,7 @@ int __kmpc_omp_task( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_task){
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_task"<<std::endl;
     #endif
+    start_backend();
     hpx_backend->create_task(new_task->routine, gtid, new_task);
     return 1;
 }
@@ -115,6 +120,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_task_with_deps"<<std::endl;
     #endif
+    start_backend();
 
     if(ndeps == 0 && ndeps_noalias == 0) {
         //TODO:how to I handle immediate tasks, read them from flags?
@@ -141,6 +147,7 @@ int __kmpc_omp_task_parts( ident_t *loc_ref, int gtid, kmp_task_t * new_task) {
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_task_parts"<<std::endl;
     #endif
+    start_backend();
     hpx_backend->create_task(new_task->routine, gtid, new_task);
     return 0;
 }
@@ -149,6 +156,7 @@ kmp_int32 __kmpc_omp_taskwait( ident_t *loc_ref, kmp_int32 gtid ){
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_taskwait"<<std::endl;
     #endif
+    start_backend();
     hpx_backend->task_wait();
     return 0;
 }
@@ -157,6 +165,7 @@ kmp_int32 __kmpc_omp_taskyield(ident_t *loc_ref, kmp_int32 gtid, int end_part ){
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_taskyield"<<std::endl;
     #endif
+    start_backend();
     hpx::this_thread::yield();
     return 0;
 }
@@ -166,6 +175,7 @@ void __kmpc_taskgroup( ident_t* loc, int gtid ) {
         #ifdef DEBUG
                 std::cout<<"__kmpc_taskgroup"<<std::endl;
         #endif
+        start_backend();
         cout << "Warning, taskgroup failed to start" << endl;
     }
     //hpx_backend->get_task_data()->num_taskgroup_tasks.reset(new atomic<int>{0});
@@ -176,6 +186,7 @@ void __kmpc_end_taskgroup( ident_t* loc, int gtid ) {
     #ifdef DEBUG
         std::cout<<"__kmpc_end_taskgroup"<<std::endl;
     #endif
+    start_backend();
     hpx_backend->end_taskgroup();
     /*
     while( *(hpx_backend->get_task_data()->num_taskgroup_tasks) > 0 ) {
@@ -192,6 +203,7 @@ __kmpc_omp_wait_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps,
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_wait_deps"<<std::endl;
     #endif
+    start_backend();
     //Not handling dependencies at the moment
     if(ndeps > 0 || ndeps_noalias > 0){
         cout <<"task has more than 0 dependencies. This runtime does not support task dependencies\n";
@@ -204,6 +216,7 @@ void __kmpc_omp_task_begin_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * t
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_task_begin_if0"<<std::endl;
     #endif
+    start_backend();
     task->routine(gtid, task);
     //FIXME: not sure if this is correct. These only seem to do internal 
     //tracking in the intel runtime
@@ -213,6 +226,7 @@ __kmpc_omp_task_complete_if0( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t *task
     #ifdef DEBUG
         std::cout<<"__kmpc_omp_task_complete_if0"<<std::endl;
     #endif
+    start_backend();
     //This pairs up with task_begin_if0, waiting for the task that if0 starts.
     //For now, I am just going to execute the thread in task begin, and do nothing here.
 }
@@ -227,6 +241,7 @@ __kmpc_push_num_threads( ident_t *loc,
         std::cout<<"__kmpc_push_num_threads"<<std::endl;
     #endif
     start_backend();
+    start_backend();
     omp_task_data *data = hpx_backend->get_task_data();
     data->set_threads_requested( num_threads );
 }
@@ -236,6 +251,7 @@ __kmpc_barrier(ident_t *loc, kmp_int32 global_tid) {
     #ifdef DEBUG
         std::cout<<"__kmpc_barrier"<<std::endl;
     #endif
+    start_backend();
     hpx_backend->barrier_wait();
 }
 
@@ -243,6 +259,7 @@ int  __kmpc_cancel_barrier(ident_t* loc_ref, kmp_int32 gtid){
     #ifdef DEBUG
         std::cout<<"__kmpc_cancel_barrier"<<std::endl;
     #endif
+    start_backend();
     hpx_backend->barrier_wait();
     return 0;
 }
@@ -251,6 +268,7 @@ int __kmpc_global_thread_num(ident_t *loc){
     #ifdef DEBUG
         std::cout<<"__kmpc_global_thread_num"<<std::endl;
     #endif
+    start_backend();
     if(hpx_backend)
         return hpx_backend->get_thread_num();
     return 0;
@@ -260,6 +278,7 @@ int __kmpc_single(ident_t *loc, int tid){
     #ifdef DEBUG
         std::cout<<"__kmpc_single"<<std::endl;
     #endif
+    start_backend();
     //TODO: does this make sense in the context of a hybrid application?
     if(!hpx_backend || !hpx::threads::get_self_ptr() ) {
         return 1;
@@ -284,6 +303,7 @@ void __kmpc_end_single(ident_t *loc, int tid){
     #ifdef DEBUG
         std::cout<<"__kmpc_end_single"<<std::endl;
     #endif
+    start_backend();
 }
 
 int __kmpc_master(ident_t *loc, int global_tid){
@@ -301,6 +321,7 @@ void __kmpc_end_master(ident_t *loc, int global_tid){
     #ifdef DEBUG
         std::cout<<"__kmpc_end_master"<<std::endl;
     #endif
+    start_backend();
 }
 
 void
@@ -318,6 +339,7 @@ __kmpc_end_critical(ident_t *loc, kmp_int32 global_tid, kmp_critical_name *crit)
     #ifdef DEBUG
         std::cout<<"__kmpc_end_critical"<<std::endl;
     #endif
+    start_backend();
     parallel_region *team = hpx_backend->get_team();
     team->crit_mtx.unlock();
 }
@@ -326,6 +348,7 @@ void __kmpc_flush(ident_t *loc, ...){
     #ifdef DEBUG
         std::cout<<"kmpc_ok_to_fork"<<std::endl;
     #endif
+    start_backend();
     __sync_synchronize();
 }
 
@@ -333,6 +356,7 @@ void * __kmpc_future_cached(ident_t *  loc, kmp_int32  global_tid, void *data, s
     #ifdef DEBUG
         std::cout<<"__kmpc_future_cache"<<std::endl;
     #endif
+    start_backend();
     //cout << "__kmpc_future_cached called, data = " << data << ", cache = " << cache << endl;
     void *retval;
     shared_future<raw_data> *future_ptr;
@@ -383,6 +407,7 @@ __kmpc_copyprivate( ident_t *loc, kmp_int32 gtid, size_t cpy_size, void *cpy_dat
     #ifdef DEBUG
         std::cout<<"__kmpc_copyprivate"<<std::endl;
     #endif
+    start_backend();
     void **data_ptr = &(hpx_backend->get_team()->copyprivate_data);
     if(didit) {
         *data_ptr = cpy_data;
@@ -397,6 +422,7 @@ int __kmpc_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size
     #ifdef DEBUG
         std::cout<<"__kmpc_reduce_nowait"<<std::endl;
     #endif
+    start_backend();
     //This is 2 because the compiler generates a version where the runtime does the work(0/1 are
     //returned) and a version with calls to atomic operations that is used when 2 is returned.
     //return 2;
@@ -407,6 +433,7 @@ void __kmpc_end_reduce_nowait( ident_t *loc, kmp_int32 gtid, kmp_critical_name *
     #ifdef DEBUG
         std::cout<<"__kmpc_end_reduce_nowait"<<std::endl;
     #endif
+    start_backend();
     __kmpc_end_reduce( loc, gtid, lck );
 }
 
@@ -427,6 +454,7 @@ __kmpc_reduce( ident_t *loc, kmp_int32 gtid, kmp_int32 num_vars, size_t size,
     #ifdef DEBUG
         std::cout<<"__kmpc_reduce"<<std::endl;
     #endif
+    start_backend();
     bool atomic_avail = (loc->flags & 0x10) == 0x10;
     if( atomic_avail ) {
         hpx_backend->barrier_wait();
@@ -459,6 +487,7 @@ __kmpc_end_reduce( ident_t *loc, kmp_int32 gtid, kmp_critical_name *lck ) {
     #ifdef DEBUG
         std::cout<<"__kmpc_end_reduce"<<std::endl;
     #endif
+    start_backend();
     //note only master calls this if not using atomics
     bool atomic_avail = (loc->flags & 0x10) == 0x10;
     if( atomic_avail ) {
@@ -480,6 +509,7 @@ void __kmpc_destroy_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_destroy_lock"<<std::endl;
     #endif
+    start_backend();
     delete ((omp_lock_t*) *lock);
 }
 
@@ -487,6 +517,7 @@ void __kmpc_set_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_set_lock"<<std::endl;
     #endif
+    start_backend();
     ((omp_lock_t*) *lock)->lock();
 }
 
@@ -494,6 +525,7 @@ void __kmpc_unset_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_unset_lock"<<std::endl;
     #endif
+    start_backend();
     ((omp_lock_t*) *lock)->unlock();
 }
 
@@ -501,6 +533,7 @@ int __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_test_lock"<<std::endl;
     #endif
+    start_backend();
     return ((omp_lock_t*) *lock)->try_lock();
 }
 
@@ -509,6 +542,7 @@ void __kmpc_init_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_init_nest_lock"<<std::endl;
     #endif
+    start_backend();
     __kmpc_init_lock(loc, gtid, lock);
 }
 
@@ -516,6 +550,7 @@ void __kmpc_destroy_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_destroy_nest_lock"<<std::endl;
     #endif
+    start_backend();
     __kmpc_destroy_lock(loc, gtid, lock);
 }
 
@@ -523,6 +558,7 @@ void __kmpc_set_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_set_nest_lock"<<std::endl;
     #endif
+    start_backend();
     __kmpc_set_lock(loc, gtid, lock);
 }
 
@@ -530,6 +566,7 @@ void __kmpc_unset_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_unset_nest_lock"<<std::endl;
     #endif
+    start_backend();
     __kmpc_unset_lock(loc, gtid, lock);
 }
 
@@ -537,6 +574,7 @@ int __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **lock ){
     #ifdef DEBUG
         std::cout<<"__kmpc_test_nest_lock"<<std::endl;
     #endif
+    start_backend();
     return __kmpc_test_lock(loc, gtid, lock);
 }
 
@@ -544,6 +582,7 @@ void __kmpc_serialized_parallel( ident_t *, kmp_int32 global_tid ){
     #ifdef DEBUG
         std::cout<<"__kmpc_serialized_parallel"<<std::endl;
     #endif
+    start_backend();
     //Not sure if this needs to do anything. It is not used in clang, 
     //only in icc generated code
 }
@@ -552,6 +591,7 @@ void __kmpc_end_serialized_parallel ( ident_t *, kmp_int32 global_tid ) {
     #ifdef DEBUG
         std::cout<<"__kmpc_end_serialized_parallel"<<std::endl;
     #endif
+    start_backend();
 }
 
 
@@ -560,6 +600,7 @@ int omp_get_thread_num(){
     #ifdef DEBUG
         std::cout<<"omp_get_thread_num"<<std::endl;
     #endif
+    start_backend();
     if(hpx_backend)
         return hpx_backend->get_thread_num();
     else
@@ -592,9 +633,9 @@ int omp_get_max_threads() {
 }
 
 int omp_get_num_procs(){
-#ifdef DEBUG
-    std::cout<<"omp_get_num_procs"<<std::endl;
-#endif
+    #ifdef DEBUG
+        std::cout<<"omp_get_num_procs"<<std::endl;
+    #endif
     start_backend();
     return hpx_backend->get_num_procs();
 }
@@ -619,6 +660,7 @@ double omp_get_wtick(){
     #ifdef DEBUG
         std::cout<<"omp_get_wtick"<<std::endl;
     #endif
+    start_backend();
     return .000000001;
 }
 
@@ -668,12 +710,14 @@ void omp_destroy_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"omp_destroy_lock"<<std::endl;
     #endif
+    start_backend();
     delete *lock;
 }
 void omp_destroy_nest_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"omp_destroy_nest_lock"<<std::endl;
     #endif
+    start_backend();
     delete *lock;
 }
 
@@ -681,6 +725,7 @@ int omp_test_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"omp_test_lock"<<std::endl;
     #endif
+    start_backend();
     if((*lock)->try_lock())
         return 1;
     return 0;
@@ -689,6 +734,7 @@ int omp_test_nest_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"omp_test_nest_lock"<<std::endl;
     #endif
+    start_backend();
     if((*lock)->try_lock())
         return 1;
     return 0;
@@ -698,12 +744,14 @@ void omp_set_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"omp_set_lock"<<std::endl;
     #endif
+    start_backend();
     (*lock)->lock();
 }
 void omp_set_nest_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"__omp_set_nest_lockl"<<std::endl;
     #endif
+    start_backend();
     (*lock)->lock();
 }
 
@@ -711,6 +759,7 @@ void omp_unset_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"__omp_unset_lock"<<std::endl;
     #endif
+    start_backend();
     (*lock)->unlock();
 }
 
@@ -718,6 +767,7 @@ void omp_unset_nest_lock(omp_lock_t **lock) {
     #ifdef DEBUG
         std::cout<<"omp_unset_nest_lock"<<std::endl;
     #endif
+    start_backend();
     (*lock)->unlock();
 }
 
