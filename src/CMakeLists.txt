@@ -23,10 +23,17 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 # Instruct cmake to find the HPX settings
 find_package(HPX NO_CMAKE_PACKAGE_REGISTRY REQUIRED)
 
-include_directories(${HPX_INCLUDE_DIR})
+include_directories(${HPX_INCLUDE_DIRS})
 link_directories(${HPX_LIBRARY_DIR})
 
 
 set(HPX_RPATH  "${HPX_RPATH}:${CMAKE_INSTALL_PREFIX}/lib/hpx:${CMAKE_BINARY_DIR}/lib/hpx")
 
-add_hpx_library(hpxmp SOURCES asm_functions.s intel_hpxMP.cpp hpx_runtime.cpp kmp_atomic.cpp loop_schedule.cpp  HEADERS intel_hpxMP.h hpx_runtime.h kmp_atomic.h loop_schedule.h)
+add_library(hpxmp SHARED asm_functions.s intel_hpxMP.cpp hpx_runtime.cpp kmp_atomic.cpp loop_schedule.cpp
+        intel_hpxMP.h hpx_runtime.h kmp_atomic.h loop_schedule.h)
+
+foreach(dir ${HPX_LIBRARY_DIR})
+    target_link_libraries(hpxmp PRIVATE -L${dir})
+endforeach()
+
+target_link_libraries(hpxmp PRIVATE ${HPX_LIBRARIES})
