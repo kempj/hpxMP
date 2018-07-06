@@ -1,6 +1,4 @@
 .*
-CMake*
-cmake*
 gmon.out
 data
 *.w2c*
